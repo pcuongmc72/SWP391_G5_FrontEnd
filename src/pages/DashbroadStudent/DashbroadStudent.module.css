@@ -1,0 +1,227 @@
+/* DashbroadStudent.module.css — dùng chung style với AdminPage */
+
+.page {
+    display: flex;
+    min-height: 100vh;
+    background: #F1F5F9;
+    font-family: 'Inter', 'Segoe UI', sans-serif;
+}
+
+.sidebar {
+    width: 280px;
+    flex-shrink: 0;
+    background: #062e1a;
+    border-right: 1px solid rgba(255, 255, 255, 0.04);
+    display: flex;
+    flex-direction: column;
+    padding: 1.75rem 1.25rem;
+    position: sticky;
+    top: 0;
+    height: 100vh;
+}
+
+.sidebarLogo {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    margin-bottom: 2.5rem;
+    padding: 0 0.5rem;
+}
+
+.sidebarLogoIcon {
+    width: 40px;
+    height: 40px;
+    background: rgba(16, 185, 129, 0.15);
+    border-radius: 0.75rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+
+.sidebarLogoIcon svg {
+    width: 20px;
+    height: 20px;
+    color: #34d399;
+}
+
+.sidebarLogoText {
+    font-size: 1.05rem;
+    font-weight: 800;
+    color: #ffffff;
+    letter-spacing: -0.010em;
+    line-height: 1.1;
+}
+
+.sidebarLogoSub {
+    display: block;
+    font-size: 0.65rem;
+    font-weight: 600;
+    color: #8da296;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    margin-top: 1px;
+}
+
+.navGroupLabel {
+    font-size: 0.675rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: #7b9c8c;
+    padding: 0 0.75rem;
+    margin-bottom: 0.75rem;
+}
+
+.sidebarNav {
+    display: flex;
+    flex-direction: column;
+    gap: 0.375rem;
+    flex: 1;
+}
+
+.navItem {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.75rem 1rem;
+    border-radius: 0.75rem;
+    font-size: 0.875rem;
+    font-weight: 500;
+    color: #8da296;
+    border: none;
+    border-left: 4px solid transparent;
+    background: none;
+    cursor: pointer;
+    font-family: inherit;
+    width: 100%;
+    text-align: left;
+    transition: all 200ms cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.navItem:hover {
+    background: rgba(255, 255, 255, 0.04);
+    color: #ffffff;
+}
+
+.navItem.active {
+    background: rgba(255, 255, 255, 0.05);
+    color: #ffffff;
+    font-weight: 700;
+    border-left-color: #10b981;
+}
+
+.navItem.active .navIcon {
+    color: #10b981;
+}
+
+.navIcon {
+    width: 18px;
+    height: 18px;
+    flex-shrink: 0;
+    color: #8da296;
+    transition: color 200ms ease;
+}
+
+.logoutBtn {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 1.25rem 1rem 0.25rem;
+    border-radius: 0.75rem;
+    font-size: 0.875rem;
+    font-weight: 700;
+    font-family: inherit;
+    color: #ffffff;
+    background: none;
+    border: none;
+    border-top: 1px solid rgba(255, 255, 255, 0.08);
+    cursor: pointer;
+    width: 100%;
+    text-align: left;
+    transition: all 200ms ease;
+    margin-top: auto;
+}
+
+.logoutBtn:hover {
+    background: rgba(255, 255, 255, 0.04);
+    color: #ef4444;
+}
+
+.logoutBtn:hover .navIcon {
+    color: #ef4444;
+}
+
+.main {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    overflow: auto;
+    min-width: 0;
+}
+
+.topbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 1.25rem 2rem;
+    border-bottom: 1px solid #e2e8f0;
+    background: #ffffff;
+    position: sticky;
+    top: 0;
+    z-index: 10;
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.04);
+}
+
+.topbarRight {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+}
+
+.userBadge {
+    display: flex;
+    align-items: center;
+    gap: 0.625rem;
+    padding: 0.375rem 0.75rem 0.375rem 0.375rem;
+    border-radius: 9999px;
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+}
+
+.avatar {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #0D3E26, #166534);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.75rem;
+    font-weight: 700;
+    color: #fff;
+    flex-shrink: 0;
+}
+
+.userInfo {
+    display: flex;
+    flex-direction: column;
+}
+
+.userName {
+    font-size: 0.8125rem;
+    font-weight: 600;
+    color: #0f172a;
+    line-height: 1.2;
+}
+
+.userRole {
+    font-size: 0.6875rem;
+    color: #64748b;
+    line-height: 1.2;
+}
+
+.content {
+    padding: 1.5rem 2rem;
+    flex: 1;
+}
