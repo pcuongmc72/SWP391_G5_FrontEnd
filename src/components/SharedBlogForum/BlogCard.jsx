@@ -7,7 +7,7 @@ import {
 /**
  * BlogCard — Displays a summary of a blog post/discussion thread
  */
-function BlogCard({ thread, onClick, onEdit, onDelete, onApprove, isAdmin, isPendingView }) {
+function BlogCard({ thread, onClick, onEdit, onDelete, onApprove, isAdmin, isPendingView, isAuthor, showStatus }) {
   const title = thread.title ?? thread.Title ?? '';
   const content = thread.content ?? thread.Content ?? '';
   const authorName = thread.authorFullName ?? thread.AuthorFullName ?? thread.authorName ?? 'Người dùng';
@@ -18,13 +18,17 @@ function BlogCard({ thread, onClick, onEdit, onDelete, onApprove, isAdmin, isPen
   const authorId = thread.authorId ?? thread.AuthorId;
   const status = thread.status ?? thread.Status ?? 0;
 
+  // Debug author matching
+  // console.log(`Blog: ${title} | AuthorId: ${authorId} | isAuthor: ${isAuthor}`);
+
   const formatDate = (dateString) => {
     if (!dateString) return '—';
     const date = new Date(dateString);
     return date.toLocaleDateString('vi-VN', { 
       day: '2-digit', 
       month: '2-digit', 
-      year: 'numeric' 
+      year: 'numeric',
+      timeZone: 'Asia/Ho_Chi_Minh'
     });
   };
 
@@ -55,61 +59,85 @@ function BlogCard({ thread, onClick, onEdit, onDelete, onApprove, isAdmin, isPen
         e.currentTarget.style.borderColor = '#e2e8f0';
       }}
     >
-      {/* Visibility & Status Badges */}
+      {/* Header Row: Course Tag + Badges */}
       <div style={{
-        position: 'absolute',
-        top: '1rem',
-        right: '1rem',
         display: 'flex',
-        gap: '0.5rem'
+        justifyContent: 'space-between',
+        alignItems: 'flex-start',
+        gap: '1rem',
+        marginBottom: '0.5rem'
       }}>
-        {/* Status Badge */}
-        {status === 0 && (
-          <div style={{ padding: '0.35rem 0.75rem', borderRadius: '2rem', fontSize: '0.7rem', fontWeight: 700, background: '#fef3c7', color: '#d97706', border: '1px solid #fde68a' }}>
-            Chờ duyệt
-          </div>
-        )}
-        {status === 2 && (
-          <div style={{ padding: '0.35rem 0.75rem', borderRadius: '2rem', fontSize: '0.7rem', fontWeight: 700, background: '#fee2e2', color: '#dc2626', border: '1px solid #fecaca' }}>
-            Từ chối
+        {/* Course Tag */}
+        {courseCode && (
+          <div style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: '0.35rem',
+            color: '#0D3E26',
+            fontSize: '0.75rem',
+            fontWeight: 700,
+            background: '#ecfdf5',
+            padding: '0.35rem 0.75rem',
+            borderRadius: '0.625rem',
+            border: '1px solid #a7f3d0',
+            whiteSpace: 'nowrap',
+            overflow: 'hidden',
+            textOverflow: 'ellipsis',
+            maxWidth: '180px'
+          }}>
+            <Tag size={12} />
+            {courseCode}
           </div>
         )}
 
+        {/* Visibility & Status Badges */}
         <div style={{
-          padding: '0.35rem 0.75rem',
-          borderRadius: '2rem',
-          fontSize: '0.7rem',
-          fontWeight: 700,
           display: 'flex',
-          alignItems: 'center',
-          gap: '0.35rem',
-          background: isPublic ? '#ecfdf5' : '#fff7ed',
-          color: isPublic ? '#059669' : '#d97706',
-          border: `1px solid ${isPublic ? '#a7f3d0' : '#ffedd5'}`,
+          flexDirection: 'column',
+          alignItems: 'flex-end',
+          gap: '0.4rem',
+          flexShrink: 0
         }}>
-          {isPublic ? <Globe size={12} /> : <Lock size={12} />}
-          {isPublic ? 'Công khai' : 'Riêng tư'}
+          <div style={{ display: 'flex', gap: '0.4rem' }}>
+            <div style={{
+              padding: '0.35rem 0.75rem',
+              borderRadius: '2rem',
+              fontSize: '0.7rem',
+              fontWeight: 700,
+              display: 'flex',
+              alignItems: 'center',
+              gap: '0.35rem',
+              background: isPublic ? '#ecfdf5' : '#fff7ed',
+              color: isPublic ? '#059669' : '#d97706',
+              border: `1px solid ${isPublic ? '#a7f3d0' : '#ffedd5'}`,
+            }}>
+              {isPublic ? <Globe size={12} /> : <Lock size={12} />}
+              {isPublic ? 'Công khai' : 'Riêng tư'}
+            </div>
+
+            {/* Status Badge */}
+            {(showStatus || isPendingView || isAdmin) && (
+              <>
+                {status === 0 && (
+                  <div style={{ padding: '0.35rem 0.75rem', borderRadius: '2rem', fontSize: '0.7rem', fontWeight: 800, background: '#fffbeb', color: '#b45309', border: '1px solid #fde68a' }}>
+                    🕒 Đang chờ duyệt
+                  </div>
+                )}
+                {status === 1 && (
+                  <div style={{ padding: '0.35rem 0.75rem', borderRadius: '2rem', fontSize: '0.7rem', fontWeight: 800, background: '#f0fdf4', color: '#15803d', border: '1px solid #bbf7d0' }}>
+                    ✅ Đã duyệt
+                  </div>
+                )}
+                {status === 2 && (
+                  <div style={{ padding: '0.35rem 0.75rem', borderRadius: '2rem', fontSize: '0.7rem', fontWeight: 800, background: '#fef2f2', color: '#b91c1c', border: '1px solid #fecaca' }}>
+                    ❌ Đã từ chối
+                  </div>
+                )}
+              </>
+            )}
+          </div>
         </div>
       </div>
-
-      {/* Course Tag */}
-      {courseCode && (
-        <div style={{
-          display: 'flex',
-          alignItems: 'center',
-          gap: '0.35rem',
-          color: '#0D3E26',
-          fontSize: '0.75rem',
-          fontWeight: 600,
-          background: '#ecfdf5',
-          width: 'fit-content',
-          padding: '0.25rem 0.6rem',
-          borderRadius: '0.5rem',
-        }}>
-          <Tag size={12} />
-          {courseCode}
-        </div>
-      )}
 
       {/* Title & Content Snippet */}
       <div>
@@ -212,7 +240,7 @@ function BlogCard({ thread, onClick, onEdit, onDelete, onApprove, isAdmin, isPen
           </div>
         )}
 
-        {isAdmin && (
+        {(isAdmin || isAuthor) && (
           <div style={{ display: 'flex', gap: '0.25rem' }} onClick={(e) => e.stopPropagation()}>
             <button 
               onClick={(e) => { e.stopPropagation(); onEdit(thread); }}
@@ -231,7 +259,7 @@ function BlogCard({ thread, onClick, onEdit, onDelete, onApprove, isAdmin, isPen
               <Edit2 size={14} />
             </button>
             <button 
-              onClick={(e) => { e.stopPropagation(); onDelete(thread.id); }}
+              onClick={(e) => { e.stopPropagation(); onDelete(thread.id ?? thread.Id); }}
               style={{
                 padding: '0.4rem',
                 borderRadius: '0.5rem',

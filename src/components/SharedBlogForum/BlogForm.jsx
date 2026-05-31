@@ -1,8 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import {
   X, Save, Loader2, Type, AlignLeft,
-  Tag, Globe, Lock, AlertCircle
+  Tag, Globe, Lock, AlertCircle, School
 } from 'lucide-react';
+import { getUserClasses } from '../../services/classService';
+import { getUser } from '../../services/authService';
 
 /**
  * BlogForm — Modal for creating or editing a blog entry
@@ -19,8 +21,12 @@ function BlogForm({
     title: '',
     content: '',
     courseId: '',
+    classId: '',
     isPublic: true
   });
+
+  const [userClasses, setUserClasses] = useState([]);
+  const currentUser = React.useMemo(() => getUser(), []);
 
   useEffect(() => {
     if (initialData) {
@@ -28,6 +34,7 @@ function BlogForm({
         title: initialData.title || initialData.Title || '',
         content: initialData.content || initialData.Content || '',
         courseId: initialData.courseId || initialData.CourseId || '',
+        classId: initialData.classId || initialData.ClassId || '',
         isPublic: initialData.isPublic ?? !(initialData.isPrivate ?? initialData.IsPrivate ?? false)
       });
     } else {
@@ -35,10 +42,25 @@ function BlogForm({
         title: '',
         content: '',
         courseId: '',
+        classId: '',
         isPublic: true
       });
     }
   }, [initialData, isOpen]);
+
+  useEffect(() => {
+    if (isOpen && currentUser) {
+      getUserClasses(currentUser.id || currentUser.Id)
+        .then(res => {
+          const list = res.success ? res.data : res;
+          setUserClasses(Array.isArray(list) ? list : (list?.$values || []));
+        })
+        .catch(err => console.error('Failed to fetch user classes:', err));
+    }
+  }, [isOpen, currentUser]);
+
+  // Filter classes by selected course
+  const filteredClasses = userClasses.filter(c => c.courseId === formData.courseId || c.CourseId === formData.courseId);
 
   if (!isOpen) return null;
 
@@ -56,6 +78,7 @@ function BlogForm({
     outline: 'none',
     transition: 'all 0.2s',
     background: '#f8fafc',
+    color: '#0f172a',
   };
 
   const labelStyle = {
@@ -151,24 +174,54 @@ function BlogForm({
             />
           </div>
 
-          {/* Course Tag Select */}
-          <div>
-            <label style={labelStyle}><Tag size={16} /> Gắn thẻ môn học</label>
-            <select
-              required
-              className="blog-input"
-              style={inputStyle}
-              value={formData.courseId}
-              onChange={(e) => setFormData({ ...formData, courseId: e.target.value })}
-            >
-              <option value="">Chọn môn học...</option>
-              {courses.map(course => (
-                <option key={course.id} value={course.id}>
-                  [{course.code}] {course.name}
-                </option>
-              ))}
-            </select>
+          <div style={{ display: 'grid', gridTemplateColumns: formData.isPublic ? '1fr' : '1fr 1fr', gap: '1rem' }}>
+            {/* Course Tag Select */}
+            <div>
+              <label style={labelStyle}><Tag size={16} /> Gắn thẻ môn học</label>
+              <select
+                required
+                className="blog-input"
+                style={inputStyle}
+                value={formData.courseId}
+                onChange={(e) => setFormData({ ...formData, courseId: e.target.value })}
+              >
+                <option value="">Chọn môn học...</option>
+                {courses.map(course => (
+                  <option key={course.id} value={course.id}>
+                    [{course.code}] {course.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            {/* Class Select (Only for Private) */}
+            {!formData.isPublic && (
+              <div>
+                <label style={labelStyle}><School size={16} /> Chọn lớp học</label>
+                <select
+                  required
+                  className="blog-input"
+                  style={inputStyle}
+                  value={formData.classId}
+                  onChange={(e) => setFormData({ ...formData, classId: e.target.value })}
+                >
+                  <option value="">Chọn lớp học...</option>
+                  {filteredClasses.map(cls => (
+                    <option key={cls.id || cls.Id} value={cls.id || cls.Id}>
+                      {cls.id || cls.Id} {cls.courseCode ? `(${cls.courseCode})` : ''}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            )}
           </div>
+
+          {formData.courseId && !formData.isPublic && filteredClasses.length === 0 && (
+            <div style={{ padding: '0.75rem', borderRadius: '0.75rem', background: '#fef2f2', border: '1px solid #fee2e2', color: '#b91c1c', fontSize: '0.75rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+              <AlertCircle size={14} />
+              Bạn không tham gia lớp học nào cho môn học này.
+            </div>
+          )}
 
           {/* Content */}
           <div>
@@ -191,7 +244,7 @@ function BlogForm({
             padding: '1rem',
             background: '#f8fafc',
             borderRadius: '1rem',
-            border: '1px border #e2e8f0'
+            border: '1px solid #e2e8f0'
           }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
               <div style={{

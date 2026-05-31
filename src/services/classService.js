@@ -29,6 +29,15 @@ export const getClasses = async (termId) => {
 };
 
 /**
+ * Lấy danh sách lớp học của một user cụ thể (sinh viên/giảng viên)
+ * @param {string} userId
+ */
+export const getUserClasses = async (userId) => {
+  const res = await api.get(`/api/Classes/user/${userId}`);
+  return res.data;
+};
+
+/**
  * Lấy thông tin một lớp học theo ID
  * @param {string} id
  */

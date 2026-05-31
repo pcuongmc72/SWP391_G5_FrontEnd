@@ -5,6 +5,7 @@ import {
 } from 'lucide-react';
 import { 
   fetchPublicBlogs, fetchClassBlogs, fetchPendingBlogs, fetchAllBlogs, fetchPrivateBlogs,
+  fetchUserBlogs, fetchMyClassesBlogs,
   createBlog, updateBlog, deleteBlog, approveBlog 
 } from '../../services/blogService';
 import { fetchCourses } from '../../services/courseService';
@@ -30,18 +31,20 @@ function SharedBlogForum({ defaultTab = 'PUBLIC' }) {
   const [isSaving, setIsSaving] = useState(false);
   const [currentTab, setCurrentTab] = useState(defaultTab); // 'PUBLIC', 'CLASS', 'PENDING', 'MANAGEMENT'
 
-  const currentUser = getUser();
-  const userRole = getRole();
-  const isAdmin = userRole && String(userRole).toLowerCase() === 'admin';
-  const isLecturer = userRole && String(userRole).toLowerCase() === 'lecturer';
+  const currentUser = useMemo(() => getUser(), []);
+  const userRole = useMemo(() => getRole(), []);
+  const isAdmin = useMemo(() => userRole && String(userRole).toLowerCase() === 'admin', [userRole]);
+  const isLecturer = useMemo(() => userRole && String(userRole).toLowerCase() === 'lecturer', [userRole]);
+  const isStudent = useMemo(() => userRole && String(userRole).toLowerCase() === 'student', [userRole]);
+
+  // Set initial tab based on role if not provided
+  useEffect(() => {
+    if (!defaultTab) {
+      if (isStudent) setCurrentTab('CLASS');
+      else if (isAdmin || isLecturer) setCurrentTab('PENDING');
+    }
+  }, [isStudent, isAdmin, isLecturer, defaultTab]);
   
-  console.log('--- BlogForum Debug ---', { 
-    userRole, 
-    isAdmin, 
-    isLecturer,
-    currentTab,
-    defaultTab 
-  });
 
   // Load data
   const loadData = useCallback(async () => {
@@ -59,26 +62,38 @@ function SharedBlogForum({ defaultTab = 'PUBLIC' }) {
           blogsRes = await fetchAllBlogs();
         } else if (currentTab === 'PRIVATE' && isAdmin) {
           blogsRes = await fetchPrivateBlogs(selectedCourse === 'ALL' ? null : selectedCourse);
+        } else if (currentTab === 'MY_POSTS') {
+          const uid = currentUser?.id || currentUser?.Id;
+          blogsRes = await fetchUserBlogs(uid);
+        } else if (currentTab === 'CLASS' && isStudent) {
+          blogsRes = await fetchMyClassesBlogs(currentUser?.id || currentUser?.Id, selectedCourse === 'ALL' ? null : selectedCourse);
         } else {
-          blogsRes = await fetchPublicBlogs(selectedCourse === 'ALL' ? null : selectedCourse);
+          blogsRes = await fetchPublicBlogs(
+            selectedCourse === 'ALL' ? null : selectedCourse,
+            currentUser?.id || currentUser?.Id
+          );
         }
       } catch (err) {
         console.error('Failed to fetch blogs:', err);
       }
 
       try {
-        if (isAdmin) {
-          coursesRes = await fetchCourses();
-        }
+        coursesRes = await fetchCourses();
       } catch (err) {
-        console.warn('Failed to fetch courses (likely unauthorized):', err);
+        console.warn('Failed to fetch courses:', err);
       }
 
       // Normalize blogs - Handle { success: true, data: [...] } structure
       let blogList = [];
-      const blogsData = blogsRes.success ? blogsRes.data : blogsRes;
+      const blogsData = (blogsRes && typeof blogsRes === 'object' && blogsRes.success !== undefined) ? blogsRes.data : blogsRes;
+      
       if (Array.isArray(blogsData)) blogList = blogsData;
       else if (blogsData?.$values) blogList = blogsData.$values;
+      else if (blogsData?.data) {
+        // Double unwrap just in case
+        const innerData = blogsData.data;
+        blogList = Array.isArray(innerData) ? innerData : (innerData?.$values || []);
+      }
 
       // Normalize courses
       let courseList = [];
@@ -95,7 +110,7 @@ function SharedBlogForum({ defaultTab = 'PUBLIC' }) {
     } finally {
       setLoading(false);
     }
-  }, [selectedCourse, currentTab, isAdmin]);
+  }, [selectedCourse, currentTab, isAdmin, currentUser, isStudent]);
 
   useEffect(() => {
     loadData();
@@ -108,13 +123,16 @@ function SharedBlogForum({ defaultTab = 'PUBLIC' }) {
       const title = blog.title ?? blog.Title ?? '';
       const content = blog.content ?? blog.Content ?? '';
       
+      const blogCourseId = blog.courseId ?? blog.CourseId;
+      const matchesCourse = selectedCourse === 'ALL' || blogCourseId === selectedCourse;
+
       const matchesSearch = 
         title.toLowerCase().includes(searchQuery.toLowerCase()) ||
         content.toLowerCase().includes(searchQuery.toLowerCase());
       
-      return matchesSearch;
+      return matchesSearch && matchesCourse;
     });
-  }, [blogs, searchQuery]);
+  }, [blogs, searchQuery, selectedCourse]);
 
   // CRUD Handlers
   const handleSave = async (formData) => {
@@ -136,13 +154,20 @@ function SharedBlogForum({ defaultTab = 'PUBLIC' }) {
         await updateBlog(editingBlog.id ?? editingBlog.Id, payload);
       } else {
         await createBlog(payload);
+        // Switch tab to let user see their post
+        if (!formData.isPublic && isStudent) {
+          setCurrentTab('CLASS');
+        } else {
+          setCurrentTab('MY_POSTS');
+        }
       }
       
       setIsModalOpen(false);
       setEditingBlog(null);
       await loadData();
     } catch (err) {
-      alert('Lỗi khi lưu bài viết: ' + err.message);
+      console.error('Save error details:', err.response?.data || err.message);
+      alert('Lỗi khi lưu bài viết: ' + (err.response?.data?.message || err.message));
     } finally {
       setIsSaving(false);
     }
@@ -234,50 +259,56 @@ function SharedBlogForum({ defaultTab = 'PUBLIC' }) {
         )}
       </div>
 
-      {/* Tabs for Admin/Lecturer */}
-      {(isAdmin || isLecturer) && (
-        <div style={{
-          display: 'flex',
-          gap: '0.25rem',
-          marginBottom: '2rem',
-          borderBottom: '1px solid #e2e8f0',
-          paddingBottom: '0'
-        }}>
-          {[
-            { key: 'PUBLIC', label: 'Thảo luận công khai' },
-            { key: 'PRIVATE', label: 'Thảo luận riêng tư', adminOnly: true },
-            { key: 'MANAGEMENT', label: 'Tất cả bài viết', adminOnly: true },
-            { key: 'PENDING', label: 'Chờ duyệt' },
-          ]
-            .filter(tab => !tab.adminOnly || isAdmin)
-            .map(tab => (
-              <button
-                key={tab.key}
-                onClick={() => setCurrentTab(tab.key)}
-                style={{
-                  padding: '0.6rem 1.1rem',
-                  border: 'none',
-                  background: 'none',
-                  color: currentTab === tab.key ? '#0D3E26' : '#64748b',
-                  fontWeight: currentTab === tab.key ? 700 : 500,
-                  fontSize: '0.875rem',
-                  borderBottom: currentTab === tab.key ? '2.5px solid #0D3E26' : '2.5px solid transparent',
-                  cursor: 'pointer',
-                  transition: 'all 0.2s',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '0.4rem'
-                }}
-              >
-                {tab.label}
-                {tab.key === 'PENDING' && currentTab !== 'PENDING' && blogs.some(b => (b.status ?? b.Status) === 0) && (
-                  <span style={{ background: '#f43f5e', color: '#fff', fontSize: '0.6rem', padding: '0.1rem 0.45rem', borderRadius: '1rem', fontWeight: 700 }}>!</span>
-                )}
-              </button>
-            ))
-          }
-        </div>
-      )}
+      {/* Tabs Layout */}
+      <div style={{
+        display: 'flex',
+        gap: '0.25rem',
+        marginBottom: '2rem',
+        borderBottom: '1px solid #e2e8f0',
+        paddingBottom: '0'
+      }}>
+        {[
+          { key: 'PUBLIC', label: 'Thảo luận công khai' },
+          { key: 'CLASS', label: 'Lớp học của tôi', studentOnly: true },
+          { key: 'MY_POSTS', label: 'Bài viết của tôi', authenticatedOnly: true },
+          { key: 'PRIVATE', label: 'Thảo luận riêng tư', adminOnly: true },
+          { key: 'MANAGEMENT', label: 'Tất cả bài viết', adminOnly: true },
+          { key: 'PENDING', label: 'Chờ duyệt', roles: ['admin', 'lecturer'] },
+        ]
+          .filter(tab => {
+            if (tab.adminOnly && !isAdmin) return false;
+            if (tab.studentOnly && !isStudent) return false;
+            if (tab.authenticatedOnly && !currentUser) return false;
+            if (tab.roles && !tab.roles.includes(userRole?.toLowerCase())) return false;
+            return true;
+          })
+          .map(tab => (
+            <button
+              key={tab.key}
+              onClick={() => setCurrentTab(tab.key)}
+              style={{
+                padding: '0.6rem 1.1rem',
+                border: 'none',
+                background: 'none',
+                color: currentTab === tab.key ? '#0D3E26' : '#64748b',
+                fontWeight: currentTab === tab.key ? 700 : 500,
+                fontSize: '0.875rem',
+                borderBottom: currentTab === tab.key ? '2.5px solid #0D3E26' : '2.5px solid transparent',
+                cursor: 'pointer',
+                transition: 'all 0.2s',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '0.4rem'
+              }}
+            >
+              {tab.label}
+              {tab.key === 'PENDING' && currentTab !== 'PENDING' && blogs.some(b => (b.status ?? b.Status) === 0) && (
+                <span style={{ background: '#f43f5e', color: '#fff', fontSize: '0.6rem', padding: '0.1rem 0.45rem', borderRadius: '1rem', fontWeight: 700 }}>!</span>
+              )}
+            </button>
+          ))
+        }
+      </div>
 
       {/* Filters & Search */}
       <div style={{
@@ -292,7 +323,7 @@ function SharedBlogForum({ defaultTab = 'PUBLIC' }) {
         alignItems: 'center'
       }}>
         <div style={{ position: 'relative' }}>
-          <Search size={18} color="#94a3b8" style={{ position: 'absolute', left: '1rem', top: '50%', transform: 'translateY(-50%)' }} />
+          <Search size={18} color="#64748b" style={{ position: 'absolute', left: '1rem', top: '50%', transform: 'translateY(-50%)' }} />
           <input 
             style={{
               width: '100%',
@@ -301,7 +332,9 @@ function SharedBlogForum({ defaultTab = 'PUBLIC' }) {
               border: '1px solid #e2e8f0',
               fontSize: '0.875rem',
               outline: 'none',
-              background: '#f8fafc'
+              background: '#f8fafc',
+              color: '#0f172a', // Darker text
+              fontWeight: 500
             }}
             placeholder="Tìm kiếm chủ đề, nội dung bài viết..."
             value={searchQuery}
@@ -310,7 +343,7 @@ function SharedBlogForum({ defaultTab = 'PUBLIC' }) {
         </div>
 
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-          <div style={{ color: '#64748b', fontSize: '0.875rem', fontWeight: 600 }}>
+          <div style={{ color: '#0f172a', fontSize: '0.875rem', fontWeight: 700 }}> {/* Darker label */}
             <Filter size={16} style={{ display: 'inline', marginRight: '0.5rem', verticalAlign: 'middle' }} />
             Môn học:
           </div>
@@ -321,6 +354,8 @@ function SharedBlogForum({ defaultTab = 'PUBLIC' }) {
               border: '1px solid #e2e8f0',
               fontSize: '0.875rem',
               background: '#fff',
+              color: '#0f172a', // Darker select text
+              fontWeight: 600,
               outline: 'none',
               cursor: 'pointer'
             }}
@@ -365,8 +400,10 @@ function SharedBlogForum({ defaultTab = 'PUBLIC' }) {
             <BlogCard 
               key={blog.id ?? blog.Id} 
               thread={blog}
-              isAdmin={isAdmin || (blog.authorId ?? blog.AuthorId) === currentUser?.id}
+              isAdmin={isAdmin || isLecturer}
+              isAuthor={(blog.authorId ?? blog.AuthorId) === (currentUser?.id || currentUser?.Id)}
               isPendingView={currentTab === 'PENDING'}
+              showStatus={currentTab === 'MY_POSTS'}
               onClick={() => setSelectedBlog(blog)}
               onEdit={(b) => { setEditingBlog(b); setIsModalOpen(true); }}
               onDelete={handleDelete}
@@ -383,8 +420,20 @@ function SharedBlogForum({ defaultTab = 'PUBLIC' }) {
           border: '2px dashed #e2e8f0'
         }}>
           <div style={{ fontSize: '3rem', marginBottom: '1rem' }}>📭</div>
-          <h3 style={{ fontSize: '1.25rem', fontWeight: 700, color: '#1e293b', margin: 0 }}>Chưa có bài viết nào</h3>
-          <p style={{ color: '#64748b', marginTop: '0.5rem' }}>Hãy là người đầu tiên chia sẻ kiến thức của bạn!</p>
+          <h3 style={{ fontSize: '1.25rem', fontWeight: 700, color: '#1e293b', margin: 0 }}>Chưa tìm thấy bài viết nào</h3>
+          <p style={{ color: '#64748b', marginTop: '0.5rem' }}>
+            {searchQuery || selectedCourse !== 'ALL' 
+              ? 'Không có bài viết nào khớp với tìm kiếm hoặc bộ lọc của bạn. Hãy thử thay đổi bộ lọc nhé!' 
+              : 'Hãy là người đầu tiên chia sẻ kiến thức của bạn!'}
+          </p>
+          {(searchQuery || selectedCourse !== 'ALL') && (
+            <button 
+              onClick={() => { setSearchQuery(''); setSelectedCourse('ALL'); }}
+              style={{ marginTop: '1.5rem', padding: '0.625rem 1.25rem', background: '#fff', border: '1px solid #e2e8f0', borderRadius: '0.75rem', color: '#0D3E26', fontWeight: 700, cursor: 'pointer', fontSize: '0.875rem' }}
+            >
+              Xóa tất cả bộ lọc
+            </button>
+          )}
         </div>
       )}
 

@@ -17,10 +17,14 @@ const SIDEBAR_TABS = [
     { key: 'forum', label: 'Blog thảo luận chung', icon: MessageSquare, path: '/dashboard/student/forum' },
 ];
 
+import SharedBlogForum from '../../components/SharedBlogForum/SharedBlogForum';
+
 function DashbroadStudent() {
     const currentUser = getUser();
     const navigate = useNavigate();
     const location = useLocation();
+
+    const isForumActive = location.pathname === '/dashboard/student/forum';
 
     const handleLogout = () => {
         logout();
@@ -83,14 +87,18 @@ function DashbroadStudent() {
 
                 {/* Content Area */}
                 <div className={styles.content}>
-                    <div className="bg-white rounded-3xl p-6 border border-slate-100 shadow-sm">
-                        <h2 className="text-xl font-bold text-slate-800">
-                            Chào mừng, {currentUser?.name || 'Học viên'}! 👋
-                        </h2>
-                        <p className="text-slate-500 text-sm mt-1">
-                            Đây là trang học viên. Chức năng đầy đủ sẽ được thêm vào ở bước sau.
-                        </p>
-                    </div>
+                    {isForumActive ? (
+                        <SharedBlogForum />
+                    ) : (
+                        <div className="bg-white rounded-3xl p-6 border border-slate-100 shadow-sm">
+                            <h2 className="text-xl font-bold text-slate-800">
+                                Chào mừng, {currentUser?.name || 'Học viên'}! 👋
+                            </h2>
+                            <p className="text-slate-500 text-sm mt-1">
+                                Đây là trang học viên. Chức năng đầy đủ sẽ được thêm vào ở bước sau.
+                            </p>
+                        </div>
+                    )}
                 </div>
             </div>
         </div>

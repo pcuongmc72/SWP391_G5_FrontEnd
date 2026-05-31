@@ -41,6 +41,7 @@ function CommentForm({ onSubmit, isSubmitting }) {
           outline: 'none',
           resize: 'vertical',
           background: '#f8fafc',
+          color: '#0f172a',
           transition: 'all 0.2s',
           fontFamily: 'inherit',
           boxSizing: 'border-box'

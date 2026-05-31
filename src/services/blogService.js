@@ -9,8 +9,10 @@ import api from './api';
  * Fetch all public blogs
  * GET /api/Blogs/public
  */
-export async function fetchPublicBlogs(courseId = null) {
-  const params = courseId ? { courseId } : {};
+export async function fetchPublicBlogs(courseId = null, currentUserId = null) {
+  const params = {};
+  if (courseId) params.courseId = courseId;
+  if (currentUserId) params.currentUserId = currentUserId;
   const res = await api.get('/api/Blogs/public', { params });
   return res.data;
 }
@@ -128,8 +130,24 @@ export async function createComment(data) {
 }
 
 /**
+ * Fetch blogs by a specific author
+ */
+export async function fetchUserBlogs(userId) {
+  const res = await api.get(`/api/Blogs/user/${userId}`);
+  return res.data;
+}
+
+/**
+ * Fetch private blogs for student's enrolled classes
+ */
+export async function fetchMyClassesBlogs(studentId, courseId = null) {
+  const params = courseId ? { courseId } : {};
+  const res = await api.get(`/api/Blogs/my-classes/${studentId}`, { params });
+  return res.data;
+}
+
+/**
  * Delete a comment
- * DELETE /api/Blogs/comments/{id}
  */
 export async function deleteComment(id) {
   const res = await api.delete(`/api/Blogs/comments/${id}`);
