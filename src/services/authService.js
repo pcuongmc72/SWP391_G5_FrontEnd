@@ -38,3 +38,33 @@ export const getToken = () => localStorage.getItem('access_token');
  * @returns {boolean}
  */
 export const isAuthenticated = () => !!getToken();
+
+/**
+ * Lấy thông tin user đang lưu
+ * @returns {object|null}
+ */
+export const getUser = () => {
+  try {
+    const raw = localStorage.getItem('user');
+    return raw ? JSON.parse(raw) : null;
+  } catch {
+    return null;
+  }
+};
+
+/**
+ * Lấy role của user đang đăng nhập
+ * Hỗ trợ các field: role, Role, roles (array), userRole
+ * @returns {string|null}
+ */
+export const getRole = () => {
+  const user = getUser();
+  if (!user) return null;
+  // Hỗ trợ nhiều cấu trúc API trả về
+  const raw =
+    user.role ??
+    user.Role ??
+    user.userRole ??
+    (Array.isArray(user.roles) ? user.roles[0] : null);
+  return raw ? String(raw).toLowerCase() : null;
+};

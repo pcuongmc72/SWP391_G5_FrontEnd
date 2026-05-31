@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
+import { Eye, EyeOff } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
-import { login } from '../../services/authService';
+import { login, getRole } from '../../services/authService';
 import styles from './AuthModal.module.css';
 
 /**
@@ -90,8 +91,15 @@ function AuthModal({ onClose }) {
         const user = data?.user || data?.userInfo || data?.data?.user || data?.data?.userInfo || data?.data || {};
         localStorage.setItem('user', JSON.stringify(user));
 
+        // Redirect theo role
+        const role = getRole();
         onClose();
-        navigate('/dashboard', { replace: true });
+        if (role === 'admin') {
+          navigate('/dashboard/admin', { replace: true });
+        } else {
+          // Role khác: thêm vào đây khi có thêm trang
+          navigate('/', { replace: true });
+        }
       } else {
         // Nếu không tìm thấy token trong response
         setApiError('Đăng nhập thành công nhưng không tìm thấy token. API trả về: ' + JSON.stringify(data));
@@ -126,7 +134,6 @@ function AuthModal({ onClose }) {
 
         {/* Header */}
         <div className={styles.header}>
-          <div className={styles.iconWrap} aria-hidden="true">🔑</div>
           <h2 id="modal-title" className={styles.title}>Đăng nhập</h2>
           <p className={styles.subtitle}>Vui lòng nhập thông tin để tiếp tục.</p>
         </div>
@@ -178,7 +185,7 @@ function AuthModal({ onClose }) {
                 onClick={() => setShowPwd((p) => !p)}
                 aria-label={showPwd ? 'Ẩn mật khẩu' : 'Hiện mật khẩu'}
               >
-                {showPwd ? '🙈' : '👁️'}
+                {showPwd ? <EyeOff size={16} /> : <Eye size={16} />}
               </button>
             </div>
             {errors.password && <span className={styles.error}>{errors.password}</span>}

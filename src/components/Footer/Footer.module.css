@@ -1,0 +1,138 @@
+/* ───────────────────────────────────────────
+   Footer — CSS Module
+   Light theme, 4-column grid
+   ─────────────────────────────────────────── */
+
+.footer {
+  background: #ffffff;
+  border-top: 1px solid #f1f5f9;
+  padding: 3rem 0;
+  color: #64748b;
+  font-family: 'Inter', 'Segoe UI', sans-serif;
+}
+
+.inner {
+  max-width: 1280px;
+  margin-inline: auto;
+  padding-inline: 2rem;
+}
+
+/* ── Grid ── */
+.grid {
+  display: grid;
+  grid-template-columns: 2fr 1fr 1fr;
+  gap: 2rem;
+  margin-bottom: 2rem;
+}
+
+/* ── Brand column ── */
+.colBrand {
+  grid-column: span 1;
+}
+
+.brandRow {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+}
+
+.brandIcon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  background: #0D3E26;
+  border-radius: 0.5rem;
+  flex-shrink: 0;
+}
+
+.brandSvg {
+  width: 16px;
+  height: 16px;
+  color: #6ee7b7;
+}
+
+.brandName {
+  font-size: 0.9375rem;
+  font-weight: 800;
+  color: #0D3E26;
+  letter-spacing: -0.02em;
+}
+
+.brandDesc {
+  font-size: 0.75rem;
+  color: #94a3b8;
+  line-height: 1.75;
+  max-width: 28rem;
+}
+
+/* ── Columns ── */
+.col {}
+
+.colHeading {
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: #0f172a;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  margin-bottom: 1rem;
+}
+
+.colList {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.625rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: #94a3b8;
+}
+
+.colLink {
+  cursor: pointer;
+  transition: color 150ms ease;
+}
+
+.colLink:hover {
+  color: #0D3E26;
+}
+
+/* ── Bottom bar ── */
+.bottom {
+  display: flex;
+  flex-direction: row;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1rem;
+  padding-top: 2rem;
+  border-top: 1px solid #f1f5f9;
+  font-size: 0.75rem;
+  font-weight: 500;
+  color: #64748b;
+}
+
+.credit {
+  font-size: 0.625rem;
+  color: #94a3b8;
+  white-space: nowrap;
+}
+
+/* ── Responsive ── */
+@media (max-width: 768px) {
+  .grid {
+    grid-template-columns: 1fr;
+  }
+
+  .bottom {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .inner {
+    padding-inline: 1rem;
+  }
+}
