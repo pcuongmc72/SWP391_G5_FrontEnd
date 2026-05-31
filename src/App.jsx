@@ -7,6 +7,7 @@ import MainLayout from './layouts/MainLayout';
 // Pages
 import HomePage from './pages/Home/HomePage';
 import DashboardAdminPage from './pages/DashboardAdmin/DashboardAdminPage';
+import DashbroadStudentPage from './pages/DashbroadStudent/DashbroadStudent';
 
 // Components
 import ProtectedRoute from './components/ProtectedRoute/ProtectedRoute';
@@ -19,8 +20,9 @@ function RoleRedirect() {
   if (!isAuthenticated()) return <Navigate to="/" replace />;
   const role = getRole();
   if (role === 'admin') return <Navigate to="/dashboard/admin" replace />;
-  // Nếu là role khác (như student) nhưng chưa có dashboard riêng, 
-  // trả về null hoặc Navigate đến trang chủ nhưng dùng HomePage
+  if (role === 'student') return <Navigate to="/dashboard/student" replace />;
+
+  // Thêm role khác ở đây khi có thêm trang
   return <HomePage />;
 }
 
@@ -101,6 +103,15 @@ function App() {
           <Route path="/dashboard/admin/terms-management" element={<DashboardAdminPage />} />
           <Route path="/dashboard/admin/classes-management" element={<DashboardAdminPage />} />
           <Route path="/dashboard/admin/blogs-management" element={<DashboardAdminPage />} />
+        </Route>
+
+        {/* ── Trang Student — chỉ role 'student' ── */}
+        <Route element={<ProtectedRoute allowedRoles={['student']} />}>
+          <Route path="/dashboard/student" element={<DashbroadStudentPage />} />
+          <Route path="/dashboard/student/materials" element={<DashbroadStudentPage />} />
+          <Route path="/dashboard/student/submissions" element={<DashbroadStudentPage />} />
+          <Route path="/dashboard/student/grades" element={<DashbroadStudentPage />} />
+          <Route path="/dashboard/student/forum" element={<DashbroadStudentPage />} />
         </Route>
 
         {/* ── Redirect /dashboard → trang đúng role ── */}

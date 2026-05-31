@@ -96,8 +96,11 @@ function AuthModal({ onClose }) {
         onClose();
         if (role === 'admin') {
           navigate('/dashboard/admin', { replace: true });
+        } else if (role === 'student') {
+          navigate('/dashboard/student', { replace: true });
+        } else if (role === 'lecturer' || role === 'teacher') {
+          navigate('/dashboard/lecturer', { replace: true });
         } else {
-          // Role khác: thêm vào đây khi có thêm trang
           navigate('/', { replace: true });
         }
       } else {
