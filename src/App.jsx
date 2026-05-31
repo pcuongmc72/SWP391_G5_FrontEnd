@@ -10,6 +10,7 @@ import DashboardAdminPage from './pages/DashboardAdmin/DashboardAdminPage';
 
 // Components
 import ProtectedRoute from './components/ProtectedRoute/ProtectedRoute';
+import SharedBlogForum from './components/SharedBlogForum/SharedBlogForum';
 
 /**
  * Redirect thông minh sau khi đăng nhập theo role
@@ -18,8 +19,9 @@ function RoleRedirect() {
   if (!isAuthenticated()) return <Navigate to="/" replace />;
   const role = getRole();
   if (role === 'admin') return <Navigate to="/dashboard/admin" replace />;
-  // Thêm role khác ở đây khi có thêm trang
-  return <Navigate to="/" replace />;
+  // Nếu là role khác (như student) nhưng chưa có dashboard riêng, 
+  // trả về null hoặc Navigate đến trang chủ nhưng dùng HomePage
+  return <HomePage />;
 }
 
 /**
@@ -88,6 +90,7 @@ function App() {
                 : <HomePage />
             }
           />
+          <Route path="/blog" element={<SharedBlogForum />} />
         </Route>
 
         {/* ── Trang Admin — chỉ role 'admin' ── */}
@@ -97,6 +100,7 @@ function App() {
           <Route path="/dashboard/admin/courses-management" element={<DashboardAdminPage />} />
           <Route path="/dashboard/admin/terms-management" element={<DashboardAdminPage />} />
           <Route path="/dashboard/admin/classes-management" element={<DashboardAdminPage />} />
+          <Route path="/dashboard/admin/blogs-management" element={<DashboardAdminPage />} />
         </Route>
 
         {/* ── Redirect /dashboard → trang đúng role ── */}

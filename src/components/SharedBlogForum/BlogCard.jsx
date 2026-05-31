@@ -1,0 +1,256 @@
+import React from 'react';
+import { 
+  MessageSquare, User, Calendar, Tag, ChevronRight, 
+  Lock, Globe, Edit2, Trash2 
+} from 'lucide-react';
+
+/**
+ * BlogCard — Displays a summary of a blog post/discussion thread
+ */
+function BlogCard({ thread, onClick, onEdit, onDelete, onApprove, isAdmin, isPendingView }) {
+  const title = thread.title ?? thread.Title ?? '';
+  const content = thread.content ?? thread.Content ?? '';
+  const authorName = thread.authorFullName ?? thread.AuthorFullName ?? thread.authorName ?? 'Người dùng';
+  const createdAt = thread.createdAt ?? thread.CreatedAt;
+  const courseCode = thread.courseCode ?? thread.CourseCode ?? thread.courseName ?? thread.CourseName ?? '';
+  const isPrivate = thread.isPrivate ?? thread.IsPrivate ?? false;
+  const isPublic = !isPrivate;
+  const authorId = thread.authorId ?? thread.AuthorId;
+  const status = thread.status ?? thread.Status ?? 0;
+
+  const formatDate = (dateString) => {
+    if (!dateString) return '—';
+    const date = new Date(dateString);
+    return date.toLocaleDateString('vi-VN', { 
+      day: '2-digit', 
+      month: '2-digit', 
+      year: 'numeric' 
+    });
+  };
+
+  return (
+    <div 
+      onClick={onClick}
+      style={{
+        background: '#ffffff',
+        borderRadius: '1.25rem',
+        padding: '1.5rem',
+        border: '1px solid #e2e8f0',
+        transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+        cursor: 'pointer',
+        position: 'relative',
+        display: 'flex',
+        flexDirection: 'column',
+        gap: '1rem',
+        boxShadow: '0 1px 3px rgba(0,0,0,0.05)',
+      }}
+      onMouseEnter={(e) => {
+        e.currentTarget.style.transform = 'translateY(-4px)';
+        e.currentTarget.style.boxShadow = '0 12px 24px rgba(13, 62, 38, 0.08)';
+        e.currentTarget.style.borderColor = '#10b98133';
+      }}
+      onMouseLeave={(e) => {
+        e.currentTarget.style.transform = 'translateY(0)';
+        e.currentTarget.style.boxShadow = '0 1px 3px rgba(0,0,0,0.05)';
+        e.currentTarget.style.borderColor = '#e2e8f0';
+      }}
+    >
+      {/* Visibility & Status Badges */}
+      <div style={{
+        position: 'absolute',
+        top: '1rem',
+        right: '1rem',
+        display: 'flex',
+        gap: '0.5rem'
+      }}>
+        {/* Status Badge */}
+        {status === 0 && (
+          <div style={{ padding: '0.35rem 0.75rem', borderRadius: '2rem', fontSize: '0.7rem', fontWeight: 700, background: '#fef3c7', color: '#d97706', border: '1px solid #fde68a' }}>
+            Chờ duyệt
+          </div>
+        )}
+        {status === 2 && (
+          <div style={{ padding: '0.35rem 0.75rem', borderRadius: '2rem', fontSize: '0.7rem', fontWeight: 700, background: '#fee2e2', color: '#dc2626', border: '1px solid #fecaca' }}>
+            Từ chối
+          </div>
+        )}
+
+        <div style={{
+          padding: '0.35rem 0.75rem',
+          borderRadius: '2rem',
+          fontSize: '0.7rem',
+          fontWeight: 700,
+          display: 'flex',
+          alignItems: 'center',
+          gap: '0.35rem',
+          background: isPublic ? '#ecfdf5' : '#fff7ed',
+          color: isPublic ? '#059669' : '#d97706',
+          border: `1px solid ${isPublic ? '#a7f3d0' : '#ffedd5'}`,
+        }}>
+          {isPublic ? <Globe size={12} /> : <Lock size={12} />}
+          {isPublic ? 'Công khai' : 'Riêng tư'}
+        </div>
+      </div>
+
+      {/* Course Tag */}
+      {courseCode && (
+        <div style={{
+          display: 'flex',
+          alignItems: 'center',
+          gap: '0.35rem',
+          color: '#0D3E26',
+          fontSize: '0.75rem',
+          fontWeight: 600,
+          background: '#ecfdf5',
+          width: 'fit-content',
+          padding: '0.25rem 0.6rem',
+          borderRadius: '0.5rem',
+        }}>
+          <Tag size={12} />
+          {courseCode}
+        </div>
+      )}
+
+      {/* Title & Content Snippet */}
+      <div>
+        <h3 style={{
+          fontSize: '1.125rem',
+          fontWeight: 700,
+          color: '#0f172a',
+          marginBottom: '0.5rem',
+          lineHeight: 1.3,
+          display: '-webkit-box',
+          WebkitLineClamp: 2,
+          WebkitBoxOrient: 'vertical',
+          overflow: 'hidden',
+        }}>
+          {title}
+        </h3>
+        <p style={{
+          fontSize: '0.875rem',
+          color: '#64748b',
+          lineHeight: 1.5,
+          display: '-webkit-box',
+          WebkitLineClamp: 3,
+          WebkitBoxOrient: 'vertical',
+          overflow: 'hidden',
+        }}>
+          {content}
+        </p>
+      </div>
+
+      {/* Footer Info */}
+      <div style={{
+        marginTop: 'auto',
+        paddingTop: '1rem',
+        borderTop: '1px solid #f1f5f9',
+        display: 'flex',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+      }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+          <div style={{
+            width: '2rem',
+            height: '2rem',
+            borderRadius: '50%',
+            background: '#f1f5f9',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            color: '#64748b',
+            fontSize: '0.8rem',
+            fontWeight: 700,
+            border: '1px solid #e2e8f0'
+          }}>
+            {authorName?.[0]?.toUpperCase() || 'U'}
+          </div>
+          <div>
+            <div style={{ fontSize: '0.8125rem', fontWeight: 600, color: '#334155' }}>
+              {authorName}
+            </div>
+            <div style={{ fontSize: '0.7rem', color: '#94a3b8', display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
+              <Calendar size={10} />
+              {formatDate(createdAt)}
+            </div>
+          </div>
+        </div>
+
+        {/* Action buttons for admin or author */}
+        {/* Approval Actions for Admin in Pending View */}
+        {isPendingView && (
+          <div style={{ display: 'flex', gap: '0.5rem' }}>
+            <button
+              onClick={(e) => { e.stopPropagation(); onApprove(thread.id ?? thread.Id, 1); }}
+              style={{
+                padding: '0.4rem 0.8rem',
+                borderRadius: '0.5rem',
+                border: 'none',
+                background: '#ecfdf5',
+                color: '#059669',
+                fontSize: '0.75rem',
+                fontWeight: 700,
+                cursor: 'pointer'
+              }}
+            >
+              Duyệt
+            </button>
+            <button
+              onClick={(e) => { e.stopPropagation(); onApprove(thread.id ?? thread.Id, 2); }}
+              style={{
+                padding: '0.4rem 0.8rem',
+                borderRadius: '0.5rem',
+                border: 'none',
+                background: '#fff1f2',
+                color: '#e11d48',
+                fontSize: '0.75rem',
+                fontWeight: 700,
+                cursor: 'pointer'
+              }}
+            >
+              Từ chối
+            </button>
+          </div>
+        )}
+
+        {isAdmin && (
+          <div style={{ display: 'flex', gap: '0.25rem' }} onClick={(e) => e.stopPropagation()}>
+            <button 
+              onClick={(e) => { e.stopPropagation(); onEdit(thread); }}
+              style={{
+                padding: '0.4rem',
+                borderRadius: '0.5rem',
+                border: 'none',
+                background: '#f8fafc',
+                color: '#64748b',
+                cursor: 'pointer',
+                transition: 'all 0.2s',
+              }}
+              onMouseEnter={(e) => { e.currentTarget.style.background = '#e2e8f0'; e.currentTarget.style.color = '#0f172a'; }}
+              onMouseLeave={(e) => { e.currentTarget.style.background = '#f8fafc'; e.currentTarget.style.color = '#64748b'; }}
+            >
+              <Edit2 size={14} />
+            </button>
+            <button 
+              onClick={(e) => { e.stopPropagation(); onDelete(thread.id); }}
+              style={{
+                padding: '0.4rem',
+                borderRadius: '0.5rem',
+                border: 'none',
+                background: '#fff1f2',
+                color: '#f43f5e',
+                cursor: 'pointer',
+                transition: 'all 0.2s',
+              }}
+              onMouseEnter={(e) => { e.currentTarget.style.background = '#ffe4e6'; }}
+              onMouseLeave={(e) => { e.currentTarget.style.background = '#fff1f2'; }}
+            >
+              <Trash2 size={14} />
+            </button>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+export default BlogCard;
