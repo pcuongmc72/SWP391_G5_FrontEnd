@@ -12,6 +12,8 @@ import DashboardPage from './pages/Dashboard/DashboardPage';
 import LecturerDashboardPage from './pages/Lecturer/LecturerDashboardPage';
 import LecturerSchedulePage from './pages/Lecturer/LecturerSchedulePage';
 import DashboardAdminPage from './pages/DashboardAdmin/DashboardAdminPage';
+import DashbroadStudentPage from './pages/DashbroadStudent/DashbroadStudent';
+
 
 import AuthModal from './components/AuthModal/AuthModal';
 import ProtectedRoute from './components/ProtectedRoute/ProtectedRoute';
@@ -28,7 +30,12 @@ function RoleRedirect() {
   if (!isAuthenticated()) return <Navigate to="/" replace />;
   const role = getRole();
   if (role === 'admin') return <Navigate to="/dashboard/admin" replace />;
+
   if (role === 'lecturer') return <Navigate to="/lecturer/dashboard" replace />;
+
+
+  if (role === 'student') return <Navigate to="/dashboard/student" replace />;  // ← THÊM DÒNG NÀY
+
   return <Navigate to="/" replace />;
 }
 
@@ -110,30 +117,39 @@ function App() {
           <Route path="/dashboard/admin/classes-management" element={<DashboardAdminPage />} />
         </Route>
 
-        {/* ── Trang Lecturer — chỉ role 'lecturer' ── */}
-        <Route element={<RoleProtectedRoute allowedRoles={[ROLES.LECTURER]} />}>
-          <Route element={<LecturerLayout />}>
-            <Route path="/lecturer/dashboard" element={<LecturerDashboardPage />} />
-            <Route path="/lecturer/classes" element={<LecturerSchedulePage />} />
-            <Route path="/lecturer/classes/:classId" element={<LecturerSchedulePage />} />
-          </Route>
-        </Route>
+<<<<<<< HEAD
+  {/* ── Trang Lecturer — chỉ role 'lecturer' ── */ }
+  <Route element={<RoleProtectedRoute allowedRoles={[ROLES.LECTURER]} />}>
+    <Route element={<LecturerLayout />}>
+      <Route path="/lecturer/dashboard" element={<LecturerDashboardPage />} />
+      <Route path="/lecturer/classes" element={<LecturerSchedulePage />} />
+      <Route path="/lecturer/classes/:classId" element={<LecturerSchedulePage />} />
+    </Route>
+=======
+        {/* ── Trang Student — chỉ role 'student' ── */}
+    <Route element={<ProtectedRoute allowedRoles={['student']} />}>
+      <Route path="/dashboard/student" element={<DashbroadStudentPage />} />
+>>>>>>> origin/cuongnphe194338
+    </Route>
 
-        {/* ── Redirect /dashboard → trang đúng role ── */}
-        <Route path="/dashboard" element={<AuthenticatedHomeRedirect />} />
-        <Route path="/db" element={<Navigate to="/dashboard" replace />} />
+    {/* ── Redirect /dashboard → trang đúng role ── */}
+    <Route path="/dashboard" element={<AuthenticatedHomeRedirect />} />
+    <Route path="/db" element={<Navigate to="/dashboard" replace />} />
 
-        {/* ── Không có quyền ── */}
-        <Route path="/unauthorized" element={<UnauthorizedPage />} />
+    {/* ── Không có quyền ── */}
+    <Route path="/unauthorized" element={<UnauthorizedPage />} />
 
-        {/* ── Catch-all ── */}
-        <Route path="*" element={<Navigate to="/" replace />} />
-      </Routes>
+    {/* ── Catch-all ── */}
+    <Route path="*" element={<Navigate to="/" replace />} />
 
-      {showLogin && (
-        <AuthModal onClose={() => setShowLogin(false)} />
-      )}
-    </BrowserRouter>
+  </Routes>
+
+  {
+    showLogin && (
+      <AuthModal onClose={() => setShowLogin(false)} />
+    )
+  }
+    </BrowserRouter >
   );
 }
 

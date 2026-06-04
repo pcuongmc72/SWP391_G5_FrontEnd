@@ -2,16 +2,25 @@
 @import './variables.css';
 
 /* ===========================
+   Global Imports (MUST be first)
+   =========================== */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
+@import './variables.css';
+
+/* ===========================
    Tailwind CSS Directives
    =========================== */
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
+<<<<<<< HEAD
 /* ===========================
    Global Styles
    =========================== */
 
+=======
+>>>>>>> origin/cuongnphe194338
 /* Reset */
 *,
 *::before,

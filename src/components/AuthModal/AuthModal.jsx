@@ -73,6 +73,7 @@ function AuthModal({ onClose }) {
       // Log response ra console để debug
       console.log('API Response:', response);
 
+<<<<<<< HEAD
       // Cố gắng lấy token và user bằng helper của HEAD
       let parsed = parseLoginResponse(response);
       let token = parsed.token;
@@ -95,6 +96,23 @@ function AuthModal({ onClose }) {
       }
       if (!user) {
         user = response?.user || response?.userInfo || response?.data?.user || response?.data?.userInfo || response?.data || {};
+=======
+        // Redirect theo role
+        const role = getRole();
+        onClose();
+        if (role === 'admin') {
+          navigate('/dashboard/admin', { replace: true });
+        } else if (role === 'student') {
+          navigate('/dashboard/student', { replace: true });
+        } else if (role === 'lecturer' || role === 'teacher') {
+          navigate('/dashboard/lecturer', { replace: true });
+        } else {
+          navigate('/', { replace: true });
+        }
+      } else {
+        // Nếu không tìm thấy token trong response
+        setApiError('Đăng nhập thành công nhưng không tìm thấy token. API trả về: ' + JSON.stringify(data));
+>>>>>>> origin/cuongnphe194338
       }
 
       if (token && user) {
