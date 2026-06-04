@@ -1,23 +1,14 @@
 import { useState, useEffect, useRef } from 'react';
-<<<<<<< HEAD
-import { useNavigate } from 'react-router-dom';
-import { login } from '../../services/authService';
-import { getDashboardPathForRole } from '../../constants/roles';
-import { parseLoginResponse, persistAuth } from '../../utils/authStorage';
-=======
 import { Eye, EyeOff } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { login, getRole } from '../../services/authService';
->>>>>>> 5a0202d322bef30bf80ba9cbe7c846fdfde31b3d
+import { getDashboardPathForRole } from '../../constants/roles';
+import { parseLoginResponse, persistAuth } from '../../utils/authStorage';
 import styles from './AuthModal.module.css';
 
 /**
  * AuthModal — Modal Đăng nhập (email + mật khẩu)
-<<<<<<< HEAD
- * Sau khi đăng nhập thành công → chuyển theo role (lecturer → /lecturer/dashboard)
-=======
- * Sau khi đăng nhập thành công → navigate('/dashboard')
->>>>>>> 5a0202d322bef30bf80ba9cbe7c846fdfde31b3d
+ * Sau khi đăng nhập thành công → chuyển theo role tương ứng (admin -> /dashboard/admin, lecturer -> /lecturer/dashboard, etc.)
  */
 function AuthModal({ onClose }) {
   const navigate = useNavigate();
@@ -77,58 +68,48 @@ function AuthModal({ onClose }) {
     setApiError('');
 
     try {
-<<<<<<< HEAD
       const response = await login(form.email, form.password);
-      const { token, user } = parseLoginResponse(response);
+      
+      // Log response ra console để debug
+      console.log('API Response:', response);
+
+      // Cố gắng lấy token và user bằng helper của HEAD
+      let parsed = parseLoginResponse(response);
+      let token = parsed.token;
+      let user = parsed.user;
+
+      // Nếu không có, dự phòng bằng cách parse thủ công từ nhánh kia
+      if (!token) {
+        token = typeof response === 'string'
+          ? response
+          : (
+              response?.token ||
+              response?.accessToken ||
+              response?.access_token ||
+              response?.jwt ||
+              response?.data?.token ||
+              response?.data?.accessToken ||
+              response?.data?.access_token ||
+              response?.data?.jwt
+            );
+      }
+      if (!user) {
+        user = response?.user || response?.userInfo || response?.data?.user || response?.data?.userInfo || response?.data || {};
+      }
 
       if (token && user) {
         persistAuth({ token, user });
+        
+        // Hỗ trợ cả 2 kiểu lấy role
+        const role = user.role || getRole() || '';
         onClose();
-        navigate(getDashboardPathForRole(user.role), { replace: true });
+        
+        // Điều hướng thông minh theo role
+        const path = getDashboardPathForRole(role);
+        navigate(path, { replace: true });
       } else {
         setApiError('Đăng nhập thành công nhưng không nhận được token hoặc thông tin người dùng.');
       }
-=======
-      const data = await login(form.email, form.password);
-
-      // Log response ra console để debug
-      console.log('API Response:', data);
-
-      // Cố gắng lấy token từ các field phổ biến
-      const token = typeof data === 'string'
-        ? data
-        : (
-            data?.token ||
-            data?.accessToken ||
-            data?.access_token ||
-            data?.jwt ||
-            data?.data?.token ||
-            data?.data?.accessToken ||
-            data?.data?.access_token ||
-            data?.data?.jwt
-          );
-      
-      if (token) {
-        localStorage.setItem('access_token', token);
-        
-        const user = data?.user || data?.userInfo || data?.data?.user || data?.data?.userInfo || data?.data || {};
-        localStorage.setItem('user', JSON.stringify(user));
-
-        // Redirect theo role
-        const role = getRole();
-        onClose();
-        if (role === 'admin') {
-          navigate('/dashboard/admin', { replace: true });
-        } else {
-          // Role khác: thêm vào đây khi có thêm trang
-          navigate('/', { replace: true });
-        }
-      } else {
-        // Nếu không tìm thấy token trong response
-        setApiError('Đăng nhập thành công nhưng không tìm thấy token. API trả về: ' + JSON.stringify(data));
-      }
-
->>>>>>> 5a0202d322bef30bf80ba9cbe7c846fdfde31b3d
     } catch (err) {
       setApiError(err.message || 'Đăng nhập thất bại. Vui lòng thử lại.');
     } finally {
@@ -158,10 +139,7 @@ function AuthModal({ onClose }) {
 
         {/* Header */}
         <div className={styles.header}>
-<<<<<<< HEAD
           <div className={styles.iconWrap} aria-hidden="true">🔑</div>
-=======
->>>>>>> 5a0202d322bef30bf80ba9cbe7c846fdfde31b3d
           <h2 id="modal-title" className={styles.title}>Đăng nhập</h2>
           <p className={styles.subtitle}>Vui lòng nhập thông tin để tiếp tục.</p>
         </div>
@@ -213,11 +191,7 @@ function AuthModal({ onClose }) {
                 onClick={() => setShowPwd((p) => !p)}
                 aria-label={showPwd ? 'Ẩn mật khẩu' : 'Hiện mật khẩu'}
               >
-<<<<<<< HEAD
-                {showPwd ? '🙈' : '👁️'}
-=======
                 {showPwd ? <EyeOff size={16} /> : <Eye size={16} />}
->>>>>>> 5a0202d322bef30bf80ba9cbe7c846fdfde31b3d
               </button>
             </div>
             {errors.password && <span className={styles.error}>{errors.password}</span>}

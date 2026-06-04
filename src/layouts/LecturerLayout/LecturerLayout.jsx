@@ -3,7 +3,7 @@ import { Outlet, useNavigate } from 'react-router-dom';
 import {
   BookOpen, Upload, CheckSquare, MessageSquare, TrendingUp, Award,
   LogOut, Search, Bell, Calendar, ChevronDown,
-  User, KeyRound, X, Pencil, Check, Mail, Phone, MapPin, Briefcase,
+  User, KeyRound, X, Pencil, Check, Mail, Phone, MapPin, Briefcase, Users,
 } from 'lucide-react';
 import { logout, updateProfile } from '../../services/authService';
 import { getStoredUser, getUserDisplayName, persistAuth } from '../../utils/authStorage';
@@ -12,6 +12,7 @@ import styles from './LecturerLayout.module.css';
 
 const SIDEBAR_ITEMS = [
   { id: 'materials',   label: 'Tài liệu học tập',    icon: BookOpen },
+  { id: 'classList',   label: 'Danh sách lớp học',   icon: Users },
   { id: 'assignments', label: 'Bài tập & Đồ án',     icon: Upload },
   { id: 'grading',    label: 'Chấm điểm nộp bài',   icon: CheckSquare },
   { id: 'feedback',   label: 'Phản hồi hỗ trợ',     icon: MessageSquare },

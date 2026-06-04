@@ -37,6 +37,7 @@ const mapMaterial = (m) => ({
   fileSize: m.fileSize,
   uploadedAt: m.uploadedAt,
   completedByUsers: m.completedByUsers || [],
+  isDisabled: m.isDisabled ?? false,
 });
 
 const mapAssignment = (a) => ({
@@ -66,6 +67,7 @@ const mapFeedback = (f) => ({
   id: f.id,
   classId: f.classId,
   senderId: f.senderId,
+  senderName: f.senderName,
   title: f.title,
   message: f.message,
   status: f.status,

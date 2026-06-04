@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import {
   Upload, Plus, CheckSquare, TrendingUp, MessageSquare, Award,
   Clock, Check, Send, Eye, X, Sparkles, Trash2, FileText, Film, FileSpreadsheet, Paperclip, Pencil,
+  Users, Search,
 } from 'lucide-react';
 import { useLecturerWorkspace } from '../../context/LecturerWorkspaceContext';
 import SharedBlogForum from './SharedBlogForum';
@@ -9,6 +10,7 @@ import styles from './LecturerDashboard.module.css';
 
 const SUB_TABS = [
   { id: 'materials', label: 'Học liệu & Drag-Drop', icon: Upload },
+  { id: 'classList', label: 'Danh sách Lớp', icon: Users },
   { id: 'assignments', label: 'Tạo Bài Tập', icon: Plus },
   { id: 'grading', label: 'Chấm bài tập', icon: CheckSquare },
   { id: 'progress', label: 'Báo cáo Tiến độ', icon: TrendingUp },
@@ -179,6 +181,7 @@ function LecturerDashboard() {
   });
   const [assignmentFilter, setAssignmentFilter] = useState('all'); // all, active, overdue
   const [assignmentSearch, setAssignmentSearch] = useState('');
+  const [classListSearch, setClassListSearch] = useState('');
   const [gradingSubmission, setGradingSubmission] = useState(null);
   const [gradeInput, setGradeInput] = useState(10);
   const [gradeFeedback, setGradeFeedback] = useState('');
@@ -528,11 +531,12 @@ function LecturerDashboard() {
   };
 
   const handleDeleteMaterial = async (id) => {
+    if (!window.confirm('Vô hiệu hóa học liệu này?\nHọc liệu sẽ bị ẩn khỏi học sinh nhưng vẫn hiển thị trong danh sách của giảng viên với trạng thái "Đã VH".')) return;
     try {
       await api.removeMaterial(id);
-      showToast('Đã xóa học liệu.');
+      showToast('Đã vô hiệu hóa học liệu.');
     } catch (err) {
-      showToast(err.message || 'Xóa thất bại.', 'info');
+      showToast(err.message || 'Vô hiệu hóa thất bại.', 'info');
     }
   };
 
@@ -842,13 +846,13 @@ function LecturerDashboard() {
                 return (
                   <div
                     key={m.id}
-                    className={styles.materialItem}
-                    style={isCompletedByAll ? { borderLeft: '4px solid #10b981', background: '#f8fafc' } : undefined}
+                    className={`${styles.materialItem} ${m.isDisabled ? styles.materialItemDisabled : ''}`}
+                    style={isCompletedByAll && !m.isDisabled ? { borderLeft: '4px solid #10b981', background: '#f8fafc' } : m.isDisabled ? { borderLeft: '4px solid #cbd5e1' } : undefined}
                   >
                     <div style={{ display: 'flex', gap: 12 }}>
                       <span
                         className={styles.indexBadge}
-                        style={isCompletedByAll ? { background: '#d1fae5', color: '#065f46' } : undefined}
+                        style={isCompletedByAll && !m.isDisabled ? { background: '#d1fae5', color: '#065f46' } : undefined}
                       >
                         {index + 1}
                       </span>
@@ -861,6 +865,9 @@ function LecturerDashboard() {
                             <>
                               <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: 4 }}>
                                 <span className={`${styles.typeTag} ${typeClass(m.type)}`}>{m.type}</span>
+                                {m.isDisabled && (
+                                  <span className={styles.disabledBadge}>Đã VH</span>
+                                )}
                                 <span style={{ fontSize: 10, color: '#94a3b8', marginLeft: 4 }}>Đăng: {displayPublishDate}</span>
                                 {meta.deadline && (
                                   <span style={{ fontSize: 10, background: '#fef2f2', color: '#b91c1c', padding: '1px 6px', borderRadius: 4, fontWeight: 600 }}>
@@ -886,7 +893,7 @@ function LecturerDashboard() {
                       </div>
                     </div>
                     <div style={{ display: 'flex', gap: 6, flexShrink: 0, alignItems: 'center' }}>
-                      {isCompletedByAll ? (
+                      {!m.isDisabled && (isCompletedByAll ? (
                         <div
                           style={{
                             display: 'inline-flex',
@@ -942,22 +949,25 @@ function LecturerDashboard() {
                         >
                           Cập nhật hoàn thành
                         </button>
-                      )}
+                      ))}
                       <button
                         type="button"
                         className={styles.iconBtn}
                         onClick={() => handleEditMaterialStart(m)}
                         title="Sửa học liệu"
+                        disabled={m.isDisabled}
+                        style={m.isDisabled ? { opacity: 0.4, cursor: 'not-allowed' } : undefined}
                       >
-                        <Pencil size={16} />
+                        <Pencil size={15} />
                       </button>
                       <button
                         type="button"
-                        className={styles.iconBtn}
-                        onClick={() => handleDeleteMaterial(m.id)}
-                        title="Xóa học liệu"
+                        className={m.isDisabled ? styles.iconBtn : styles.iconBtnDanger}
+                        onClick={() => !m.isDisabled && handleDeleteMaterial(m.id)}
+                        title={m.isDisabled ? 'Đã vô hiệu hóa' : 'Vô hiệu hóa học liệu'}
+                        style={m.isDisabled ? { opacity: 0.4, cursor: 'not-allowed' } : undefined}
                       >
-                        <Trash2 size={16} />
+                        <Trash2 size={15} />
                       </button>
                     </div>
                   </div>
@@ -968,6 +978,246 @@ function LecturerDashboard() {
               )}
             </div>
           </div>
+        )}
+
+        {activeSubTab === 'classList' && (
+          <>
+            {/* Header info */}
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24, flexWrap: 'wrap', gap: 12 }}>
+              <div>
+                <h3 className={styles.panelTitle} style={{ margin: 0, display: 'flex', alignItems: 'center', gap: 8 }}>
+                  <Users size={20} color="#059669" /> Danh sách Lớp & Trợ giảng
+                </h3>
+                <p className={styles.panelDesc} style={{ margin: '4px 0 0' }}>
+                  Quản lý và theo dõi thông tin học sinh, trợ giảng học thuật trong lớp học này.
+                </p>
+              </div>
+              
+              {/* Stats badges */}
+              <div style={{ display: 'flex', gap: 10 }}>
+                <div style={{ background: '#f0fdf4', border: '1px solid #bbf7d0', padding: '6px 12px', borderRadius: 8, textAlign: 'center' }}>
+                  <span style={{ fontSize: 10, color: '#166534', display: 'block', textTransform: 'uppercase', fontWeight: 700 }}>Trợ giảng</span>
+                  <strong style={{ fontSize: 16, color: '#15803d' }}>
+                    {classStudents.filter((s) => s.role === 'assistant').length}
+                  </strong>
+                </div>
+                <div style={{ background: '#eff6ff', border: '1px solid #bfdbfe', padding: '6px 12px', borderRadius: 8, textAlign: 'center' }}>
+                  <span style={{ fontSize: 10, color: '#1e40af', display: 'block', textTransform: 'uppercase', fontWeight: 700 }}>Học viên</span>
+                  <strong style={{ fontSize: 16, color: '#1d4ed8' }}>
+                    {classStudents.filter((s) => s.role !== 'assistant').length}
+                  </strong>
+                </div>
+              </div>
+            </div>
+
+            {/* Search toolbar */}
+            <div style={{ display: 'flex', gap: 12, marginBottom: 20, alignItems: 'center', background: '#fff', padding: 12, borderRadius: 12, border: '1px solid #e2e8f0', boxShadow: '0 1px 3px rgba(0,0,0,0.02)' }}>
+              <div style={{ position: 'relative', flex: 1 }}>
+                <Search size={16} color="#94a3b8" style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)' }} />
+                <input
+                  type="text"
+                  placeholder="Tìm kiếm theo họ tên hoặc email..."
+                  className={styles.input}
+                  style={{ paddingLeft: 36, width: '100%', margin: 0 }}
+                  value={classListSearch}
+                  onChange={(e) => setClassListSearch(e.target.value)}
+                />
+              </div>
+              {classListSearch && (
+                <button
+                  type="button"
+                  className={styles.btnSecondary}
+                  style={{ padding: '8px 12px', margin: 0 }}
+                  onClick={() => setClassListSearch('')}
+                >
+                  Xóa bộ lọc
+                </button>
+              )}
+            </div>
+
+            {(() => {
+              const q = classListSearch.toLowerCase().trim();
+              const filteredMembers = classStudents.filter((s) => 
+                s.name?.toLowerCase().includes(q) || s.email?.toLowerCase().includes(q)
+              );
+              
+              const assistants = filteredMembers.filter((s) => s.role === 'assistant');
+              const regularStudents = filteredMembers.filter((s) => s.role !== 'assistant');
+
+              return (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
+                  
+                  {/* 1. TEACHING ASSISTANTS SECTION */}
+                  <div>
+                    <h4 style={{ fontSize: 14, fontWeight: 700, color: '#0f172a', margin: '0 0 12px', display: 'flex', alignItems: 'center', gap: 6 }}>
+                      <Award size={16} color="#ea580c" /> Trợ giảng học thuật ({assistants.length})
+                    </h4>
+                    
+                    {assistants.length > 0 ? (
+                      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: 12 }}>
+                        {assistants.map((ast) => {
+                          const done = classroomMaterials.filter((m) => m.completedByUsers?.includes(ast.id)).length;
+                          const pct = classroomMaterials.length ? Math.round((done / classroomMaterials.length) * 100) : 0;
+                          return (
+                            <div
+                              key={ast.id}
+                              style={{
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: 12,
+                                background: 'linear-gradient(135deg, #fffbeb 0%, #fff 100%)',
+                                border: '1px solid #fde68a',
+                                boxShadow: '0 4px 15px rgba(251, 191, 36, 0.05)',
+                                padding: 14,
+                                borderRadius: 12,
+                                position: 'relative',
+                                overflow: 'hidden'
+                              }}
+                            >
+                              {/* Accent top line */}
+                              <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 3, background: 'linear-gradient(90deg, #f59e0b, #d97706)' }} />
+                              
+                              <img
+                                src={ast.avatarUrl}
+                                alt={ast.name}
+                                style={{ width: 48, height: 48, borderRadius: '50%', border: '2px solid #fbbf24', flexShrink: 0 }}
+                              />
+                              <div style={{ overflow: 'hidden', flex: 1 }}>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
+                                  <strong style={{ fontSize: 13, color: '#78350f' }}>{ast.name}</strong>
+                                  <span style={{ fontSize: 8, background: '#fef3c7', color: '#b45309', border: '1px solid #fde68a', padding: '1px 5px', borderRadius: 4, textTransform: 'uppercase', fontWeight: 800 }}>
+                                    Trợ giảng
+                                  </span>
+                                </div>
+                                <span style={{ fontSize: 11, color: '#b45309', opacity: 0.8, display: 'block', textOverflow: 'ellipsis', overflow: 'hidden', whiteSpace: 'nowrap' }}>
+                                  {ast.email}
+                                </span>
+                                <small style={{ fontSize: 10, color: '#92400e', marginTop: 4, display: 'block' }}>
+                                  Đã xem: <strong>{pct}% ({done}/{classroomMaterials.length})</strong> tài liệu
+                                </small>
+                              </div>
+                              
+                              <button
+                                type="button"
+                                className={styles.groupMemberActionBtn}
+                                onClick={() => {
+                                  setTrackingStudent(ast);
+                                  setTrackingStudentTab('completed');
+                                }}
+                                style={{ background: '#fef3c7', color: '#b45309' }}
+                                title="Xem học bạ trợ giảng"
+                              >
+                                <Eye size={12} />
+                              </button>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    ) : (
+                      <div style={{ background: '#f8fafc', border: '1px dashed #cbd5e1', borderRadius: 12, padding: '16px 20px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                        <div>
+                          <p style={{ margin: 0, fontSize: 12, color: '#64748b', fontWeight: 600 }}>Chưa có trợ giảng nào cho lớp học này.</p>
+                          <small style={{ color: '#94a3b8' }}>Bạn có thể thăng cấp học viên xuất sắc làm trợ giảng cục bộ để hỗ trợ quản lý lớp.</small>
+                        </div>
+                        <button
+                          type="button"
+                          className={styles.btnSecondary}
+                          style={{ fontSize: 11, padding: '6px 12px', background: '#fffbeb', border: '1px solid #fde68a', color: '#b45309' }}
+                          onClick={() => setActiveSubTab('promotion')}
+                        >
+                          <Sparkles size={11} style={{ marginRight: 4, display: 'inline', verticalAlign: 'middle' }} />
+                          Đi thăng cấp ngay
+                        </button>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* 2. REGULAR STUDENTS SECTION */}
+                  <div>
+                    <h4 style={{ fontSize: 14, fontWeight: 700, color: '#0f172a', margin: '0 0 12px', display: 'flex', alignItems: 'center', gap: 6 }}>
+                      <Users size={16} color="#0284c7" /> Danh sách Học viên thường ({regularStudents.length})
+                    </h4>
+                    
+                    {regularStudents.length > 0 ? (
+                      <div className={styles.tableWrap} style={{ boxShadow: '0 4px 15px rgba(0,0,0,0.01)', border: '1px solid #e2e8f0', borderRadius: 12, overflow: 'hidden' }}>
+                        <table className={styles.table} style={{ margin: 0 }}>
+                          <thead>
+                            <tr>
+                              <th>Học viên</th>
+                              <th>Tiến độ Học liệu</th>
+                              <th>Bài tập Đã nộp</th>
+                              <th>Điểm Trung bình</th>
+                              <th style={{ textAlign: 'right' }}>Học bạ điện tử</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {regularStudents.map((st) => {
+                              const done = classroomMaterials.filter((m) => m.completedByUsers?.includes(st.id)).length;
+                              const pct = classroomMaterials.length ? Math.round((done / classroomMaterials.length) * 100) : 0;
+                              const hw = submissions.filter((sub) => sub.studentId === st.id && activeAsgIds.includes(sub.assignmentId)).length;
+                              const graded = submissions.filter((sub) => sub.studentId === st.id && sub.status === 'GRADED' && sub.grade != null);
+                              const avg = graded.length
+                                ? (graded.reduce((sum, curr) => sum + curr.grade, 0) / graded.length).toFixed(1)
+                                : 'Chưa có';
+                              
+                              return (
+                                <tr key={st.id} style={{ transition: 'background 0.15s' }}>
+                                  <td style={{ display: 'flex', alignItems: 'center', gap: 10, borderBottom: 'none' }}>
+                                    <img
+                                      src={st.avatarUrl}
+                                      alt={st.name}
+                                      style={{ width: 32, height: 32, borderRadius: '50%', border: '1px solid #e2e8f0' }}
+                                    />
+                                    <div>
+                                      <strong style={{ fontSize: 12, color: '#1e293b', display: 'block' }}>{st.name}</strong>
+                                      <span style={{ fontSize: 11, color: '#64748b' }}>{st.email}</span>
+                                    </div>
+                                  </td>
+                                  <td>
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                                      <span className={styles.progressBar} style={{ width: 60, margin: 0 }}>
+                                        <span className={styles.progressFill} style={{ width: `${pct}%` }} />
+                                      </span>
+                                      <span style={{ fontSize: 11, fontWeight: 600 }}>{pct}%</span>
+                                      <span style={{ fontSize: 10, color: '#94a3b8' }}>({done}/{classroomMaterials.length})</span>
+                                    </div>
+                                  </td>
+                                  <td style={{ fontSize: 12, fontWeight: 500 }}>
+                                    {hw} / {classroomAssignments.length} bài
+                                  </td>
+                                  <td>
+                                    <strong style={{ color: avg !== 'Chưa có' ? '#047857' : '#64748b', fontSize: 12 }}>
+                                      {avg} {avg !== 'Chưa có' && 'đ'}
+                                    </strong>
+                                  </td>
+                                  <td style={{ textAlign: 'right' }}>
+                                    <button
+                                      type="button"
+                                      className={styles.btnSecondary}
+                                      onClick={() => {
+                                        setTrackingStudent(st);
+                                        setTrackingStudentTab('completed');
+                                      }}
+                                      style={{ fontSize: 11, padding: '5px 10px', height: 'auto', display: 'inline-flex', alignItems: 'center', gap: 4 }}
+                                    >
+                                      <Eye size={12} /> Học bạ
+                                    </button>
+                                  </td>
+                                </tr>
+                              );
+                            })}
+                          </tbody>
+                        </table>
+                      </div>
+                    ) : (
+                      <div className={styles.emptyBox}>Không tìm thấy học viên nào phù hợp.</div>
+                    )}
+                  </div>
+                  
+                </div>
+              );
+            })()}
+          </>
         )}
 
         {activeSubTab === 'assignments' && (
@@ -1134,14 +1384,18 @@ function LecturerDashboard() {
               {activeSubmissions.map((sub) => {
                 const student = users.find((u) => u.id === sub.studentId) || { name: sub.studentName };
                 const asg = classroomAssignments.find((a) => a.id === sub.assignmentId);
+                const isSelected = gradingSubmission?.id === sub.id;
+                const isGraded = sub.status === 'GRADED';
                 return (
                   <button
                     key={sub.id}
                     type="button"
-                    className={styles.card}
+                    className={`${styles.card} ${isSelected ? styles.activeCard : ''}`}
                     style={{
-                      width: '100%', textAlign: 'left', marginBottom: 8, cursor: 'pointer',
-                      border: gradingSubmission?.id === sub.id ? '2px solid #6ee7b7' : undefined,
+                      width: '100%',
+                      textAlign: 'left',
+                      marginBottom: 12,
+                      cursor: 'pointer',
                     }}
                     onClick={() => {
                       setGradingSubmission(sub);
@@ -1150,9 +1404,9 @@ function LecturerDashboard() {
                     }}
                   >
                     <strong>{student?.name}</strong>
-                    <p style={{ fontSize: 12 }}>{asg?.title}</p>
-                    <span style={{ fontSize: 10 }}>
-                      {sub.status === 'GRADED' ? `Đã chấm: ${sub.grade}đ` : 'Chờ chấm'}
+                    <p style={{ fontSize: 12, margin: '4px 0' }}>{asg?.title}</p>
+                    <span className={isGraded ? styles.statusBadgeGraded : styles.statusBadgePending}>
+                      {isGraded ? `Đã chấm: ${sub.grade}đ` : 'Chờ chấm'}
                     </span>
                   </button>
                 );
@@ -1163,20 +1417,91 @@ function LecturerDashboard() {
             </div>
             <div className={styles.formBox}>
               {gradingSubmission ? (
-                <form onSubmit={handleSubmitGrade}>
-                  <h3 className={styles.panelTitle}>Chấm điểm & Nhận xét</h3>
-                  <div className={styles.field}>
-                    <label>Điểm (thang 10)</label>
-                    <input type="number" min="0" max="10" step="0.5" className={styles.input}
-                      value={gradeInput} onChange={(e) => setGradeInput(Number(e.target.value))} required />
-                  </div>
-                  <div className={styles.field}>
-                    <label>Phản hồi</label>
-                    <textarea className={styles.textarea} rows={4} value={gradeFeedback}
-                      onChange={(e) => setGradeFeedback(e.target.value)} required />
-                  </div>
-                  <button type="submit" className={styles.btnPrimary}>Lưu điểm & Trả bài</button>
-                </form>
+                (() => {
+                  const student = users.find((u) => u.id === gradingSubmission.studentId) || { name: gradingSubmission.studentName };
+                  const asg = classroomAssignments.find((a) => a.id === gradingSubmission.assignmentId);
+                  const GRADE_CHOICES = [10, 9.5, 9, 8.5, 8, 7.5, 7, 6.5, 6, 5.5, 5, 4.5, 4, 3.5, 3, 2.5, 2, 1.5, 1, 0.5, 0];
+
+                  return (
+                    <div>
+                      {/* Thông tin bài nộp chi tiết */}
+                      <div className={styles.submissionDetails}>
+                        <h4 className={styles.detailsHeader}>Thông tin bài nộp</h4>
+                        <div className={styles.detailsRow}>
+                          <strong>Học sinh nộp:</strong>
+                          <span>
+                            {student?.name} {student?.email && `(${student.email})`}
+                          </span>
+                        </div>
+                        <div className={styles.detailsRow}>
+                          <strong>Bài tập:</strong>
+                          <span>{asg?.title}</span>
+                        </div>
+                        <div className={styles.detailsRow}>
+                          <strong>Giờ nộp:</strong>
+                          <span>{new Date(gradingSubmission.submittedAt).toLocaleString('vi-VN')}</span>
+                        </div>
+                        {gradingSubmission.fileName && (
+                          <div className={styles.detailsRow}>
+                            <strong>Tệp đính kèm:</strong>
+                            <a
+                              href={`#file:${gradingSubmission.fileName}`}
+                              className={styles.fileLink}
+                              title="Tải xuống tệp nộp bài"
+                            >
+                              <Paperclip size={12} style={{ marginRight: 4 }} />
+                              {gradingSubmission.fileName}
+                            </a>
+                          </div>
+                        )}
+                        {gradingSubmission.studentNotes && (
+                          <div className={styles.notesBox}>
+                            <strong>Nội dung bài làm:</strong>
+                            <p className={styles.notesText}>{gradingSubmission.studentNotes}</p>
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Form Chấm điểm */}
+                      <form onSubmit={handleSubmitGrade}>
+                        <h3 className={styles.panelTitle}>Chấm điểm & Nhận xét</h3>
+                        
+                        <div className={styles.field}>
+                          <label>Chọn điểm số (Thang 10)</label>
+                          <div className={styles.gradeGrid}>
+                            {GRADE_CHOICES.map((val) => (
+                              <button
+                                key={val}
+                                type="button"
+                                className={`${styles.gradeOptionBtn} ${gradeInput === val ? styles.gradeOptionBtnActive : ''}`}
+                                onClick={() => setGradeInput(val)}
+                              >
+                                {val}
+                              </button>
+                            ))}
+                          </div>
+                          <div style={{ fontSize: 11, color: '#64748b', marginTop: -6, marginBottom: 12 }}>
+                            Điểm đang chọn: <strong style={{ color: '#065f46', fontSize: 13 }}>{gradeInput}đ</strong>
+                          </div>
+                        </div>
+
+                        <div className={styles.field}>
+                          <label>Phản hồi</label>
+                          <textarea
+                            className={styles.textarea}
+                            rows={4}
+                            value={gradeFeedback}
+                            onChange={(e) => setGradeFeedback(e.target.value)}
+                            required
+                          />
+                        </div>
+                        <button type="submit" className={styles.btnPrimary}>
+                          Lưu điểm & Trả bài
+                        </button>
+                      </form>
+                    </div>
+                  );
+                })()
               ) : (
                 <div className={styles.emptyBox}>Chọn bài nộp bên trái để chấm.</div>
               )}
@@ -1321,45 +1646,102 @@ function LecturerDashboard() {
 
         {activeSubTab === 'feedback' && (
           <div className={styles.grid2}>
+            {/* ── Left: feedback list ── */}
             <div>
+              <h3 className={styles.panelTitle} style={{ marginBottom: 12 }}>
+                <MessageSquare size={16} style={{ verticalAlign: 'middle', marginRight: 6 }} />
+                Danh sách phản hồi ({feedbacks.length})
+              </h3>
+              {feedbacks.length === 0 && (
+                <div className={styles.emptyBox}>Chưa có phản hồi nào từ học sinh.</div>
+              )}
               {feedbacks.map((fb) => {
-                const sender = users.find((u) => u.id === fb.senderId);
+                const isResponded = fb.status === 'RESPONDED';
+                const isActive = selectedFeedbackId === fb.id;
                 return (
                   <button
                     key={fb.id}
                     type="button"
-                    className={`${styles.card} ${selectedFeedbackId === fb.id ? '' : ''}`}
-                    style={{
-                      width: '100%', textAlign: 'left', marginBottom: 8, cursor: 'pointer',
-                      background: selectedFeedbackId === fb.id ? '#ecfdf5' : undefined,
-                    }}
+                    className={`${styles.feedbackListItem} ${isActive ? styles.feedbackListItemActive : ''}`}
                     onClick={() => setSelectedFeedbackId(fb.id)}
                   >
-                    <strong>{fb.title}</strong>
-                    <p style={{ fontSize: 12, fontStyle: 'italic' }}>{fb.message}</p>
-                    <small>— {sender?.name} · {fb.status}</small>
+                    <p className={styles.feedbackListTitle}>{fb.title}</p>
+                    <p className={styles.feedbackListSender}>
+                      &#128100; {fb.senderName || fb.senderId}
+                    </p>
+                    <div className={styles.feedbackListFooter}>
+                      <span className={isResponded ? styles.statusBadgeEmerald : styles.statusBadgeOrange}>
+                        {isResponded ? '✓ Đã trả lời' : '⏳ Chờ trả lời'}
+                      </span>
+                      <span style={{ fontSize: 10, color: '#94a3b8' }}>🕐 {fb.createdAt}</span>
+                      {fb.respondedAt && (
+                        <span style={{ fontSize: 10, color: '#6ee7b7' }}>✉ Đã trả lời: {fb.respondedAt}</span>
+                      )}
+                    </div>
                   </button>
                 );
               })}
             </div>
+
+            {/* ── Right: feedback detail + reply ── */}
             <div className={styles.formBox}>
               {(() => {
                 const fb = feedbacks.find((f) => f.id === selectedFeedbackId);
-                if (!fb) return <div className={styles.emptyBox}>Chọn phản hồi bên trái.</div>;
+                if (!fb) return <div className={styles.emptyBox}>&#128072; Chọn một phản hồi bên trái để xem chi tiết và trả lời.</div>;
+
+                const isResponded = fb.status === 'RESPONDED';
                 return (
                   <>
-                    <h4>{fb.title}</h4>
-                    <p style={{ fontSize: 13 }}>{fb.message}</p>
-                    {fb.response && (
-                      <p style={{ background: '#ecfdf5', padding: 12, borderRadius: 12, fontSize: 13 }}>
-                        Đã trả lời: {fb.response}
-                      </p>
-                    )}
-                    <form onSubmit={handleSendFeedbackResponse} style={{ display: 'flex', gap: 8, marginTop: 16 }}>
-                      <input className={styles.input} value={responseText}
+                    <div className={styles.feedbackDetailCard}>
+                      <h4>{fb.title}</h4>
+
+                      {/* Meta info */}
+                      <div className={styles.feedbackMeta}>
+                        <span className={isResponded ? styles.statusBadgeEmerald : styles.statusBadgeOrange}>
+                          {isResponded ? '✓ Đã trả lời' : '⏳ Chờ trả lời'}
+                        </span>
+                        <span className={styles.feedbackMetaItem}>
+                          &#128100; <strong>{fb.senderName || fb.senderId}</strong>
+                        </span>
+                        <span className={styles.feedbackMetaItem}>
+                          🕐 Gửi lúc: {fb.createdAt}
+                        </span>
+                        {fb.respondedAt && (
+                          <span className={styles.feedbackMetaItem} style={{ color: '#059669' }}>
+                            ✅ Đã trả lời: {fb.respondedAt}
+                          </span>
+                        )}
+                      </div>
+
+                      {/* Message */}
+                      <p className={styles.feedbackMessage}>{fb.message}</p>
+
+                      {/* Previous response */}
+                      {fb.response && (
+                        <div className={styles.feedbackResponseBox}>
+                          <strong>Câu trả lời của bạn</strong>
+                          <p>{fb.response}</p>
+                          {fb.respondedAt && (
+                            <div className={styles.feedbackResponseMeta}>Đã gửi lúc: {fb.respondedAt}</div>
+                          )}
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Reply form */}
+                    <form onSubmit={handleSendFeedbackResponse} className={styles.feedbackReplyForm}>
+                      <label>{fb.response ? '✏️ Cập nhật câu trả lời' : '💬 Gửi câu trả lời'}</label>
+                      <textarea
+                        className={styles.textarea}
+                        rows={4}
+                        value={responseText}
                         onChange={(e) => setResponseText(e.target.value)}
-                        placeholder="Viết câu trả lời..." required />
-                      <button type="submit" className={styles.btnEmerald}><Send size={14} /> Gửi</button>
+                        placeholder="Nhập câu trả lời chi tiết cho học sinh..."
+                        required
+                      />
+                      <button type="submit" className={styles.btnEmerald} style={{ display: 'flex', alignItems: 'center', gap: 6, alignSelf: 'flex-start' }}>
+                        <Send size={14} /> {fb.response ? 'Cập nhật trả lời' : 'Gửi trả lời'}
+                      </button>
                     </form>
                   </>
                 );
@@ -1367,6 +1749,7 @@ function LecturerDashboard() {
             </div>
           </div>
         )}
+
 
         {activeSubTab === 'promotion' && (
           <>

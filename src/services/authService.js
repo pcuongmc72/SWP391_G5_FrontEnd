@@ -39,14 +39,13 @@ export const getToken = () => localStorage.getItem('access_token');
  */
 export const isAuthenticated = () => !!getToken();
 
-<<<<<<< HEAD
 export const updateProfile = async (userData) => {
   const response = await api.put('/api/Auth/profile', userData);
   return response.data;
 };
 
 export { getStoredUser, getUserRole, getHomePathForCurrentUser } from '../utils/authStorage';
-=======
+
 /**
  * Lấy thông tin user đang lưu
  * @returns {object|null}
@@ -76,4 +75,3 @@ export const getRole = () => {
     (Array.isArray(user.roles) ? user.roles[0] : null);
   return raw ? String(raw).toLowerCase() : null;
 };
->>>>>>> 5a0202d322bef30bf80ba9cbe7c846fdfde31b3d

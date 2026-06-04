@@ -20,7 +20,7 @@ export const getDashboardPathForRole = (role) => {
     case ROLES.LECTURER:
       return '/lecturer/dashboard';
     case ROLES.ADMIN:
-      return '/admin/dashboard';
+      return '/dashboard/admin';
     case ROLES.STUDENT:
       return '/student/dashboard';
     default:
