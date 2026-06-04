@@ -1293,6 +1293,17 @@ function ClassesDashboard({ terms = [], selectedTerm, onTermChange, users = [], 
   };
 
   const handleDelete = async (id, name) => {
+    const classObj = classes.find(c => c.id === id);
+    if (classObj) {
+      if (classObj.lecturer) {
+        showToast('Không thể xóa lớp học này vì đang có giảng viên phụ trách!', 'error');
+        return;
+      }
+      if (classObj.enrolled > 0) {
+        showToast('Không thể xóa lớp học này vì đang có sinh viên theo học!', 'error');
+        return;
+      }
+    }
     setItemToDelete({ id, name });
     setDeleteConfirmOpen(true);
   };

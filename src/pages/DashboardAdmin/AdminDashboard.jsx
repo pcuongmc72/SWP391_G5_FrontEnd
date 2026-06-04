@@ -254,6 +254,11 @@ function AdminDashboard({
                   className="w-full border border-slate-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-800" placeholder="example@email.com" />
               </div>
               <div>
+                <label className="block text-sm font-semibold text-slate-700 mb-1">Đường dẫn ảnh đại diện (Avatar URL)</label>
+                <input value={userForm.avatarUrl || ''} onChange={e => setUserForm({ ...userForm, avatarUrl: e.target.value })}
+                  className="w-full border border-slate-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-800" placeholder="https://example.com/avatar.png" />
+              </div>
+              <div>
                 <label className="block text-sm font-semibold text-slate-700 mb-1">
                   Mật khẩu <span className="text-rose-500">*</span>
                 </label>
