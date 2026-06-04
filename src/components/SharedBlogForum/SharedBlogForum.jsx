@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { 
   Plus, Search, Filter, Loader2, 
-  AlertCircle, MessageSquare, BookOpen 
+  AlertCircle 
 } from 'lucide-react';
 import { 
   fetchPublicBlogs, fetchClassBlogs, fetchPendingBlogs, fetchAllBlogs, fetchPrivateBlogs,
@@ -14,9 +14,6 @@ import BlogCard from './BlogCard';
 import BlogForm from './BlogForm';
 import BlogDetails from './BlogDetails';
 
-/**
- * SharedBlogForum — The main blog & discussion component
- */
 function SharedBlogForum({ defaultTab = 'PUBLIC' }) {
   const [blogs, setBlogs] = useState([]);
   const [courses, setCourses] = useState([]);
@@ -29,7 +26,7 @@ function SharedBlogForum({ defaultTab = 'PUBLIC' }) {
   const [editingBlog, setEditingBlog] = useState(null);
   const [selectedBlog, setSelectedBlog] = useState(null);
   const [isSaving, setIsSaving] = useState(false);
-  const [currentTab, setCurrentTab] = useState(defaultTab); // 'PUBLIC', 'CLASS', 'PENDING', 'MANAGEMENT'
+  const [currentTab, setCurrentTab] = useState(defaultTab);
 
   const currentUser = useMemo(() => getUser(), []);
   const userRole = useMemo(() => getRole(), []);
@@ -37,72 +34,49 @@ function SharedBlogForum({ defaultTab = 'PUBLIC' }) {
   const isLecturer = useMemo(() => userRole && String(userRole).toLowerCase() === 'lecturer', [userRole]);
   const isStudent = useMemo(() => userRole && String(userRole).toLowerCase() === 'student', [userRole]);
 
-  // Set initial tab based on role if not provided
   useEffect(() => {
     if (!defaultTab) {
       if (isStudent) setCurrentTab('CLASS');
       else if (isAdmin || isLecturer) setCurrentTab('PENDING');
     }
   }, [isStudent, isAdmin, isLecturer, defaultTab]);
-  
 
-  // Load data
+  // Load data based on current tab
   const loadData = useCallback(async () => {
     try {
       setLoading(true);
-      
-      // Fetch blogs based on current tab
-      let blogsRes = { success: false, data: [] };
-      let coursesRes = { success: false, data: [] };
+      const courseFilter = selectedCourse === 'ALL' ? null : selectedCourse;
+      const userId = currentUser?.id;
 
+      let blogsData = [];
       try {
         if (currentTab === 'PENDING') {
-          blogsRes = await fetchPendingBlogs();
+          blogsData = await fetchPendingBlogs();
         } else if (currentTab === 'MANAGEMENT' && isAdmin) {
-          blogsRes = await fetchAllBlogs();
+          blogsData = await fetchAllBlogs();
         } else if (currentTab === 'PRIVATE' && isAdmin) {
-          blogsRes = await fetchPrivateBlogs(selectedCourse === 'ALL' ? null : selectedCourse);
+          blogsData = await fetchPrivateBlogs(courseFilter);
         } else if (currentTab === 'MY_POSTS') {
-          const uid = currentUser?.id || currentUser?.Id;
-          blogsRes = await fetchUserBlogs(uid);
+          blogsData = await fetchUserBlogs(userId);
         } else if (currentTab === 'CLASS' && isStudent) {
-          blogsRes = await fetchMyClassesBlogs(currentUser?.id || currentUser?.Id, selectedCourse === 'ALL' ? null : selectedCourse);
+          blogsData = await fetchMyClassesBlogs(userId, courseFilter);
         } else {
-          blogsRes = await fetchPublicBlogs(
-            selectedCourse === 'ALL' ? null : selectedCourse,
-            currentUser?.id || currentUser?.Id
-          );
+          blogsData = await fetchPublicBlogs(courseFilter);
         }
       } catch (err) {
         console.error('Failed to fetch blogs:', err);
       }
 
+      let coursesData = [];
       try {
-        coursesRes = await fetchCourses();
+        const coursesRes = await fetchCourses();
+        coursesData = coursesRes.success ? coursesRes.data : coursesRes;
       } catch (err) {
         console.warn('Failed to fetch courses:', err);
       }
 
-      // Normalize blogs - Handle { success: true, data: [...] } structure
-      let blogList = [];
-      const blogsData = (blogsRes && typeof blogsRes === 'object' && blogsRes.success !== undefined) ? blogsRes.data : blogsRes;
-      
-      if (Array.isArray(blogsData)) blogList = blogsData;
-      else if (blogsData?.$values) blogList = blogsData.$values;
-      else if (blogsData?.data) {
-        // Double unwrap just in case
-        const innerData = blogsData.data;
-        blogList = Array.isArray(innerData) ? innerData : (innerData?.$values || []);
-      }
-
-      // Normalize courses
-      let courseList = [];
-      const coursesData = coursesRes.success ? coursesRes.data : coursesRes;
-      if (Array.isArray(coursesData)) courseList = coursesData;
-      else if (coursesData?.$values) courseList = coursesData.$values;
-
-      setBlogs(blogList);
-      setCourses(courseList);
+      setBlogs(Array.isArray(blogsData) ? blogsData : []);
+      setCourses(Array.isArray(coursesData) ? coursesData : []);
       setError(null);
     } catch (err) {
       console.error('Failed to load blog data:', err);
@@ -116,20 +90,13 @@ function SharedBlogForum({ defaultTab = 'PUBLIC' }) {
     loadData();
   }, [loadData]);
 
-  // Filter blogs (Client-side search)
+  // Client-side search filter
   const filteredBlogs = useMemo(() => {
     return blogs.filter(blog => {
-      // Backend fields are PascalCase: Title, Content, AuthorFullName, etc.
-      const title = blog.title ?? blog.Title ?? '';
-      const content = blog.content ?? blog.Content ?? '';
-      
-      const blogCourseId = blog.courseId ?? blog.CourseId;
-      const matchesCourse = selectedCourse === 'ALL' || blogCourseId === selectedCourse;
-
+      const matchesCourse = selectedCourse === 'ALL' || blog.courseId === selectedCourse;
       const matchesSearch = 
-        title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        content.toLowerCase().includes(searchQuery.toLowerCase());
-      
+        (blog.title || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
+        (blog.content || '').toLowerCase().includes(searchQuery.toLowerCase());
       return matchesSearch && matchesCourse;
     });
   }, [blogs, searchQuery, selectedCourse]);
@@ -138,23 +105,20 @@ function SharedBlogForum({ defaultTab = 'PUBLIC' }) {
   const handleSave = async (formData) => {
     try {
       setIsSaving(true);
-      
-      // Map frontend formData to backend DTO (PascalCase)
       const payload = {
-        Title: formData.title,
-        Content: formData.content,
-        CourseId: formData.courseId,
-        AuthorId: currentUser?.id || currentUser?.Id || '',
-        IsPrivate: !formData.isPublic,
+        title: formData.title,
+        content: formData.content,
+        courseId: formData.courseId,
+        authorId: currentUser?.id || '',
         isPrivate: !formData.isPublic,
-        ClassId: formData.classId || null
+        classId: formData.classId || null,
+        keywords: formData.keywords || null
       };
 
       if (editingBlog) {
-        await updateBlog(editingBlog.id ?? editingBlog.Id, payload);
+        await updateBlog(editingBlog.id, payload);
       } else {
         await createBlog(payload);
-        // Switch tab to let user see their post
         if (!formData.isPublic && isStudent) {
           setCurrentTab('CLASS');
         } else {
@@ -166,7 +130,7 @@ function SharedBlogForum({ defaultTab = 'PUBLIC' }) {
       setEditingBlog(null);
       await loadData();
     } catch (err) {
-      console.error('Save error details:', err.response?.data || err.message);
+      console.error('Save error:', err.response?.data || err.message);
       alert('Lỗi khi lưu bài viết: ' + (err.response?.data?.message || err.message));
     } finally {
       setIsSaving(false);
@@ -213,7 +177,7 @@ function SharedBlogForum({ defaultTab = 'PUBLIC' }) {
         @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
       `}</style>
 
-      {/* Header & Stats */}
+      {/* Header */}
       <div style={{
         marginBottom: '2.5rem',
         display: 'flex',
@@ -231,7 +195,6 @@ function SharedBlogForum({ defaultTab = 'PUBLIC' }) {
           </p>
         </div>
         
-        {/* User context action: Only show Create button if logged in */}
         {currentUser && (
           <button 
             onClick={() => { setEditingBlog(null); setIsModalOpen(true); }}
@@ -259,7 +222,7 @@ function SharedBlogForum({ defaultTab = 'PUBLIC' }) {
         )}
       </div>
 
-      {/* Tabs Layout */}
+      {/* Tabs */}
       <div style={{
         display: 'flex',
         gap: '0.25rem',
@@ -302,7 +265,7 @@ function SharedBlogForum({ defaultTab = 'PUBLIC' }) {
               }}
             >
               {tab.label}
-              {tab.key === 'PENDING' && currentTab !== 'PENDING' && blogs.some(b => (b.status ?? b.Status) === 0) && (
+              {tab.key === 'PENDING' && currentTab !== 'PENDING' && blogs.some(b => b.status === 0) && (
                 <span style={{ background: '#f43f5e', color: '#fff', fontSize: '0.6rem', padding: '0.1rem 0.45rem', borderRadius: '1rem', fontWeight: 700 }}>!</span>
               )}
             </button>
@@ -333,7 +296,7 @@ function SharedBlogForum({ defaultTab = 'PUBLIC' }) {
               fontSize: '0.875rem',
               outline: 'none',
               background: '#f8fafc',
-              color: '#0f172a', // Darker text
+              color: '#0f172a',
               fontWeight: 500
             }}
             placeholder="Tìm kiếm chủ đề, nội dung bài viết..."
@@ -343,7 +306,7 @@ function SharedBlogForum({ defaultTab = 'PUBLIC' }) {
         </div>
 
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-          <div style={{ color: '#0f172a', fontSize: '0.875rem', fontWeight: 700 }}> {/* Darker label */}
+          <div style={{ color: '#0f172a', fontSize: '0.875rem', fontWeight: 700 }}>
             <Filter size={16} style={{ display: 'inline', marginRight: '0.5rem', verticalAlign: 'middle' }} />
             Môn học:
           </div>
@@ -354,7 +317,7 @@ function SharedBlogForum({ defaultTab = 'PUBLIC' }) {
               border: '1px solid #e2e8f0',
               fontSize: '0.875rem',
               background: '#fff',
-              color: '#0f172a', // Darker select text
+              color: '#0f172a',
               fontWeight: 600,
               outline: 'none',
               cursor: 'pointer'
@@ -370,7 +333,7 @@ function SharedBlogForum({ defaultTab = 'PUBLIC' }) {
         </div>
       </div>
 
-      {/* Error State */}
+      {/* Error */}
       {error && (
         <div style={{
           padding: '1.25rem',
@@ -398,10 +361,10 @@ function SharedBlogForum({ defaultTab = 'PUBLIC' }) {
         }}>
           {filteredBlogs.map(blog => (
             <BlogCard 
-              key={blog.id ?? blog.Id} 
+              key={blog.id} 
               thread={blog}
               isAdmin={isAdmin || isLecturer}
-              isAuthor={(blog.authorId ?? blog.AuthorId) === (currentUser?.id || currentUser?.Id)}
+              isAuthor={blog.authorId === currentUser?.id}
               isPendingView={currentTab === 'PENDING'}
               showStatus={currentTab === 'MY_POSTS'}
               onClick={() => setSelectedBlog(blog)}

@@ -1,34 +1,17 @@
 import React from 'react';
 import { 
-  MessageSquare, User, Calendar, Tag, ChevronRight, 
+  Calendar, Tag, ChevronRight, 
   Lock, Globe, Edit2, Trash2 
 } from 'lucide-react';
 
-/**
- * BlogCard — Displays a summary of a blog post/discussion thread
- */
 function BlogCard({ thread, onClick, onEdit, onDelete, onApprove, isAdmin, isPendingView, isAuthor, showStatus }) {
-  const title = thread.title ?? thread.Title ?? '';
-  const content = thread.content ?? thread.Content ?? '';
-  const authorName = thread.authorFullName ?? thread.AuthorFullName ?? thread.authorName ?? 'Người dùng';
-  const createdAt = thread.createdAt ?? thread.CreatedAt;
-  const courseCode = thread.courseCode ?? thread.CourseCode ?? thread.courseName ?? thread.CourseName ?? '';
-  const isPrivate = thread.isPrivate ?? thread.IsPrivate ?? false;
-  const isPublic = !isPrivate;
-  const authorId = thread.authorId ?? thread.AuthorId;
-  const status = thread.status ?? thread.Status ?? 0;
-
-  // Debug author matching
-  // console.log(`Blog: ${title} | AuthorId: ${authorId} | isAuthor: ${isAuthor}`);
+  const { title = '', content = '', authorFullName: authorName = 'Người dùng', createdAt, isPrivate = false, status = 0 } = thread;
+  const courseName = thread.courseName || '';
 
   const formatDate = (dateString) => {
     if (!dateString) return '—';
-    const date = new Date(dateString);
-    return date.toLocaleDateString('vi-VN', { 
-      day: '2-digit', 
-      month: '2-digit', 
-      year: 'numeric',
-      timeZone: 'Asia/Ho_Chi_Minh'
+    return new Date(dateString).toLocaleDateString('vi-VN', { 
+      day: '2-digit', month: '2-digit', year: 'numeric', timeZone: 'Asia/Ho_Chi_Minh'
     });
   };
 
@@ -59,7 +42,7 @@ function BlogCard({ thread, onClick, onEdit, onDelete, onApprove, isAdmin, isPen
         e.currentTarget.style.borderColor = '#e2e8f0';
       }}
     >
-      {/* Header Row: Course Tag + Badges */}
+      {/* Header: Course Tag + Badges */}
       <div style={{
         display: 'flex',
         justifyContent: 'space-between',
@@ -67,8 +50,7 @@ function BlogCard({ thread, onClick, onEdit, onDelete, onApprove, isAdmin, isPen
         gap: '1rem',
         marginBottom: '0.5rem'
       }}>
-        {/* Course Tag */}
-        {courseCode && (
+        {courseName && (
           <div style={{
             display: 'flex',
             alignItems: 'center',
@@ -86,7 +68,7 @@ function BlogCard({ thread, onClick, onEdit, onDelete, onApprove, isAdmin, isPen
             maxWidth: '180px'
           }}>
             <Tag size={12} />
-            {courseCode}
+            {courseName}
           </div>
         )}
 
@@ -107,12 +89,12 @@ function BlogCard({ thread, onClick, onEdit, onDelete, onApprove, isAdmin, isPen
               display: 'flex',
               alignItems: 'center',
               gap: '0.35rem',
-              background: isPublic ? '#ecfdf5' : '#fff7ed',
-              color: isPublic ? '#059669' : '#d97706',
-              border: `1px solid ${isPublic ? '#a7f3d0' : '#ffedd5'}`,
+              background: !isPrivate ? '#ecfdf5' : '#fff7ed',
+              color: !isPrivate ? '#059669' : '#d97706',
+              border: `1px solid ${!isPrivate ? '#a7f3d0' : '#ffedd5'}`,
             }}>
-              {isPublic ? <Globe size={12} /> : <Lock size={12} />}
-              {isPublic ? 'Công khai' : 'Riêng tư'}
+              {!isPrivate ? <Globe size={12} /> : <Lock size={12} />}
+              {!isPrivate ? 'Công khai' : 'Riêng tư'}
             </div>
 
             {/* Status Badge */}
@@ -139,7 +121,7 @@ function BlogCard({ thread, onClick, onEdit, onDelete, onApprove, isAdmin, isPen
         </div>
       </div>
 
-      {/* Title & Content Snippet */}
+      {/* Title & Content */}
       <div>
         <h3 style={{
           fontSize: '1.125rem',
@@ -167,7 +149,7 @@ function BlogCard({ thread, onClick, onEdit, onDelete, onApprove, isAdmin, isPen
         </p>
       </div>
 
-      {/* Footer Info */}
+      {/* Footer */}
       <div style={{
         marginTop: 'auto',
         paddingTop: '1rem',
@@ -203,12 +185,11 @@ function BlogCard({ thread, onClick, onEdit, onDelete, onApprove, isAdmin, isPen
           </div>
         </div>
 
-        {/* Action buttons for admin or author */}
-        {/* Approval Actions for Admin in Pending View */}
+        {/* Approval Actions */}
         {isPendingView && (
           <div style={{ display: 'flex', gap: '0.5rem' }}>
             <button
-              onClick={(e) => { e.stopPropagation(); onApprove(thread.id ?? thread.Id, 1); }}
+              onClick={(e) => { e.stopPropagation(); onApprove(thread.id, 1); }}
               style={{
                 padding: '0.4rem 0.8rem',
                 borderRadius: '0.5rem',
@@ -223,7 +204,7 @@ function BlogCard({ thread, onClick, onEdit, onDelete, onApprove, isAdmin, isPen
               Duyệt
             </button>
             <button
-              onClick={(e) => { e.stopPropagation(); onApprove(thread.id ?? thread.Id, 2); }}
+              onClick={(e) => { e.stopPropagation(); onApprove(thread.id, 2); }}
               style={{
                 padding: '0.4rem 0.8rem',
                 borderRadius: '0.5rem',
@@ -240,6 +221,7 @@ function BlogCard({ thread, onClick, onEdit, onDelete, onApprove, isAdmin, isPen
           </div>
         )}
 
+        {/* Edit/Delete Actions */}
         {(isAdmin || isAuthor) && (
           <div style={{ display: 'flex', gap: '0.25rem' }} onClick={(e) => e.stopPropagation()}>
             <button 
@@ -259,7 +241,7 @@ function BlogCard({ thread, onClick, onEdit, onDelete, onApprove, isAdmin, isPen
               <Edit2 size={14} />
             </button>
             <button 
-              onClick={(e) => { e.stopPropagation(); onDelete(thread.id ?? thread.Id); }}
+              onClick={(e) => { e.stopPropagation(); onDelete(thread.id); }}
               style={{
                 padding: '0.4rem',
                 borderRadius: '0.5rem',

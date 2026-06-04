@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import {
   X, Save, Loader2, Type, AlignLeft,
   Tag, Globe, Lock, AlertCircle, School
@@ -6,17 +6,7 @@ import {
 import { getUserClasses } from '../../services/classService';
 import { getUser } from '../../services/authService';
 
-/**
- * BlogForm — Modal for creating or editing a blog entry
- */
-function BlogForm({
-  isOpen,
-  onClose,
-  onSave,
-  initialData,
-  courses,
-  isSaving
-}) {
+function BlogForm({ isOpen, onClose, onSave, initialData, courses, isSaving }) {
   const [formData, setFormData] = useState({
     title: '',
     content: '',
@@ -26,41 +16,34 @@ function BlogForm({
   });
 
   const [userClasses, setUserClasses] = useState([]);
-  const currentUser = React.useMemo(() => getUser(), []);
+  const currentUser = useMemo(() => getUser(), []);
 
   useEffect(() => {
     if (initialData) {
       setFormData({
-        title: initialData.title || initialData.Title || '',
-        content: initialData.content || initialData.Content || '',
-        courseId: initialData.courseId || initialData.CourseId || '',
-        classId: initialData.classId || initialData.ClassId || '',
-        isPublic: initialData.isPublic ?? !(initialData.isPrivate ?? initialData.IsPrivate ?? false)
+        title: initialData.title || '',
+        content: initialData.content || '',
+        courseId: initialData.courseId || '',
+        classId: initialData.classId || '',
+        isPublic: !(initialData.isPrivate ?? false)
       });
     } else {
-      setFormData({
-        title: '',
-        content: '',
-        courseId: '',
-        classId: '',
-        isPublic: true
-      });
+      setFormData({ title: '', content: '', courseId: '', classId: '', isPublic: true });
     }
   }, [initialData, isOpen]);
 
   useEffect(() => {
     if (isOpen && currentUser) {
-      getUserClasses(currentUser.id || currentUser.Id)
+      getUserClasses(currentUser.id)
         .then(res => {
           const list = res.success ? res.data : res;
-          setUserClasses(Array.isArray(list) ? list : (list?.$values || []));
+          setUserClasses(Array.isArray(list) ? list : []);
         })
         .catch(err => console.error('Failed to fetch user classes:', err));
     }
   }, [isOpen, currentUser]);
 
-  // Filter classes by selected course
-  const filteredClasses = userClasses.filter(c => c.courseId === formData.courseId || c.CourseId === formData.courseId);
+  const filteredClasses = userClasses.filter(c => c.courseId === formData.courseId);
 
   if (!isOpen) return null;
 
@@ -137,224 +120,60 @@ function BlogForm({
             <h2 style={{ fontSize: '1.25rem', fontWeight: 800, color: '#0f172a', margin: 0 }}>
               {initialData ? 'Chỉnh sửa bài viết' : 'Tạo bài viết mới'}
             </h2>
-            <p style={{ fontSize: '0.75rem', color: '#64748b', margin: '0.25rem 0 0' }}>
-              Chia sẻ kiến thức và thảo luận về chủ đề môn học
-            </p>
           </div>
-          <button
-            onClick={onClose}
-            style={{
-              padding: '0.5rem',
-              borderRadius: '0.75rem',
-              border: 'none',
-              background: '#f1f5f9',
-              color: '#64748b',
-              cursor: 'pointer',
-              transition: 'all 0.2s'
-            }}
-            onMouseEnter={(e) => { e.currentTarget.style.background = '#e2e8f0'; e.currentTarget.style.color = '#0f172a'; }}
-            onMouseLeave={(e) => { e.currentTarget.style.background = '#f1f5f9'; e.currentTarget.style.color = '#64748b'; }}
-          >
+          <button onClick={onClose} style={{ padding: '0.5rem', border: 'none', background: 'none', cursor: 'pointer', color: '#64748b' }}>
             <X size={20} />
           </button>
         </div>
 
-        {/* Form Body */}
+        {/* Form */}
         <form onSubmit={handleSubmit} style={{ padding: '1.5rem', display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
-          {/* Title */}
           <div>
             <label style={labelStyle}><Type size={16} /> Tiêu đề bài viết</label>
-            <input
-              required
-              className="blog-input"
-              style={inputStyle}
-              placeholder="VD: Kinh nghiệm học môn PRN231 hiệu quả..."
-              value={formData.title}
-              onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-            />
+            <input required className="blog-input" style={inputStyle} value={formData.title} onChange={e => setFormData({ ...formData, title: e.target.value })} />
           </div>
 
           <div style={{ display: 'grid', gridTemplateColumns: formData.isPublic ? '1fr' : '1fr 1fr', gap: '1rem' }}>
-            {/* Course Tag Select */}
             <div>
-              <label style={labelStyle}><Tag size={16} /> Gắn thẻ môn học</label>
-              <select
-                required
-                className="blog-input"
-                style={inputStyle}
-                value={formData.courseId}
-                onChange={(e) => setFormData({ ...formData, courseId: e.target.value })}
-              >
+              <label style={labelStyle}><Tag size={16} /> Thẻ môn học</label>
+              <select required className="blog-input" style={inputStyle} value={formData.courseId} onChange={e => setFormData({ ...formData, courseId: e.target.value })}>
                 <option value="">Chọn môn học...</option>
-                {courses.map(course => (
-                  <option key={course.id} value={course.id}>
-                    [{course.code}] {course.name}
-                  </option>
-                ))}
+                {courses.map(c => <option key={c.id} value={c.id}>[{c.code}] {c.name}</option>)}
               </select>
             </div>
-
-            {/* Class Select (Only for Private) */}
             {!formData.isPublic && (
               <div>
                 <label style={labelStyle}><School size={16} /> Chọn lớp học</label>
-                <select
-                  required
-                  className="blog-input"
-                  style={inputStyle}
-                  value={formData.classId}
-                  onChange={(e) => setFormData({ ...formData, classId: e.target.value })}
-                >
+                <select required className="blog-input" style={inputStyle} value={formData.classId} onChange={e => setFormData({ ...formData, classId: e.target.value })}>
                   <option value="">Chọn lớp học...</option>
-                  {filteredClasses.map(cls => (
-                    <option key={cls.id || cls.Id} value={cls.id || cls.Id}>
-                      {cls.id || cls.Id} {cls.courseCode ? `(${cls.courseCode})` : ''}
-                    </option>
-                  ))}
+                  {filteredClasses.map(cls => <option key={cls.id} value={cls.id}>{cls.id}</option>)}
                 </select>
               </div>
             )}
           </div>
 
-          {formData.courseId && !formData.isPublic && filteredClasses.length === 0 && (
-            <div style={{ padding: '0.75rem', borderRadius: '0.75rem', background: '#fef2f2', border: '1px solid #fee2e2', color: '#b91c1c', fontSize: '0.75rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-              <AlertCircle size={14} />
-              Bạn không tham gia lớp học nào cho môn học này.
-            </div>
-          )}
-
-          {/* Content */}
           <div>
             <label style={labelStyle}><AlignLeft size={16} /> Nội dung thảo luận</label>
-            <textarea
-              required
-              className="blog-input"
-              style={{ ...inputStyle, minHeight: '12rem', resize: 'vertical' }}
-              placeholder="Viết nội dung bài viết ở đây..."
-              value={formData.content}
-              onChange={(e) => setFormData({ ...formData, content: e.target.value })}
-            />
+            <textarea required className="blog-input" style={{ ...inputStyle, minHeight: '10rem', resize: 'vertical' }} value={formData.content} onChange={e => setFormData({ ...formData, content: e.target.value })} />
           </div>
 
-          {/* Visibility Toggle */}
-          <div style={{
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'space-between',
-            padding: '1rem',
-            background: '#f8fafc',
-            borderRadius: '1rem',
-            border: '1px solid #e2e8f0'
-          }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '1rem', background: '#f8fafc', borderRadius: '1rem', border: '1px solid #e2e8f0' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-              <div style={{
-                width: '2.5rem',
-                height: '2.5rem',
-                borderRadius: '0.75rem',
-                background: formData.isPublic ? '#ecfdf5' : '#fff7ed',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                color: formData.isPublic ? '#10b981' : '#f59e0b',
-              }}>
-                {formData.isPublic ? <Globe size={20} /> : <Lock size={20} />}
-              </div>
+              {formData.isPublic ? <Globe size={20} color="#10b981" /> : <Lock size={20} color="#f59e0b" />}
               <div>
-                <div style={{ fontSize: '0.875rem', fontWeight: 700, color: '#334155' }}>
-                  {formData.isPublic ? 'Công khai' : 'Riêng tư'}
-                </div>
-                <div style={{ fontSize: '0.75rem', color: '#64748b' }}>
-                  {formData.isPublic ? 'Tất cả mọi người đều có thể xem' : 'Chỉ thành viên trong lớp mới có thể xem'}
-                </div>
+                <div style={{ fontSize: '0.875rem', fontWeight: 700, color: '#334155' }}>{formData.isPublic ? 'Công khai' : 'Riêng tư'}</div>
+                <div style={{ fontSize: '0.75rem', color: '#64748b' }}>{formData.isPublic ? 'Tất cả mọi người đều có xem' : 'Chỉ thành viên trong lớp'}</div>
               </div>
             </div>
-
-            {/* Toggle Switch */}
-            <button
-              type="button"
-              onClick={() => setFormData({ ...formData, isPublic: !formData.isPublic })}
-              style={{
-                width: '3.5rem',
-                height: '1.75rem',
-                borderRadius: '2rem',
-                border: 'none',
-                background: formData.isPublic ? '#10b981' : '#cbd5e1',
-                position: 'relative',
-                cursor: 'pointer',
-                transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
-              }}
-            >
-              <div style={{
-                position: 'absolute',
-                top: '0.2rem',
-                left: formData.isPublic ? '1.95rem' : '0.25rem',
-                width: '1.35rem',
-                height: '1.35rem',
-                borderRadius: '50%',
-                background: '#fff',
-                transition: 'all 0.3s cubic-bezier(0.16, 1, 0.3, 1)',
-                boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
-              }} />
+            <button type="button" onClick={() => setFormData({ ...formData, isPublic: !formData.isPublic })} style={{ width: '3.5rem', height: '1.75rem', borderRadius: '2rem', border: 'none', background: formData.isPublic ? '#10b981' : '#cbd5e1', cursor: 'pointer', transition: 'all 0.3s' }}>
+              <div style={{ position: 'absolute', top: '0.2rem', left: formData.isPublic ? '1.95rem' : '0.25rem', width: '1.35rem', height: '1.35rem', borderRadius: '50%', background: '#fff' }} />
             </button>
           </div>
 
-          {/* Actions */}
-          <div style={{
-            display: 'flex',
-            gap: '1rem',
-            marginTop: '0.5rem',
-            paddingTop: '1.25rem',
-            borderTop: '1px solid #f1f5f9'
-          }}>
-            <button
-              type="button"
-              onClick={onClose}
-              disabled={isSaving}
-              style={{
-                flex: 1,
-                padding: '0.75rem',
-                borderRadius: '0.75rem',
-                border: '1px solid #e2e8f0',
-                background: '#fff',
-                color: '#64748b',
-                fontWeight: 700,
-                fontSize: '0.875rem',
-                cursor: 'pointer',
-              }}
-            >
-              Hủy
-            </button>
-            <button
-              type="submit"
-              disabled={isSaving}
-              style={{
-                flex: 2,
-                padding: '0.75rem',
-                borderRadius: '0.75rem',
-                border: 'none',
-                background: isSaving ? '#94a3b8' : 'linear-gradient(135deg, #0D3E26, #166534)',
-                color: '#fff',
-                fontWeight: 700,
-                fontSize: '0.875rem',
-                cursor: isSaving ? 'not-allowed' : 'pointer',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                gap: '0.5rem',
-                boxShadow: isSaving ? 'none' : '0 4px 12px rgba(13, 62, 38, 0.2)',
-              }}
-            >
-              {isSaving ? (
-                <>
-                  <Loader2 size={18} style={{ animation: 'spin 1s linear infinite' }} />
-                  Đang lưu...
-                </>
-              ) : (
-                <>
-                  <Save size={18} />
-                  Lưu bài viết
-                </>
-              )}
+          <div style={{ display: 'flex', gap: '1rem', marginTop: '0.5rem', paddingTop: '1.25rem', borderTop: '1px solid #f1f5f9' }}>
+            <button type="button" onClick={onClose} disabled={isSaving} style={{ flex: 1, padding: '0.75rem', borderRadius: '0.75rem', border: '1px solid #e2e8f0', background: '#fff', fontWeight: 700, cursor: 'pointer' }}>Hủy</button>
+            <button type="submit" disabled={isSaving} style={{ flex: 2, padding: '0.75rem', borderRadius: '0.75rem', border: 'none', background: isSaving ? '#94a3b8' : '#0D3E26', color: '#fff', fontWeight: 700, cursor: isSaving ? 'not-allowed' : 'pointer' }}>
+               {isSaving ? 'Đang lưu...' : 'Lưu bài viết'}
             </button>
           </div>
         </form>

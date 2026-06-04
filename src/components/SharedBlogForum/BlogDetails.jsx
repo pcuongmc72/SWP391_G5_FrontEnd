@@ -1,33 +1,22 @@
 import React from 'react';
 import { 
-  X, User, Calendar, Tag, Globe, Lock, 
-  ArrowLeft, Clock, BookOpen, GraduationCap 
+  X, Calendar, Globe, Lock, 
+  ArrowLeft, BookOpen, GraduationCap 
 } from 'lucide-react';
 import CommentSection from './CommentSection';
 
-/**
- * BlogDetails — Full screen modal for a blog post and its discussions
- */
 function BlogDetails({ blog, onClose }) {
   if (!blog) return null;
 
-  const title = blog.title ?? blog.Title ?? '';
-  const content = blog.content ?? blog.Content ?? '';
-  const authorName = blog.authorFullName ?? blog.AuthorFullName ?? 'Người dùng';
-  const createdAt = blog.createdAt ?? blog.CreatedAt;
-  const courseCode = blog.courseCode ?? blog.CourseCode ?? blog.courseName ?? blog.CourseName ?? '';
-  const isPublic = (blog.isPublic ?? !blog.IsPrivate) ?? true;
+  const { title = '', content = '', authorFullName: authorName = 'Người dùng', createdAt, isPrivate } = blog;
+  const courseName = blog.courseName || '';
+  const isPublic = !isPrivate;
 
   const formatDate = (dateString) => {
     if (!dateString) return '—';
-    const date = new Date(dateString);
-    return date.toLocaleDateString('vi-VN', { 
-      day: '2-digit', 
-      month: '2-digit', 
-      year: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit',
-      timeZone: 'Asia/Ho_Chi_Minh'
+    return new Date(dateString).toLocaleDateString('vi-VN', { 
+      day: '2-digit', month: '2-digit', year: 'numeric',
+      hour: '2-digit', minute: '2-digit', timeZone: 'Asia/Ho_Chi_Minh'
     });
   };
 
@@ -79,43 +68,30 @@ function BlogDetails({ blog, onClose }) {
         >
           <ArrowLeft size={20} />
         </button>
-        <div>
-          <h2 style={{ fontSize: '1rem', fontWeight: 800, color: '#0f172a', margin: 0 }}>Quay lại danh sách</h2>
-        </div>
+        <h2 style={{ fontSize: '1rem', fontWeight: 800, color: '#0f172a', margin: 0 }}>Quay lại danh sách</h2>
       </header>
 
-      {/* Main Content Area */}
+      {/* Main Content */}
       <div style={{ flex: 1, overflowY: 'auto' }}>
         <div className="details-container">
-          {/* Post Content */}
           <article>
-            {/* Meta Header */}
+            {/* Meta Tags */}
             <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '1.5rem', flexWrap: 'wrap' }}>
               <div style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: '0.35rem',
-                color: '#0D3E26',
-                fontSize: '0.75rem',
-                fontWeight: 700,
-                background: '#ecfdf5',
-                padding: '0.4rem 0.75rem',
-                borderRadius: '0.625rem',
-                border: '1px solid #a7f3d0'
+                display: 'flex', alignItems: 'center', gap: '0.35rem',
+                color: '#0D3E26', fontSize: '0.75rem', fontWeight: 700,
+                background: '#ecfdf5', padding: '0.4rem 0.75rem',
+                borderRadius: '0.625rem', border: '1px solid #a7f3d0'
               }}>
                 <GraduationCap size={14} />
-                {courseCode}
+                {courseName}
               </div>
               <div style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: '0.35rem',
+                display: 'flex', alignItems: 'center', gap: '0.35rem',
                 color: isPublic ? '#059669' : '#d97706',
-                fontSize: '0.75rem',
-                fontWeight: 700,
+                fontSize: '0.75rem', fontWeight: 700,
                 background: isPublic ? '#ecfdf5' : '#fff7ed',
-                padding: '0.4rem 0.75rem',
-                borderRadius: '0.625rem',
+                padding: '0.4rem 0.75rem', borderRadius: '0.625rem',
                 border: `1px solid ${isPublic ? '#a7f3d0' : '#ffedd5'}`
               }}>
                 {isPublic ? <Globe size={14} /> : <Lock size={14} />}
@@ -127,20 +103,14 @@ function BlogDetails({ blog, onClose }) {
               {title}
             </h1>
 
+            {/* Author Info */}
             <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginBottom: '2.5rem', paddingBottom: '1.5rem', borderBottom: '1px solid #f1f5f9' }}>
               <div style={{
-                width: '3rem',
-                height: '3rem',
-                borderRadius: '50%',
+                width: '3rem', height: '3rem', borderRadius: '50%',
                 background: 'linear-gradient(135deg, #f1f5f9, #e2e8f0)',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                color: '#475569',
-                fontSize: '1.25rem',
-                fontWeight: 800,
-                border: '2px solid #fff',
-                boxShadow: '0 4px 6px -1px rgba(0,0,0,0.1)'
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                color: '#475569', fontSize: '1.25rem', fontWeight: 800,
+                border: '2px solid #fff', boxShadow: '0 4px 6px -1px rgba(0,0,0,0.1)'
               }}>
                 {authorName[0]?.toUpperCase() || 'U'}
               </div>
@@ -153,22 +123,19 @@ function BlogDetails({ blog, onClose }) {
               </div>
             </div>
 
+            {/* Content */}
             <div style={{
-              fontSize: '1.125rem',
-              color: '#334155',
-              lineHeight: 1.8,
-              whiteSpace: 'pre-wrap',
-              marginBottom: '3rem',
+              fontSize: '1.125rem', color: '#334155', lineHeight: 1.8,
+              whiteSpace: 'pre-wrap', marginBottom: '3rem',
             }}>
               {content}
             </div>
           </article>
 
-          {/* Comment Section */}
-          <CommentSection blogId={blog.id ?? blog.Id} />
+          {/* Comments */}
+          <CommentSection blogId={blog.id} />
         </div>
 
-        {/* Footer info */}
         <footer style={{ textAlign: 'center', padding: '4rem 0', color: '#94a3b8', fontSize: '0.875rem' }}>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem', marginBottom: '0.5rem' }}>
              <BookOpen size={16} />

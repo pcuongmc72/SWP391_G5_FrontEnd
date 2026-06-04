@@ -5,9 +5,6 @@ import { getUser, getRole } from '../../services/authService';
 import CommentItem from './CommentItem';
 import CommentForm from './CommentForm';
 
-/**
- * CommentSection — Manages comment lifecycle for a blog post
- */
 function CommentSection({ blogId }) {
   const [comments, setComments] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -15,21 +12,13 @@ function CommentSection({ blogId }) {
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const currentUser = getUser();
-  const userRole = getRole();
-  const isAdmin = userRole === 'admin';
+  const isAdmin = getRole() === 'admin';
 
   const loadComments = useCallback(async () => {
     try {
       setLoading(true);
       const res = await fetchComments(blogId);
-      
-      // Handle PascalCase and potential wrapping
-      let commentList = [];
-      const data = res.success ? res.data : res;
-      if (Array.isArray(data)) commentList = data;
-      else if (data?.$values) commentList = data.$values;
-
-      setComments(commentList);
+      setComments(Array.isArray(res) ? res : (res?.success ? res.data : []));
       setError(null);
     } catch (err) {
       console.error('Failed to load comments:', err);
@@ -39,23 +28,13 @@ function CommentSection({ blogId }) {
     }
   }, [blogId]);
 
-  useEffect(() => {
-    loadComments();
-  }, [loadComments]);
+  useEffect(() => { loadComments(); }, [loadComments]);
 
   const handleAddComment = async (content) => {
-    if (!currentUser) {
-      alert('Bạn cần đăng nhập để bình luận.');
-      return;
-    }
+    if (!currentUser) return alert('Bạn cần đăng nhập để bình luận.');
     try {
       setIsSubmitting(true);
-      const payload = {
-        BlogId: blogId,
-        AuthorId: currentUser.id ?? currentUser.Id,
-        Content: content
-      };
-      await createComment(payload);
+      await createComment({ blogId, authorId: currentUser.id, content });
       await loadComments();
     } catch (err) {
       alert('Không thể gửi bình luận: ' + err.message);
@@ -87,22 +66,21 @@ function CommentSection({ blogId }) {
 
       {loading && comments.length === 0 ? (
         <div style={{ textAlign: 'center', padding: '2rem', color: '#64748b' }}>
-          <Loader2 size={24} className="animate-spin" style={{ margin: '0 auto 0.5rem' }} />
+          <Loader2 size={24} style={{ animation: 'spin 1s linear infinite', margin: '0 auto 0.5rem' }} />
           <span>Đang tải bình luận...</span>
         </div>
       ) : error ? (
         <div style={{ padding: '1rem', background: '#fff1f2', borderRadius: '0.75rem', color: '#be123c', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-          <AlertCircle size={16} />
-          {error}
+          <AlertCircle size={16} /> {error}
         </div>
       ) : comments.length > 0 ? (
         <div style={{ display: 'flex', flexDirection: 'column' }}>
-          {comments.map(comment => (
+          {comments.map(c => (
             <CommentItem 
-              key={comment.id ?? comment.Id} 
-              comment={comment}
+              key={c.id} 
+              comment={c} 
               onDelete={handleDeleteComment}
-              canDelete={isAdmin || (comment.authorId ?? comment.AuthorId) === (currentUser?.id ?? currentUser?.Id)}
+              canDelete={isAdmin || c.authorId === currentUser?.id}
             />
           ))}
         </div>
