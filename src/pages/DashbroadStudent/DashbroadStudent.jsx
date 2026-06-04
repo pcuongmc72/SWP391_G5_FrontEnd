@@ -1,3 +1,4 @@
+import StudentDashboard from './StudentDashboard';
 import { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import {
@@ -71,10 +72,10 @@ function DashbroadStudent() {
                     <div className={styles.topbarRight}>
                         <div className={styles.userBadge}>
                             <div className={styles.avatar}>
-                                {currentUser?.name?.[0]?.toUpperCase() || currentUser?.email?.[0]?.toUpperCase() || 'S'}
+                                {currentUser?.fullName?.[0]?.toUpperCase() || currentUser?.email?.[0]?.toUpperCase() || 'S'}
                             </div>
                             <div className={styles.userInfo}>
-                                <span className={styles.userName}>{currentUser?.name || 'Học viên'}</span>
+                                <span className={styles.userName}>{currentUser?.fullName || 'Học viên'}</span>
                                 <span className={styles.userRole}>Student</span>
                             </div>
                         </div>
@@ -82,16 +83,25 @@ function DashbroadStudent() {
                 </header>
 
                 {/* Content Area */}
+                {/* Content Area */}
+                {/* Content Area */}
                 <div className={styles.content}>
-                    <div className="bg-white rounded-3xl p-6 border border-slate-100 shadow-sm">
-                        <h2 className="text-xl font-bold text-slate-800">
-                            Chào mừng, {currentUser?.name || 'Học viên'}! 👋
-                        </h2>
-                        <p className="text-slate-500 text-sm mt-1">
-                            Đây là trang học viên. Chức năng đầy đủ sẽ được thêm vào ở bước sau.
-                        </p>
-                    </div>
+                    {/* Nếu đang ở trang mặc định (Lớp học của tôi) thì render StudentDashboard */}
+                    {location.pathname === '/dashboard/student' ? (
+                        <StudentDashboard />
+                    ) : (
+                        <div className="bg-white rounded-3xl p-6 border border-slate-100 shadow-sm">
+                            <h2 className="text-xl font-bold text-slate-800">
+                                Trang chức năng khác
+                            </h2>
+                            <p className="text-slate-500 text-sm mt-1">
+                                Nội dung đang được cập nhật...
+                            </p>
+                        </div>
+                    )}
                 </div>
+
+
             </div>
         </div>
     );
