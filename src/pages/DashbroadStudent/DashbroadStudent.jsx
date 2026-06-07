@@ -1,4 +1,5 @@
 import StudentDashboard from './StudentDashboard';
+import StudentRoadmap from './StudentRoadmap';
 import { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import {
@@ -86,17 +87,14 @@ function DashbroadStudent() {
                 {/* Content Area */}
                 {/* Content Area */}
                 <div className={styles.content}>
-                    {/* Nếu đang ở trang mặc định (Lớp học của tôi) thì render StudentDashboard */}
                     {location.pathname === '/dashboard/student' ? (
                         <StudentDashboard />
+                    ) : location.pathname === '/dashboard/student/roadmap' ? (
+                        <StudentRoadmap />
                     ) : (
-                        <div className="bg-white rounded-3xl p-6 border border-slate-100 shadow-sm">
-                            <h2 className="text-xl font-bold text-slate-800">
-                                Trang chức năng khác
-                            </h2>
-                            <p className="text-slate-500 text-sm mt-1">
-                                Nội dung đang được cập nhật...
-                            </p>
+                        <div style={{ background: '#fff', borderRadius: 24, padding: 24, border: '1px solid #e2e8f0' }}>
+                            <h2 style={{ fontSize: '1.125rem', fontWeight: 700, color: '#1e293b', margin: 0 }}>Trang đang cập nhật</h2>
+                            <p style={{ color: '#64748b', fontSize: '0.875rem', marginTop: 6 }}>Nội dung đang được phát triển...</p>
                         </div>
                     )}
                 </div>

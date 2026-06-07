@@ -105,6 +105,7 @@ function App() {
         {/* ── Trang Student — chỉ role 'student' ── */}
         <Route element={<ProtectedRoute allowedRoles={['student']} />}>
           <Route path="/dashboard/student" element={<DashbroadStudentPage />} />
+          <Route path="/dashboard/student/roadmap" element={<DashbroadStudentPage />} />
         </Route>
 
         {/* ── Redirect /dashboard → trang đúng role ── */}

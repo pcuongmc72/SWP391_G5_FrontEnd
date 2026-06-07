@@ -1,9 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { getAcademicTerms, getStudentClasses, getClassStudents } from '../../services/studentService';
-import { BookOpen, User, Calendar, Loader2, X, Users } from 'lucide-react';
+import { BookOpen, User, Calendar, Loader2, X, Users, Milestone, Award } from 'lucide-react';
 import styles from './DashbroadStudent.module.css'; // Sử dụng lại CSS module của Dashboard
-
-
 
 export default function StudentDashboard() {
     const [terms, setTerms] = useState([]);
@@ -18,7 +16,7 @@ export default function StudentDashboard() {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState('');
 
-    // Các state phục vụ Modal chi tiết lớp học
+        // Các state phục vụ Modal chi tiết lớp học
     const [selectedClass, setSelectedClass] = useState(null); // Lớp đang được mở chi tiết
     const [classStudents, setClassStudents] = useState([]);   // Danh sách bạn học trong lớp đó
     const [loadingStudents, setLoadingStudents] = useState(false);
@@ -120,7 +118,7 @@ export default function StudentDashboard() {
         fetchClasses();
     }, [selectedYear, selectedSemester, terms]);
 
-    // Xử lý khi nhấn "Vào lớp" hoặc click Card lớp học
+        // Xử lý khi nhấn "Vào lớp" hoặc click Card lớp học
     const handleOpenClassDetail = async (cls) => {
         setSelectedClass(cls);
         setLoadingStudents(true);
@@ -143,10 +141,47 @@ export default function StudentDashboard() {
         const codeMatch = cls.courseCode.toLowerCase().includes(searchTerm.toLowerCase());
         const classIdMatch = cls.id.toLowerCase().includes(searchTerm.toLowerCase());
         return nameMatch || codeMatch || classIdMatch;
-    });
+
+    }
+);
+// Hàm sinh lộ trình học tập chuẩn dựa vào mã môn học (Copy từ ClassesDashboard.jsx của Admin)
+const generateRoadmap = (courseCode, courseName) => {
+    const code = String(courseCode || '').toUpperCase();
+    const name = String(courseName || '');
+    const isCSharp = code.includes('PRN') || code.includes('CS') || name.toLowerCase().includes('c#') || name.toLowerCase().includes('lập trình');
+    const isSWP = code.includes('SWP') || code.includes('PROJ') || name.toLowerCase().includes('dự án') || name.toLowerCase().includes('đồ án');
+
+    if (isCSharp) {
+        return [
+            { week: 'Tuần 1', title: 'Cài đặt môi trường & Cú pháp cơ bản .NET C#', status: 'COMPLETED', lessons: ['Khởi tạo dự án Console App trong Visual Studio', 'Biến, toán tử và các kiểu dữ liệu cơ bản', 'Cấu trúc điều kiện rẽ nhánh và vòng lặp'] },
+            { week: 'Tuần 2', title: 'Lập trình Hướng đối tượng (OOP) nâng cao', status: 'COMPLETED', lessons: ['Tính kế thừa, đóng gói, đa hình', 'Tính trừu tượng (Abstract class & Interface)'] },
+            { week: 'Tuần 3', title: 'Làm việc với Collections, LINQ & Generics', status: 'ACTIVE', lessons: ['Generic class & Generic method', 'Truy vấn dữ liệu nâng cao với LINQ'] },
+            { week: 'Tuần 4', title: 'Tương tác Database với Entity Framework Core', status: 'UPCOMING', lessons: ['Cài đặt EF Core Packages & DbContext', 'Thao tác CRUD với Database thực tế'] },
+            { week: 'Tuần 5', title: 'Xây dựng RESTful API với ASP.NET Core Web API', status: 'UPCOMING', lessons: ['Kiến trúc Controllers & API Routing', 'Dependency Injection trong ASP.NET Core'] }
+        ];
+    }
+
+    if (isSWP) {
+        return [
+            { week: 'Tuần 1', title: 'Thành lập nhóm & Định hình Ý tưởng Dự án', status: 'COMPLETED', lessons: ['Phân chia vai trò thành viên (WBS)', 'Lập tiến độ tổng quan (Gantt Chart)'] },
+            { week: 'Tuần 2', title: 'Phân tích Yêu cầu & Thiết kế Hệ thống', status: 'COMPLETED', lessons: ['Phân tích yêu cầu chức năng', 'Thiết kế Mockup UI/UX ban đầu bằng Figma'] },
+            { week: 'Tuần 3', title: 'Thiết kế Cấu trúc CSDL (ERD) & Khung dự án', status: 'ACTIVE', lessons: ['Vẽ sơ đồ ERD tối ưu hóa quan hệ', 'Cấu trúc Skeleton dự án FrontEnd và BackEnd'] },
+            { week: 'Tuần 4', title: 'Sprint 1: Xây dựng các tính năng Core & Auth', status: 'UPCOMING', lessons: ['Code giao diện Đăng nhập, Đăng ký', 'Xây dựng API đăng nhập & lưu trữ Token'] },
+            { week: 'Tuần 5', title: 'Sprint 2: Tính năng nghiệp vụ chính & Quản trị', status: 'UPCOMING', lessons: ['Phát triển giao diện Dashboard Admin', 'Code các luồng giao dịch nghiệp vụ cốt lõi'] }
+        ];
+    }
+
+    return [
+        { week: 'Chặng 1', title: 'Làm quen & Khái niệm nền tảng cốt lõi', status: 'COMPLETED', lessons: ['Giới thiệu đề cương học phần', 'Các công cụ làm việc cơ bản'] },
+        { week: 'Chặng 2', title: 'Nghiên cứu chuyên sâu lý thuyết chuyên ngành', status: 'ACTIVE', lessons: ['Các mô hình kiến trúc cốt lõi', 'Slide chuyên đề 2'] },
+        { week: 'Chặng 3', title: 'Thực hành ứng dụng & Giải quyết case-study', status: 'UPCOMING', lessons: ['Giải quyết bài toán thực tế (Case study)', 'Thực hành viết báo cáo phân tích'] }
+    ];
+};
+
 
 
     return (
+        <>
         <div style={{ padding: '4px' }}>
             {/* Thanh giao diện Tìm kiếm & Bộ lọc */}
             <div style={{
@@ -365,8 +400,11 @@ export default function StudentDashboard() {
                                     <span>{cls.startDate || 'N/A'} - {cls.endDate || 'N/A'}</span>
                                 </div>
 
-                                <button 
-                                    onClick={() => handleOpenClassDetail(cls)}
+                                <button
+                                    onClick={(e) => {
+                                        e.stopPropagation();
+                                        handleOpenClassDetail(cls);
+                                    }}
                                     style={{
                                         padding: '6px 12px',
                                         backgroundColor: '#0D3E26',
@@ -388,140 +426,113 @@ export default function StudentDashboard() {
                     ))}
                 </div>
             )}
+        </div>
 
-            {/* Modal Chi tiết lớp học & Tiến độ */}
-            {selectedClass && (() => {
-
-                // Lọc danh sách bạn học theo ô tìm kiếm trong modal
-                const filteredStudents = classStudents.filter(std => 
-                    std.fullName.toLowerCase().includes(studentSearchTerm.toLowerCase()) ||
-                    std.studentId.toLowerCase().includes(studentSearchTerm.toLowerCase())
-                );
-
-                return (
-                    <div 
-                        onClick={e => { if (e.target === e.currentTarget) setSelectedClass(null); }} 
+            {/* ── Modal chi tiết lớp học ── */}
+            {selectedClass && (
+                <div
+                    onClick={() => setSelectedClass(null)}
+                    style={{
+                        position: 'fixed', inset: 0, backgroundColor: 'rgba(0,0,0,0.45)',
+                        display: 'flex', justifyContent: 'center', alignItems: 'center',
+                        zIndex: 9999, padding: '16px'
+                    }}
+                >
+                    <div
+                        onClick={e => e.stopPropagation()}
                         style={{
-                            position: 'fixed', inset: 0, zIndex: 9000,
-                            background: 'rgba(15, 23, 42, 0.4)', backdropFilter: 'blur(6px)',
-                            display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '24px'
+                            backgroundColor: '#fff', borderRadius: '20px',
+                            width: '100%', maxWidth: '600px', maxHeight: '88vh',
+                            overflowY: 'auto', boxShadow: '0 25px 60px rgba(0,0,0,0.25)',
+                            display: 'flex', flexDirection: 'column'
                         }}
                     >
-                        <div style={{
-                            backgroundColor: '#fff', borderRadius: '24px', padding: '32px',
-                            width: '100%', maxWidth: '850px', maxHeight: '90vh', overflowY: 'auto',
-                            boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)', display: 'flex', flexDirection: 'column', gap: '24px'
-                        }}>
-                            {/* Modal Header */}
-                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid #f1f5f9', paddingBottom: '16px' }}>
-                                <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                                    <div style={{ width: '42px', height: '42px', borderRadius: '12px', backgroundColor: '#e6f4ea', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                                        <BookOpen size={22} color="#0d3e26" />
-                                    </div>
-                                    <div>
-                                        <h3 style={{ margin: 0, fontSize: '1.25rem', fontWeight: 850, color: '#0d3e26' }}>
-                                            Chi tiết lớp học: {selectedClass.id}
-                                        </h3>
-                                        <p style={{ margin: 0, fontSize: '0.85rem', color: '#64748b', marginTop: '2px' }}>
-                                            Môn học: <strong>{selectedClass.courseName} ({selectedClass.courseCode})</strong>
-                                        </p>
-                                    </div>
+                        {/* Modal Header */}
+                        <div style={{ padding: '24px 24px 16px', borderBottom: '1px solid #f1f5f9', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                            <div>
+                                <div style={{ display: 'inline-flex', alignItems: 'center', gap: 6, backgroundColor: '#e6f4ea', color: '#0d3e26', fontSize: '0.75rem', fontWeight: 700, padding: '3px 10px', borderRadius: 999, marginBottom: 8 }}>
+                                    <BookOpen size={11} /> {selectedClass.id}
                                 </div>
-                                <button 
-                                    onClick={() => setSelectedClass(null)} 
-                                    style={{ border: 'none', background: '#f1f5f9', color: '#64748b', borderRadius: '50%', width: '32px', height: '32px', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}
-                                >
-                                    <X size={18} />
-                                </button>
-                            </div>
-
-                            {/* Modal Body: Chia làm 2 cột */}
-                            <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 1fr', gap: '28px', alignItems: 'start' }}>
-                                
-                                {/* Cột Trái: Thông tin giảng viên & Tiến độ */}
-                                <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
-                                    
-                                    {/* Giảng viên phụ trách */}
-                                    <div style={{ backgroundColor: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '16px', padding: '20px' }}>
-                                        <h4 style={{ margin: '0 0 12px 0', fontSize: '0.9rem', fontWeight: 800, color: '#0d3e26', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                                            <User size={16} /> Giảng viên phụ trách
-                                        </h4>
-                                        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                                            <div style={{ width: '40px', height: '40px', borderRadius: '50%', backgroundColor: '#0d3e26', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 'bold' }}>
-                                                {selectedClass.lecturerName?.[0]?.toUpperCase() || 'L'}
-                                            </div>
-                                            <div>
-                                                <div style={{ fontSize: '0.9rem', fontWeight: 700, color: '#1e293b' }}>
-                                                    {selectedClass.lecturerName}
-                                                </div>
-                                                <div style={{ fontSize: '0.75rem', color: '#64748b' }}>
-                                                    Giảng viên quản lý môn học
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
-
-
-                                </div>
-
-                                {/* Cột Phải: Danh sách bạn học cùng lớp */}
-                                <div style={{ 
-                                    backgroundColor: '#fff', border: '1px solid #e2e8f0', borderRadius: '16px', padding: '20px',
-                                    display: 'flex', flexDirection: 'column', gap: '12px'
-                                }}>
-                                    <h4 style={{ margin: 0, fontSize: '0.9rem', fontWeight: 800, color: '#0d3e26', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                                        <Users size={16} /> Bạn học cùng lớp ({classStudents.length})
-                                    </h4>
-
-                                    {/* Ô tìm kiếm bạn học nhanh */}
-                                    <input 
-                                        type="text" 
-                                        placeholder="Tìm bạn học theo Tên hoặc Mã số..."
-                                        value={studentSearchTerm}
-                                        onChange={e => setStudentSearchTerm(e.target.value)}
-                                        style={{ width: '100%', padding: '8px 12px', border: '1px solid #cbd5e1', borderRadius: '8px', fontSize: '0.78rem', outline: 'none' }}
-                                    />
-
-                                    {/* Danh sách học sinh */}
-                                    <div style={{ overflowY: 'auto', maxHeight: '180px', display: 'flex', flexDirection: 'column', gap: '8px', marginTop: '4px' }}>
-                                        {loadingStudents ? (
-                                            <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', padding: '16px', gap: '6px' }}>
-                                                <Loader2 className="animate-spin" size={14} />
-                                                <span style={{ fontSize: '0.75rem', color: '#64748b' }}>Đang tải danh sách...</span>
-                                            </div>
-                                        ) : filteredStudents.length === 0 ? (
-                                            <div style={{ fontSize: '0.75rem', color: '#94a3b8', textAlign: 'center', padding: '16px' }}>
-                                                Không có bạn học nào khớp.
-                                            </div>
-                                        ) : (
-                                            filteredStudents.map(std => (
-                                                <div 
-                                                    key={std.studentId}
-                                                    style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '8px 12px', backgroundColor: '#f8fafc', borderRadius: '8px', border: '1px solid #f1f5f9' }}
-                                                >
-                                                    <div style={{ width: '28px', height: '28px', borderRadius: '50%', backgroundColor: '#cbd5e1', color: '#334155', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.7rem', fontWeight: 'bold' }}>
-                                                        {std.fullName?.[0]?.toUpperCase() || 'S'}
-                                                    </div>
-                                                    <div style={{ minWidth: 0 }}>
-                                                        <div style={{ fontSize: '0.8rem', fontWeight: 700, color: '#334155', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                                                            {std.fullName} <span style={{ fontSize: '0.68rem', color: '#94a3b8', fontWeight: 500 }}>[{std.studentId}]</span>
-                                                        </div>
-                                                        <div style={{ fontSize: '0.68rem', color: '#64748b', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                                                            {std.email}
-                                                        </div>
-                                                    </div>
-                                                </div>
-                                            ))
-                                        )}
-                                    </div>
+                                <h2 style={{ fontSize: '1.125rem', fontWeight: 700, color: '#1e293b', margin: '0 0 6px' }}>
+                                    {selectedClass.courseName} ({selectedClass.courseCode})
+                                </h2>
+                                <div style={{ display: 'flex', gap: 16, flexWrap: 'wrap' }}>
+                                    <span style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: '0.8125rem', color: '#64748b' }}>
+                                        <User size={13} /> GV: <strong style={{ color: '#334155' }}>{selectedClass.lecturerName || '—'}</strong>
+                                    </span>
+                                    <span style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: '0.8125rem', color: '#64748b' }}>
+                                        <Calendar size={13} /> {selectedClass.startDate || 'N/A'} – {selectedClass.endDate || 'N/A'}
+                                    </span>
                                 </div>
                             </div>
+                            <button
+                                onClick={() => setSelectedClass(null)}
+                                style={{ background: '#f1f5f9', border: 'none', borderRadius: 8, width: 32, height: 32, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', fontSize: '1rem', color: '#64748b', flexShrink: 0 }}
+                                onMouseEnter={e => e.currentTarget.style.background = '#e2e8f0'}
+                                onMouseLeave={e => e.currentTarget.style.background = '#f1f5f9'}
+                            >✕</button>
+                        </div>
 
+                        {/* Student list section */}
+                        <div style={{ padding: '16px 24px 24px', flex: 1 }}>
+                            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
+                                <h3 style={{ fontSize: '0.9375rem', fontWeight: 700, color: '#1e293b', margin: 0, display: 'flex', alignItems: 'center', gap: 6 }}>
+                                    <Users size={16} color="#0D3E26" /> Danh sách học viên
+                                    {!loadingStudents && (
+                                        <span style={{ fontSize: '0.75rem', fontWeight: 600, background: '#e6f4ea', color: '#0d3e26', padding: '2px 8px', borderRadius: 999 }}>
+                                            {classStudents.length} người
+                                        </span>
+                                    )}
+                                </h3>
+                            </div>
 
+                            {/* Search students */}
+                            <input
+                                type="text"
+                                placeholder="Tìm kiếm học viên..."
+                                value={studentSearchTerm}
+                                onChange={e => setStudentSearchTerm(e.target.value)}
+                                style={{ width: '100%', padding: '8px 14px', borderRadius: 8, border: '1px solid #cbd5e1', fontSize: '0.875rem', outline: 'none', marginBottom: 14, boxSizing: 'border-box', color: '#334155' }}
+                                onFocus={e => e.target.style.borderColor = '#0D3E26'}
+                                onBlur={e => e.target.style.borderColor = '#cbd5e1'}
+                            />
+
+                            {loadingStudents ? (
+                                <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: 100, gap: 8 }}>
+                                    <Loader2 size={18} style={{ color: '#0D3E26', animation: 'spin 1s linear infinite' }} />
+                                    <span style={{ color: '#64748b', fontSize: '0.875rem' }}>Đang tải danh sách...</span>
+                                </div>
+                            ) : classStudents.length === 0 ? (
+                                <div style={{ textAlign: 'center', padding: '24px', color: '#94a3b8', fontSize: '0.875rem' }}>
+                                    Chưa có học viên nào trong lớp này.
+                                </div>
+                            ) : (
+                                <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                                    {classStudents
+                                        .filter(s => {
+                                            const q = studentSearchTerm.toLowerCase();
+                                            return !q || s.fullName?.toLowerCase().includes(q) || s.id?.toLowerCase().includes(q) || s.email?.toLowerCase().includes(q);
+                                        })
+                                        .map((s, idx) => (
+                                            <div key={s.id || idx} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '10px 14px', borderRadius: 10, background: '#f8fafc', border: '1px solid #e2e8f0' }}>
+                                                <div style={{ width: 34, height: 34, borderRadius: '50%', background: 'linear-gradient(135deg, #0D3E26, #10b981)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontWeight: 700, fontSize: '0.875rem', flexShrink: 0 }}>
+                                                    {(s.fullName || s.id || '?')[0].toUpperCase()}
+                                                </div>
+                                                <div style={{ minWidth: 0, flex: 1 }}>
+                                                    <div style={{ fontWeight: 600, fontSize: '0.875rem', color: '#1e293b', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                                                        {s.fullName || '—'}
+                                                    </div>
+                                                    <div style={{ fontSize: '0.75rem', color: '#94a3b8' }}>{s.email || s.id}</div>
+                                                </div>
+                                            </div>
+                                        ))
+                                    }
+                                </div>
+                            )}
                         </div>
                     </div>
-                );
-            })()}
-        </div>
+                </div>
+            )}
+        </>
     );
 }
