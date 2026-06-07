@@ -30,18 +30,19 @@ function MaterialList({ selectedClass, onBack }) {
 
     // ── Fetch materials ───────────────────────────────────────────
     const fetchMaterials = useCallback(async () => {
-        if (!selectedClass?.id) return;
+        const classId = selectedClass?.id || selectedClass?.Id;
+        if (!classId) return;
         setLoading(true);
         setError(null);
         try {
-            const data = await getMaterialsByClass(selectedClass.id);
+            const data = await getMaterialsByClass(classId);
             setMaterials(Array.isArray(data) ? data : []);
         } catch {
             setError('Không thể tải danh sách tài liệu. Vui lòng thử lại.');
         } finally {
             setLoading(false);
         }
-    }, [selectedClass?.id]);
+    }, [selectedClass]);
 
     useEffect(() => { fetchMaterials(); }, [fetchMaterials]);
 
@@ -126,10 +127,10 @@ function MaterialList({ selectedClass, onBack }) {
                         <div>
                             <h2 className={styles.headerTitle}>
                                 Tài liệu của lớp:{' '}
-                                <span className={styles.className}>{selectedClass.id}</span>
+                                <span className={styles.className}>{selectedClass?.id || selectedClass?.Id}</span>
                             </h2>
                             <p className={styles.headerSub}>
-                                {selectedClass.courseName || 'Kho tài liệu lý thuyết đảo ngược'}
+                                {selectedClass?.courseName || selectedClass?.CourseName || 'Kho tài liệu lý thuyết đảo ngược'}
                             </p>
                         </div>
                     </div>

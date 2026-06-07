@@ -5,6 +5,9 @@ import {
     Upload, MessageSquare, Star, BookMarked
 } from 'lucide-react';
 import { logout, getUser } from '../../services/authService';
+import StudentMaterials from './StudentMaterials';
+import AssignmentDeadline from './AssignmentDeadline';
+import StudentGrades from './StudentGrades';
 import styles from './DashbroadStudent.module.css';
 
 /* ── Sidebar tabs cho student ── */
@@ -21,6 +24,9 @@ function DashbroadStudent() {
     const currentUser = getUser();
     const navigate = useNavigate();
     const location = useLocation();
+
+    // State quản lý việc lựa chọn lớp học và học liệu
+    const [selectedClassForMaterials, setSelectedClassForMaterials] = useState(null);
 
     const handleLogout = () => {
         logout();
@@ -83,14 +89,38 @@ function DashbroadStudent() {
 
                 {/* Content Area */}
                 <div className={styles.content}>
-                    <div className="bg-white rounded-3xl p-6 border border-slate-100 shadow-sm">
-                        <h2 className="text-xl font-bold text-slate-800">
-                            Chào mừng, {currentUser?.name || 'Học viên'}! 👋
-                        </h2>
-                        <p className="text-slate-500 text-sm mt-1">
-                            Đây là trang học viên. Chức năng đầy đủ sẽ được thêm vào ở bước sau.
-                        </p>
-                    </div>
+                    {location.pathname === '/dashboard/student/materials' ? (
+                        <StudentMaterials
+                            selectedClass={selectedClassForMaterials}
+                            onSelectClass={setSelectedClassForMaterials}
+                        />
+                    ) : location.pathname === '/dashboard/student/submissions' ? (
+                        <div className="bg-white rounded-3xl p-6 border border-slate-100 shadow-sm">
+                            <AssignmentDeadline />
+                        </div>
+                    ) : location.pathname === '/dashboard/student/grades' ? (
+                        <div className="bg-white rounded-3xl p-6 border border-slate-100 shadow-sm">
+                            <StudentGrades />
+                        </div>
+                    ) : location.pathname === '/dashboard/student' ? (
+                        <div className="bg-white rounded-3xl p-6 border border-slate-100 shadow-sm text-left">
+                            <h2 className="text-xl font-bold text-slate-800">
+                                Lớp học của tôi 🏫
+                            </h2>
+                            <p className="text-slate-500 text-sm mt-1">
+                                Coming Soon... Tính năng này đang được phát triển bởi thành viên khác trong nhóm. Vui lòng bấm vào tab <strong>Học liệu</strong> để tra cứu tài liệu học tập.
+                            </p>
+                        </div>
+                    ) : (
+                        <div className="bg-white rounded-3xl p-6 border border-slate-100 shadow-sm text-left">
+                            <h2 className="text-xl font-bold text-slate-800">
+                                {SIDEBAR_TABS.find(t => t.path === location.pathname)?.label || 'Chức năng'} 🛠️
+                            </h2>
+                            <p className="text-slate-500 text-sm mt-1">
+                                comming soon... Tính năng này đang được phát triển. Vui lòng bấm vào tab <strong>Học liệu</strong> để trải nghiệm hệ thống học liệu lý thuyết đảo ngược.
+                            </p>
+                        </div>
+                    )}
                 </div>
             </div>
         </div>
