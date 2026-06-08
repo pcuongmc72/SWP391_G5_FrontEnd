@@ -5,7 +5,7 @@ import {
 } from 'lucide-react';
 import { 
   fetchPublicBlogs, fetchClassBlogs, fetchPendingBlogs, fetchAllBlogs, fetchPrivateBlogs,
-  fetchUserBlogs, fetchMyClassesBlogs,
+  fetchUserBlogs, fetchMyClassesBlogs, fetchLecturerClassesBlogs,
   createBlog, updateBlog, deleteBlog, approveBlog 
 } from '../../services/blogService';
 import { fetchCourses } from '../../services/courseService';
@@ -58,8 +58,12 @@ function SharedBlogForum({ defaultTab = 'PUBLIC' }) {
           blogsData = await fetchPrivateBlogs(courseFilter);
         } else if (currentTab === 'MY_POSTS') {
           blogsData = await fetchUserBlogs(userId);
-        } else if (currentTab === 'CLASS' && isStudent) {
-          blogsData = await fetchMyClassesBlogs(userId, courseFilter);
+        } else if (currentTab === 'CLASS' && (isStudent || isLecturer)) {
+          if (isStudent) {
+            blogsData = await fetchMyClassesBlogs(userId, courseFilter);
+          } else if (isLecturer) {
+            blogsData = await fetchLecturerClassesBlogs(userId, courseFilter);
+          }
         } else {
           blogsData = await fetchPublicBlogs(courseFilter);
         }
@@ -241,6 +245,7 @@ function SharedBlogForum({ defaultTab = 'PUBLIC' }) {
           .filter(tab => {
             if (tab.adminOnly && !isAdmin) return false;
             if (tab.studentOnly && !isStudent) return false;
+            if (tab.key === 'CLASS' && (isStudent || isLecturer)) return true;
             if (tab.authenticatedOnly && !currentUser) return false;
             if (tab.roles && !tab.roles.includes(userRole?.toLowerCase())) return false;
             return true;

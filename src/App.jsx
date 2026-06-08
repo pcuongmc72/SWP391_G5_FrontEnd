@@ -8,6 +8,7 @@ import MainLayout from './layouts/MainLayout';
 import HomePage from './pages/Home/HomePage';
 import DashboardAdminPage from './pages/DashboardAdmin/DashboardAdminPage';
 import DashbroadStudentPage from './pages/DashbroadStudent/DashbroadStudent';
+import LecturerDashboard from './pages/Lecturer/LecturerDashboard';
 
 // Components
 import ProtectedRoute from './components/ProtectedRoute/ProtectedRoute';
@@ -22,6 +23,7 @@ function RoleRedirect() {
   
   if (role === 'admin') return <Navigate to="/dashboard/admin" replace />;
   if (role === 'student') return <Navigate to="/dashboard/student" replace />;
+  if (role === 'lecturer') return <Navigate to="/dashboard/lecturer" replace />;
   
   return <Navigate to="/" replace />;
 }
@@ -113,6 +115,15 @@ function App() {
           <Route path="/dashboard/student/submissions" element={<DashbroadStudentPage />} />
           <Route path="/dashboard/student/grades" element={<DashbroadStudentPage />} />
           <Route path="/dashboard/student/forum" element={<DashbroadStudentPage />} />
+        </Route>
+
+        {/* ── Trang Lecturer — chỉ role 'lecturer' ── */}
+        <Route element={<ProtectedRoute allowedRoles={['lecturer']} />}>
+          <Route path="/dashboard/lecturer" element={<LecturerDashboard />} />
+          <Route path="/dashboard/lecturer/schedule" element={<LecturerDashboard />} />
+          <Route path="/dashboard/lecturer/materials" element={<LecturerDashboard />} />
+          <Route path="/dashboard/lecturer/assignments" element={<LecturerDashboard />} />
+          <Route path="/dashboard/lecturer/forum" element={<LecturerDashboard />} />
         </Route>
 
         {/* ── Redirect /dashboard → trang đúng role ── */}

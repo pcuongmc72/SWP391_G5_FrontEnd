@@ -79,6 +79,12 @@ export async function fetchMyClassesBlogs(studentId, courseId = null) {
   return res.data;
 }
 
+export async function fetchLecturerClassesBlogs(lecturerId, courseId = null) {
+  const params = courseId ? { courseId } : {};
+  const res = await api.get(`/api/Blogs/lecturer-classes/${lecturerId}`, { params });
+  return res.data;
+}
+
 export async function deleteComment(id) {
   const res = await api.delete(`/api/Blogs/comments/${id}`);
   return res.data;
