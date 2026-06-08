@@ -1,11 +1,15 @@
-import { useState, useEffect } from 'react';
+import React, { useMemo } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import {
-    BookOpen, LogOut, LayoutGrid, GraduationCap,
-    Upload, MessageSquare, Star, BookMarked
+    BookOpen, LogOut, BookMarked,
+    Upload, MessageSquare, Star
 } from 'lucide-react';
 import { logout, getUser } from '../../services/authService';
 import styles from './DashbroadStudent.module.css';
+
+// Components
+import StudentDashboard from './StudentDashboard';
+import SharedBlogForum from '../../components/SharedBlogForum/SharedBlogForum';
 
 /* ── Sidebar tabs cho student ── */
 const SIDEBAR_TABS = [
@@ -17,24 +21,26 @@ const SIDEBAR_TABS = [
     { key: 'forum', label: 'Blog thảo luận chung', icon: MessageSquare, path: '/dashboard/student/forum' },
 ];
 
-import SharedBlogForum from '../../components/SharedBlogForum/SharedBlogForum';
-import StudentDashboard from './StudentDashboard';
-
 function DashbroadStudent() {
-    const currentUser = getUser();
+    const currentUser = useMemo(() => getUser(), []);
     const navigate = useNavigate();
     const location = useLocation();
-
-    const isForumActive = location.pathname === '/dashboard/student/forum';
 
     const handleLogout = () => {
         logout();
         window.location.replace('/');
     };
 
+    const renderContent = () => {
+        if (location.pathname === '/dashboard/student/forum') {
+            return <SharedBlogForum />;
+        }
+        // Default to dashboard
+        return <StudentDashboard />;
+    };
+
     return (
         <div className={styles.page}>
-
             {/* ── Sidebar ── */}
             <aside className={styles.sidebar}>
                 <div className={styles.sidebarLogo}>
@@ -76,10 +82,10 @@ function DashbroadStudent() {
                     <div className={styles.topbarRight}>
                         <div className={styles.userBadge}>
                             <div className={styles.avatar}>
-                                {currentUser?.name?.[0]?.toUpperCase() || currentUser?.email?.[0]?.toUpperCase() || 'S'}
+                                {currentUser?.fullName?.[0]?.toUpperCase() || 'S'}
                             </div>
                             <div className={styles.userInfo}>
-                                <span className={styles.userName}>{currentUser?.name || 'Học viên'}</span>
+                                <span className={styles.userName}>{currentUser?.fullName || 'Học viên'}</span>
                                 <span className={styles.userRole}>Student</span>
                             </div>
                         </div>
@@ -88,20 +94,7 @@ function DashbroadStudent() {
 
                 {/* Content Area */}
                 <div className={styles.content}>
-                    {isForumActive ? (
-                        <SharedBlogForum />
-                    ) : location.pathname === '/dashboard/student' ? (
-                        <StudentDashboard />
-                    ) : (
-                        <div className="bg-white rounded-3xl p-6 border border-slate-100 shadow-sm">
-                            <h2 className="text-xl font-bold text-slate-800">
-                                Chức năng chưa khả dụng 👋
-                            </h2>
-                            <p className="text-slate-500 text-sm mt-1">
-                                Chức năng này sẽ được cập nhật trong thời gian tới.
-                            </p>
-                        </div>
-                    )}
+                    {renderContent()}
                 </div>
             </div>
         </div>

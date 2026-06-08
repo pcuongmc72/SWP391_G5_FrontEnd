@@ -19,11 +19,11 @@ import SharedBlogForum from './components/SharedBlogForum/SharedBlogForum';
 function RoleRedirect() {
   if (!isAuthenticated()) return <Navigate to="/" replace />;
   const role = getRole();
+  
   if (role === 'admin') return <Navigate to="/dashboard/admin" replace />;
   if (role === 'student') return <Navigate to="/dashboard/student" replace />;
-
-  // Thêm role khác ở đây khi có thêm trang
-  return <HomePage />;
+  
+  return <Navigate to="/" replace />;
 }
 
 /**
@@ -108,6 +108,7 @@ function App() {
         {/* ── Trang Student — chỉ role 'student' ── */}
         <Route element={<ProtectedRoute allowedRoles={['student']} />}>
           <Route path="/dashboard/student" element={<DashbroadStudentPage />} />
+          <Route path="/dashboard/student/roadmap" element={<DashbroadStudentPage />} />
           <Route path="/dashboard/student/materials" element={<DashbroadStudentPage />} />
           <Route path="/dashboard/student/submissions" element={<DashbroadStudentPage />} />
           <Route path="/dashboard/student/grades" element={<DashbroadStudentPage />} />
@@ -122,6 +123,7 @@ function App() {
 
         {/* ── Catch-all ── */}
         <Route path="*" element={<Navigate to="/" replace />} />
+
       </Routes>
     </BrowserRouter>
   );
