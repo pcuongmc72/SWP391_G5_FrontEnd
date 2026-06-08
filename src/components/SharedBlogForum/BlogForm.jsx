@@ -34,7 +34,7 @@ function BlogForm({ isOpen, onClose, onSave, initialData, courses, isSaving }) {
 
   useEffect(() => {
     if (isOpen && currentUser) {
-      getUserClasses(currentUser.id)
+      getUserClasses(currentUser.id, null, currentUser.role)
         .then(res => {
           const list = res.success ? res.data : res;
           setUserClasses(Array.isArray(list) ? list : []);
@@ -146,7 +146,9 @@ function BlogForm({ isOpen, onClose, onSave, initialData, courses, isSaving }) {
                 <label style={labelStyle}><School size={16} /> Chọn lớp học</label>
                 <select required className="blog-input" style={inputStyle} value={formData.classId} onChange={e => setFormData({ ...formData, classId: e.target.value })}>
                   <option value="">Chọn lớp học...</option>
-                  {filteredClasses.map(cls => <option key={cls.id} value={cls.id}>{cls.id}</option>)}
+                  {filteredClasses.map(cls => (
+                    <option key={cls.id} value={cls.id}>{cls.id}</option>
+                  ))}
                 </select>
               </div>
             )}

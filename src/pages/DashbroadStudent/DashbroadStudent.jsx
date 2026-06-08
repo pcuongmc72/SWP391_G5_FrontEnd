@@ -18,6 +18,7 @@ const SIDEBAR_TABS = [
 ];
 
 import SharedBlogForum from '../../components/SharedBlogForum/SharedBlogForum';
+import StudentDashboard from './StudentDashboard';
 
 function DashbroadStudent() {
     const currentUser = getUser();
@@ -89,13 +90,15 @@ function DashbroadStudent() {
                 <div className={styles.content}>
                     {isForumActive ? (
                         <SharedBlogForum />
+                    ) : location.pathname === '/dashboard/student' ? (
+                        <StudentDashboard />
                     ) : (
                         <div className="bg-white rounded-3xl p-6 border border-slate-100 shadow-sm">
                             <h2 className="text-xl font-bold text-slate-800">
-                                Chào mừng, {currentUser?.name || 'Học viên'}! 👋
+                                Chức năng chưa khả dụng 👋
                             </h2>
                             <p className="text-slate-500 text-sm mt-1">
-                                Đây là trang học viên. Chức năng đầy đủ sẽ được thêm vào ở bước sau.
+                                Chức năng này sẽ được cập nhật trong thời gian tới.
                             </p>
                         </div>
                     )}
