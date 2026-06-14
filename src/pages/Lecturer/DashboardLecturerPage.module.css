@@ -53,7 +53,7 @@
 }
 
 .chevron {
-  color: #94a3b8;
+  color: #475569;
   transition: transform var(--transition-fast);
   flex-shrink: 0;
 }
@@ -278,7 +278,7 @@
 
 .infoLabel {
   font-size: 11px;
-  color: #94a3b8;
+  color: #475569;
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.04em;
@@ -449,7 +449,7 @@
 
 .sectionLabel {
   font-size: 10px;
-  color: #64748b;
+  color: #a7f3d0;
   font-weight: 800;
   text-transform: uppercase;
   letter-spacing: 0.06em;
@@ -645,7 +645,7 @@
 
 .classItemTerm {
   font-size: 10px;
-  color: #64748b;
+  color: #334155;
   margin-top: 1px;
 }
 
@@ -666,7 +666,7 @@
   left: 14px;
   top: 50%;
   transform: translateY(-50%);
-  color: #94a3b8;
+  color: #475569;
 }
 
 .searchInput {

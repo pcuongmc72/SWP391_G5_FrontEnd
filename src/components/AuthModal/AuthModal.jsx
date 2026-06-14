@@ -13,8 +13,8 @@ import styles from './AuthModal.module.css';
 function AuthModal({ onClose }) {
   const navigate = useNavigate();
 
-  const [form, setForm]       = useState({ email: '', password: '' });
-  const [errors, setErrors]   = useState({});
+  const [form, setForm] = useState({ email: '', password: '' });
+  const [errors, setErrors] = useState({});
   const [apiError, setApiError] = useState('');
   const [loading, setLoading] = useState(false);
   const [showPwd, setShowPwd] = useState(false);
@@ -54,8 +54,8 @@ function AuthModal({ onClose }) {
   const handleChange = (e) => {
     const { name, value } = e.target;
     setForm((prev) => ({ ...prev, [name]: value }));
-    if (errors[name])  setErrors((prev)  => ({ ...prev, [name]: '' }));
-    if (apiError)      setApiError('');
+    if (errors[name]) setErrors((prev) => ({ ...prev, [name]: '' }));
+    if (apiError) setApiError('');
   };
 
   const handleSubmit = async (e) => {
@@ -69,64 +69,51 @@ function AuthModal({ onClose }) {
 
     try {
       const response = await login(form.email, form.password);
-      
+
       // Log response ra console để debug
       console.log('API Response:', response);
 
-<<<<<<< HEAD
-      // Cố gắng lấy token và user bằng helper của HEAD
-      let parsed = parseLoginResponse(response);
-      let token = parsed.token;
-      let user = parsed.user;
+      // Parse token và user từ response
+      const { token: parsedToken, user: parsedUser } = parseLoginResponse(response);
 
-      // Nếu không có, dự phòng bằng cách parse thủ công từ nhánh kia
-      if (!token) {
-        token = typeof response === 'string'
-          ? response
-          : (
-              response?.token ||
-              response?.accessToken ||
-              response?.access_token ||
-              response?.jwt ||
-              response?.data?.token ||
-              response?.data?.accessToken ||
-              response?.data?.access_token ||
-              response?.data?.jwt
-            );
-      }
-      if (!user) {
-        user = response?.user || response?.userInfo || response?.data?.user || response?.data?.userInfo || response?.data || {};
-=======
-        // Redirect theo role
-        const role = getRole();
-        onClose();
-        if (role === 'admin') {
-          navigate('/dashboard/admin', { replace: true });
-        } else if (role === 'student') {
-          navigate('/dashboard/student', { replace: true });
-        } else if (role === 'lecturer' || role === 'teacher') {
-          navigate('/dashboard/lecturer', { replace: true });
-        } else {
-          navigate('/', { replace: true });
-        }
-      } else {
-        // Nếu không tìm thấy token trong response
-        setApiError('Đăng nhập thành công nhưng không tìm thấy token. API trả về: ' + JSON.stringify(data));
->>>>>>> origin/cuongnphe194338
-      }
+      // Fallback thủ công nếu parseLoginResponse không tìm được
+      const token =
+        parsedToken ||
+        (typeof response === 'string' ? response : null) ||
+        response?.token ||
+        response?.accessToken ||
+        response?.access_token ||
+        response?.jwt ||
+        response?.data?.token ||
+        response?.data?.accessToken ||
+        response?.data?.access_token ||
+        response?.data?.jwt;
+
+      const user =
+        parsedUser ||
+        response?.user ||
+        response?.userInfo ||
+        response?.data?.user ||
+        response?.data?.userInfo;
 
       if (token && user) {
+        // Lưu token và user vào localStorage TRƯỚC khi navigate
         persistAuth({ token, user });
-        
-        // Hỗ trợ cả 2 kiểu lấy role
-        const role = user.role || getRole() || '';
+
+        // Lấy role từ user object (ưu tiên) hoặc từ localStorage
+        const role = user.role || user.Role || getRole() || '';
+
         onClose();
-        
-        // Điều hướng thông minh theo role
+
+        // Điều hướng theo role
         const path = getDashboardPathForRole(role);
         navigate(path, { replace: true });
       } else {
-        setApiError('Đăng nhập thành công nhưng không nhận được token hoặc thông tin người dùng.');
+        // Không tìm thấy token hoặc user trong response
+        setApiError(
+          'Đăng nhập thành công nhưng không nhận được token hoặc thông tin người dùng. ' +
+          'API trả về: ' + JSON.stringify(response)
+        );
       }
     } catch (err) {
       setApiError(err.message || 'Đăng nhập thất bại. Vui lòng thử lại.');

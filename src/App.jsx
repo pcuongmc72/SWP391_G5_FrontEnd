@@ -5,11 +5,12 @@ import { getHomePathForCurrentUser } from './utils/authStorage';
 import { ROLES } from './constants/roles';
 
 import MainLayout from './layouts/MainLayout';
-import LecturerLayout from './layouts/LecturerLayout/LecturerLayout';
+
 
 import HomePage from './pages/Home/HomePage';
 import DashboardPage from './pages/Dashboard/DashboardPage';
-import LecturerDashboardPage from './pages/Lecturer/LecturerDashboardPage';
+
+import DashboardLecturerPage from './pages/Lecturer/DashboardLecturerPage';
 import LecturerSchedulePage from './pages/Lecturer/LecturerSchedulePage';
 import DashboardAdminPage from './pages/DashboardAdmin/DashboardAdminPage';
 import DashbroadStudentPage from './pages/DashbroadStudent/DashbroadStudent';
@@ -117,19 +118,27 @@ function App() {
           <Route path="/dashboard/admin/classes-management" element={<DashboardAdminPage />} />
         </Route>
 
-<<<<<<< HEAD
+
   {/* ── Trang Lecturer — chỉ role 'lecturer' ── */ }
   <Route element={<RoleProtectedRoute allowedRoles={[ROLES.LECTURER]} />}>
-    <Route element={<LecturerLayout />}>
-      <Route path="/lecturer/dashboard" element={<LecturerDashboardPage />} />
-      <Route path="/lecturer/classes" element={<LecturerSchedulePage />} />
-      <Route path="/lecturer/classes/:classId" element={<LecturerSchedulePage />} />
-    </Route>
-=======
+      <Route path="/lecturer/dashboard" element={<Navigate to="/dashboard/lecturer" replace />} />
+      <Route path="/dashboard/lecturer" element={<DashboardLecturerPage />} />
+      <Route path="/dashboard/lecturer/materials" element={<DashboardLecturerPage />} />
+      <Route path="/dashboard/lecturer/classes-list" element={<DashboardLecturerPage />} />
+      <Route path="/dashboard/lecturer/assignments" element={<DashboardLecturerPage />} />
+      <Route path="/dashboard/lecturer/grading" element={<DashboardLecturerPage />} />
+      <Route path="/dashboard/lecturer/feedback" element={<DashboardLecturerPage />} />
+      <Route path="/dashboard/lecturer/progress" element={<DashboardLecturerPage />} />
+      <Route path="/dashboard/lecturer/promotion" element={<DashboardLecturerPage />} />
+      <Route path="/dashboard/lecturer/schedule" element={<DashboardLecturerPage />} />
+      <Route path="/dashboard/lecturer/schedule/:classId" element={<DashboardLecturerPage />} />
+      <Route path="/lecturer/classes" element={<Navigate to="/dashboard/lecturer/schedule" replace />} />
+      <Route path="/lecturer/classes/:classId" element={<Navigate to="/dashboard/lecturer/schedule" replace />} />
+  </Route>
         {/* ── Trang Student — chỉ role 'student' ── */}
     <Route element={<ProtectedRoute allowedRoles={['student']} />}>
       <Route path="/dashboard/student" element={<DashbroadStudentPage />} />
->>>>>>> origin/cuongnphe194338
+
     </Route>
 
     {/* ── Redirect /dashboard → trang đúng role ── */}

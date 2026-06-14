@@ -15,7 +15,7 @@ const SIDEBAR_TABS = [
     { key: 'materials', label: 'Học liệu', icon: BookMarked, path: '/dashboard/student/materials' },
     { key: 'submissions', label: 'Bài tập và deadline', icon: Upload, path: '/dashboard/student/submissions' },
     { key: 'grades', label: 'Điểm và nhận xét', icon: Star, path: '/dashboard/student/grades' },
-    { key: 'forum', label: 'Blog thảo luận chung', icon: MessageSquare, path: '/dashboard/student/forum' },
+
 ];
 
 function DashbroadStudent() {

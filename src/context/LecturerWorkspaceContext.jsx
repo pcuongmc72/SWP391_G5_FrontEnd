@@ -38,6 +38,8 @@ const mapMaterial = (m) => ({
   uploadedAt: m.uploadedAt,
   completedByUsers: m.completedByUsers || [],
   isDisabled: m.isDisabled ?? false,
+  chapter: m.chapter,
+  lesson: m.lesson,
 });
 
 const mapAssignment = (a) => ({
@@ -143,6 +145,14 @@ export function LecturerWorkspaceProvider({ children }) {
         setSelectedClassId((prev) => prev || mapped[0].id);
       }
     } catch (err) {
+      const msg = err.message || '';
+      // Nếu lỗi 401/403 (token hết hạn hoặc sai role) → tự động logout
+      if (msg.includes('401') || msg.includes('403') || msg.toLowerCase().includes('unauthorized') || msg.toLowerCase().includes('forbidden') || msg.includes('đã xảy ra lỗi')) {
+        localStorage.removeItem('access_token');
+        localStorage.removeItem('user');
+        window.location.href = '/';
+        return;
+      }
       setClassesError(err.message || 'Không tải được danh sách lớp.');
     } finally {
       setClassesLoading(false);
@@ -209,6 +219,8 @@ export function LecturerWorkspaceProvider({ children }) {
           type: body.type,
           fileUrl: body.url || '#',
           fileSize: body.fileSize,
+          chapter: body.chapter,
+          lesson: body.lesson,
         });
         await loadWorkspace(selectedClassId);
       },
@@ -219,6 +231,8 @@ export function LecturerWorkspaceProvider({ children }) {
           type: body.type,
           fileUrl: body.url || '#',
           fileSize: body.fileSize,
+          chapter: body.chapter,
+          lesson: body.lesson,
         });
         await loadWorkspace(selectedClassId);
       },

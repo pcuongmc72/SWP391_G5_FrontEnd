@@ -19,7 +19,7 @@ function MainLayout({ onLogin }) {
     const routes = {
       home:    '/',
       courses: '/courses',
-      blog:    '/blog',
+
       about:   '/about',
       contact: '/contact',
     };

@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { Outlet, useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import {
   BookOpen, Upload, CheckSquare, MessageSquare, TrendingUp, Award,
   LogOut, Search, Bell, Calendar, ChevronDown,
@@ -8,17 +8,27 @@ import {
 import { logout, updateProfile } from '../../services/authService';
 import { getStoredUser, getUserDisplayName, persistAuth } from '../../utils/authStorage';
 import { LecturerWorkspaceProvider, useLecturerWorkspace } from '../../context/LecturerWorkspaceContext';
-import styles from './LecturerLayout.module.css';
+import styles from './DashboardLecturerPage.module.css';
+
+// Import subcomponents (to be extracted)
+import MaterialsDashboard from './MaterialsDashboard';
+import AssignmentsDashboard from './AssignmentsDashboard';
+import GradingDashboard from './GradingDashboard';
+import FeedbackDashboard from './FeedbackDashboard';
+import ProgressDashboard from './ProgressDashboard';
+import PromotionDashboard from './PromotionDashboard';
+import ClassListDashboard from './ClassListDashboard';
+import LecturerSchedulePage from './LecturerSchedulePage';
 
 const SIDEBAR_ITEMS = [
-  { id: 'materials',   label: 'Tài liệu học tập',    icon: BookOpen },
-  { id: 'classList',   label: 'Danh sách lớp học',   icon: Users },
-  { id: 'assignments', label: 'Bài tập & Đồ án',     icon: Upload },
-  { id: 'grading',    label: 'Chấm điểm nộp bài',   icon: CheckSquare },
-  { id: 'feedback',   label: 'Phản hồi hỗ trợ',     icon: MessageSquare },
-  { id: 'progress',   label: 'Tiến độ học viên',     icon: TrendingUp },
-  { id: 'promotion',  label: 'Thăng cấp học thuật',  icon: Award },
-  { id: 'forum',      label: 'Blog Thảo luận Chung', icon: MessageSquare },
+  { id: 'materials',   label: 'Tài liệu học tập',    icon: BookOpen, path: '/dashboard/lecturer/materials' },
+  { id: 'classList',   label: 'Danh sách lớp học',   icon: Users, path: '/dashboard/lecturer/classes-list' },
+  { id: 'assignments', label: 'Bài tập & Đồ án',     icon: Upload, path: '/dashboard/lecturer/assignments' },
+  { id: 'grading',    label: 'Chấm điểm nộp bài',   icon: CheckSquare, path: '/dashboard/lecturer/grading' },
+  { id: 'feedback',   label: 'Phản hồi hỗ trợ',     icon: MessageSquare, path: '/dashboard/lecturer/feedback' },
+  { id: 'progress',   label: 'Tiến độ học viên',     icon: TrendingUp, path: '/dashboard/lecturer/progress' },
+  { id: 'promotion',  label: 'Thăng cấp học thuật',  icon: Award, path: '/dashboard/lecturer/promotion' },
+
 ];
 
 /* ─── Profile Modal ─────────────────────────────────── */
@@ -267,6 +277,7 @@ function ChangePasswordSection() {
 /* ─── Main Layout Inner ─────────────────────────────── */
 function LecturerLayoutInner() {
   const navigate = useNavigate();
+  const location = useLocation();
   const user     = getStoredUser();
   const {
     activeSubTab, setActiveSubTab,
@@ -326,21 +337,24 @@ function LecturerLayoutInner() {
             const isScheduleActive = window.location.pathname.startsWith('/lecturer/classes');
             return (
               <>
-                {SIDEBAR_ITEMS.map(({ id, label, icon: Icon }) => (
-                  <button
-                    key={id}
-                    type="button"
-                    className={`${styles.navBtn} ${(activeSubTab === id && !isScheduleActive) ? styles.navBtnActive : ''}`}
-                    onClick={() => { setActiveSubTab(id); navigate('/lecturer/dashboard'); }}
-                  >
-                    <Icon size={18} />
-                    <span>{label}</span>
-                  </button>
-                ))}
+                {SIDEBAR_ITEMS.map(({ id, label, icon: Icon, path }) => {
+                  const isActive = location.pathname === path || (id === 'materials' && location.pathname === '/dashboard/lecturer');
+                  return (
+                    <button
+                      key={id}
+                      type="button"
+                      className={`${styles.navBtn} ${isActive ? styles.navBtnActive : ''}`}
+                      onClick={() => { setActiveSubTab(id); navigate(path); }}
+                    >
+                      <Icon size={18} />
+                      <span>{label}</span>
+                    </button>
+                  );
+                })}
                 <button
                   type="button"
                   className={`${styles.navBtn} ${isScheduleActive ? styles.navBtnActive : ''}`}
-                  onClick={() => navigate('/lecturer/classes')}
+                  onClick={() => navigate('/dashboard/lecturer/schedule')}
                 >
                   <Calendar size={18} />
                   <span>Lịch học</span>
@@ -409,26 +423,8 @@ function LecturerLayoutInner() {
             </div>
           </div>
 
-          {/* Search */}
-          <div className={styles.searchWrap}>
-            <Search size={18} className={styles.searchIcon} />
-            <input
-              type="search"
-              className={styles.searchInput}
-              placeholder="Tìm kiếm tài liệu, khóa học, điểm số..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-            />
-          </div>
 
           <div className={styles.topbarRight}>
-            {/* Bell */}
-            <button type="button" className={styles.notifBtn} aria-label="Thông báo">
-              <Bell size={18} />
-              {openFeedbackCount > 0 && (
-                <span className={styles.notifBadge}>{openFeedbackCount}</span>
-              )}
-            </button>
 
             {/* Profile dropdown */}
             <div className={styles.profileWrap} ref={dropdownRef}>
@@ -477,7 +473,23 @@ function LecturerLayoutInner() {
         </header>
 
         <div className={styles.content}>
-          <Outlet />
+          {location.pathname === '/dashboard/lecturer/classes-list' ? (
+            <ClassListDashboard />
+          ) : location.pathname === '/dashboard/lecturer/assignments' ? (
+            <AssignmentsDashboard />
+          ) : location.pathname === '/dashboard/lecturer/grading' ? (
+            <GradingDashboard />
+          ) : location.pathname === '/dashboard/lecturer/feedback' ? (
+            <FeedbackDashboard />
+          ) : location.pathname === '/dashboard/lecturer/progress' ? (
+            <ProgressDashboard />
+          ) : location.pathname === '/dashboard/lecturer/promotion' ? (
+            <PromotionDashboard />
+          ) : location.pathname === '/dashboard/lecturer/schedule' || location.pathname.startsWith('/dashboard/lecturer/schedule/') ? (
+            <LecturerSchedulePage />
+          ) : (
+            <MaterialsDashboard />
+          )}
         </div>
       </div>
 
@@ -489,12 +501,10 @@ function LecturerLayoutInner() {
   );
 }
 
-function LecturerLayout() {
+export default function DashboardLecturerPage() {
   return (
     <LecturerWorkspaceProvider>
       <LecturerLayoutInner />
     </LecturerWorkspaceProvider>
   );
 }
-
-export default LecturerLayout;
