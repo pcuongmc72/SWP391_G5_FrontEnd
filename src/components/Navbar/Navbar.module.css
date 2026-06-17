@@ -1,0 +1,183 @@
+/* ───────────────────────────────────────────
+   Navbar — CSS Module
+   Sticky, glassmorphism backdrop, light theme
+   ─────────────────────────────────────────── */
+
+.navbar {
+  position: sticky;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 40;
+  background: rgba(255, 255, 255, 0.80);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border-bottom: 1px solid #f1f5f9;
+  transition: background 250ms ease, box-shadow 250ms ease;
+}
+
+.inner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: 80px;
+  max-width: 1280px;
+  margin-inline: auto;
+  padding-inline: 2rem;
+}
+
+/* ── Logo ── */
+.logoGroup {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  cursor: pointer;
+  outline: none;
+  transition: opacity 150ms ease;
+}
+
+.logoGroup:hover .logoIcon {
+  transform: scale(1.05);
+}
+
+.logoIcon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  background: #0D3E26;
+  border-radius: 0.75rem;
+  box-shadow: 0 4px 14px rgba(13, 62, 38, 0.2);
+  transition: transform 200ms ease;
+  flex-shrink: 0;
+}
+
+.logoSvg {
+  width: 22px;
+  height: 22px;
+  color: #6ee7b7; /* emerald-300 */
+}
+
+.logoTitle {
+  display: block;
+  font-size: 0.9rem;
+  font-weight: 800;
+  color: #0f172a;
+  letter-spacing: -0.02em;
+  line-height: 1;
+}
+
+.logoSub {
+  display: block;
+  font-size: 0.625rem;
+  font-weight: 800;
+  color: #166534; /* emerald-800 */
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  margin-top: 0.25rem;
+}
+
+/* ── Nav Menu ── */
+.navMenu {
+  display: flex;
+  align-items: center;
+  gap: 2rem;
+}
+
+.navBtn {
+  position: relative;
+  padding: 0.5rem 0;
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: #475569;
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-family: inherit;
+  transition: color 150ms ease;
+  white-space: nowrap;
+}
+
+.navBtn:hover {
+  color: #0D3E26;
+}
+
+.navBtnActive {
+  color: #0D3E26;
+  font-weight: 700;
+}
+
+.navUnderline {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: #0D3E26;
+  border-radius: 9999px;
+}
+
+/* ── Auth Actions ── */
+.actions {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.btnOutline {
+  padding: 0.625rem 1.25rem;
+  font-size: 0.875rem;
+  font-weight: 700;
+  font-family: inherit;
+  color: #0D3E26;
+  background: transparent;
+  border: 2px solid #0D3E26;
+  border-radius: 0.75rem;
+  cursor: pointer;
+  transition: background 150ms ease;
+}
+
+.btnOutline:hover {
+  background: #f8fafc;
+}
+
+.btnPrimary {
+  padding: 0.625rem 1.25rem;
+  font-size: 0.875rem;
+  font-weight: 700;
+  font-family: inherit;
+  color: #fff;
+  background: #0D3E26;
+  border: none;
+  border-radius: 0.75rem;
+  cursor: pointer;
+  box-shadow: 0 8px 24px rgba(13, 62, 38, 0.15);
+  transition: background 150ms ease, transform 150ms ease;
+}
+
+.btnPrimary:hover {
+  background: #092B1B;
+  transform: translateY(-1px);
+}
+
+.btnPrimary:active {
+  transform: translateY(0);
+}
+
+/* ── Responsive: ẩn nav menu trên mobile ── */
+@media (max-width: 768px) {
+  .navMenu {
+    display: none;
+  }
+
+  .inner {
+    padding-inline: 1rem;
+  }
+
+  .btnOutline,
+  .btnPrimary {
+    padding: 0.5rem 0.875rem;
+    font-size: 0.8125rem;
+  }
+}
