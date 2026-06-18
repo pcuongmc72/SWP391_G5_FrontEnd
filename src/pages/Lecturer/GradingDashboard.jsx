@@ -85,9 +85,12 @@ export default function GradingDashboard() {
                 <th>Bài tập</th>
                 <th>Tệp đính kèm</th>
                 <th>Thời gian nộp</th>
+                <th>Thời gian chấm điểm</th>
                 <th>Trạng thái</th>
                 <th>Điểm số</th>
+                
                 <th>Thao tác</th>
+                
               </tr>
             </thead>
             <tbody>
@@ -124,6 +127,9 @@ export default function GradingDashboard() {
                       {sub.submittedAt ? new Date(sub.submittedAt).toLocaleString('vi-VN') : 'N/A'}
                     </td>
                     <td>
+                      {sub.gradedAt ? new Date(sub.gradedAt).toLocaleString('vi-VN') : '—'}
+                    </td>
+                    <td>
                       <span
                         className={`${styles.statusBadge} ${
                           sub.status === 'GRADED'
@@ -136,6 +142,7 @@ export default function GradingDashboard() {
                         {sub.status === 'GRADED' ? 'Đã chấm' : sub.status === 'SUBMITTED' ? 'Chưa chấm' : 'Chưa nộp'}
                       </span>
                     </td>
+                    
                     <td style={{ fontWeight: 700, fontSize: 14 }}>
                       {sub.status === 'GRADED' ? `${sub.grade}/${asg?.maxPoints || 10}` : '—'}
                     </td>

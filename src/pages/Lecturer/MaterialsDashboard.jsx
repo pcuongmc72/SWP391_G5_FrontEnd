@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import {
   Upload, Plus, CheckSquare, Film, FileText, FileSpreadsheet, Paperclip, Pencil,
-  Search, ChevronDown, BookOpen, X, MessageSquare, Check, Trash2, Clock, Award, Users
+  Search, ChevronDown, ChevronRight, BookOpen, X, MessageSquare, Check, Trash2, Clock, Award, Users, CheckCircle
 } from 'lucide-react';
 import { useLecturerWorkspace } from '../../context/LecturerWorkspaceContext';
 import styles from './LecturerDashboard.module.css';
@@ -301,7 +301,7 @@ export default function MaterialsDashboard() {
   const [filterType, setFilterType] = useState('all'); // all | video | pdf | document | quiz
   const [filterSubject, setFilterSubject] = useState('all'); // all | <subject code>
   const [hasSubmitAttempted, setHasSubmitAttempted] = useState(false);
-  
+
   const [newMaterialForm, setNewMaterialForm] = useState({
     title: '', description: '', type: 'video', fileName: '', fileSize: '', fileObj: null,
     publishDate: new Date().toISOString().split('T')[0],
@@ -563,7 +563,7 @@ export default function MaterialsDashboard() {
       fileName: material.url && material.url.startsWith('#file:') ? material.url.substring(6) : (material.url !== '#' ? material.url : ''),
       fileSize: material.fileSize || '',
       fileObj: null,
-      publishDate: meta.publishDate || material.uploadedAt?.substring(0,10) || '',
+      publishDate: meta.publishDate || material.uploadedAt?.substring(0, 10) || '',
       deadline: meta.deadline || '',
       distributeMode: meta.distributeMode || 'all',
       numGroups: meta.groups?.length || 2,
@@ -878,10 +878,10 @@ export default function MaterialsDashboard() {
                               <span className={styles.chapterTitle}>{chName}</span>
                               <span className={styles.materialsCount}>({list.length} bài học)</span>
                             </div>
-                            <ChevronDown
+                            <ChevronRight
                               size={16}
                               style={{
-                                transform: isExpanded ? 'rotate(180deg)' : 'rotate(0deg)',
+                                transform: isExpanded ? 'rotate(90deg)' : 'rotate(0deg)',
                                 transition: 'transform 0.2s',
                               }}
                             />
@@ -906,13 +906,41 @@ export default function MaterialsDashboard() {
                                           <h5 className={styles.materialTitle}>
                                             {m.title} {m.isDisabled && <span className={styles.disabledTag}>Đã VH</span>}
                                           </h5>
-                                          <button
-                                            type="button"
-                                            className={styles.editBtn}
-                                            onClick={() => handleEditMaterialStart(m)}
-                                          >
-                                            <Pencil size={13} />
-                                          </button>
+                                          <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                                            <button
+                                              type="button"
+                                              className={styles.editBtn}
+                                              style={{ 
+                                                color: m.completedByUsers?.length > 0 && users.length > 0 ? '#10b981' : '#cbd5e1',
+                                                borderColor: m.completedByUsers?.length > 0 && users.length > 0 ? '#10b981' : '#e2e8f0',
+                                                background: m.completedByUsers?.length > 0 && users.length > 0 ? '#ecfdf5' : '#fff',
+                                                cursor: m.completedByUsers?.length > 0 && users.length > 0 ? 'default' : 'pointer'
+                                              }}
+                                              title={m.completedByUsers?.length > 0 && users.length > 0 ? 'Đã hoàn thành' : 'Đánh dấu hoàn thành'}
+                                              onClick={async (e) => {
+                                                e.stopPropagation();
+                                                if (m.completedByUsers?.length > 0 && users.length > 0) return;
+                                                if (window.confirm(`Đánh dấu hoàn thành bài học "${m.title}" cho toàn bộ học sinh?`)) {
+                                                  try {
+                                                    await api.completeMaterialAll(m.id);
+                                                    showToast('Đã đánh dấu hoàn thành!');
+                                                  } catch (err) {
+                                                    showToast(err.message || 'Lỗi khi đánh dấu', 'info');
+                                                  }
+                                                }
+                                              }}
+                                            >
+                                              <CheckCircle size={14} strokeWidth={2.5} />
+                                            </button>
+                                            <button
+                                              type="button"
+                                              className={styles.editBtn}
+                                              onClick={() => handleEditMaterialStart(m)}
+                                              title="Chỉnh sửa"
+                                            >
+                                              <Pencil size={13} />
+                                            </button>
+                                          </div>
                                         </div>
                                         <p className={styles.materialDesc}>
                                           {meta.desc || 'Không có mô tả chi tiết.'}
@@ -1040,7 +1068,6 @@ export default function MaterialsDashboard() {
                     }}>
                     <option value="all">Toàn bộ lớp học</option>
                     <option value="group_random">Chia nhóm ngẫu nhiên</option>
-                    <option value="group_assigned">Chia nhóm chỉ định</option>
                   </select>
                 </div>
               </div>
@@ -1074,56 +1101,29 @@ export default function MaterialsDashboard() {
                       ✅ <strong>Chia nhóm ngẫu nhiên:</strong> Tất cả nhóm đều được xem tài liệu này.
                     </div>
                   )}
-                  {newMaterialForm.distributeMode === 'group_assigned' && (
-                    <div style={{ fontSize: 11, color: '#92400e', background: '#fffbeb', border: '1px solid #fde68a', borderRadius: 6, padding: '6px 10px', marginBottom: 8 }}>
-                      ⚙️ <strong>Chia nhóm chỉ định:</strong> Bật/tắt từng nhóm để kiểm soát quyền xem.
-                    </div>
-                  )}
+
 
                   {/* Danh sách nhóm */}
                   <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 6 }}>
-                    {newMaterialForm.groups.map((group, idx) => {
-                      const isAssigned = newMaterialForm.distributeMode === 'group_assigned';
-                      const canView = group.canView !== false; // default true
-                      return (
+                    {newMaterialForm.groups.map((group, idx) => (
                         <div
                           key={idx}
                           style={{
-                            background: isAssigned ? (canView ? '#f0fdf4' : '#fef2f2') : '#fff',
+                            background: '#fff',
                             padding: '8px 10px',
                             borderRadius: 8,
-                            border: `1.5px solid ${isAssigned ? (canView ? '#bbf7d0' : '#fecaca') : '#e2e8f0'}`,
+                            border: '1.5px solid #e2e8f0',
                             transition: 'all 0.15s',
                           }}
                         >
                           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 }}>
                             <strong style={{ fontSize: 11, color: '#0f172a' }}>{group.name}</strong>
-                            {isAssigned && (
-                              <button
-                                type="button"
-                                onClick={() => {
-                                  const updated = newMaterialForm.groups.map((g, i) =>
-                                    i === idx ? { ...g, canView: !canView } : g
-                                  );
-                                  setNewMaterialForm({ ...newMaterialForm, groups: updated });
-                                }}
-                                style={{
-                                  fontSize: 10, fontWeight: 700, padding: '2px 8px', borderRadius: 999,
-                                  cursor: 'pointer', border: 'none', transition: 'all 0.15s',
-                                  background: canView ? '#059669' : '#e2e8f0',
-                                  color: canView ? '#fff' : '#64748b',
-                                }}
-                              >
-                                {canView ? '👁 Được xem' : '🚫 Ẩn'}
-                              </button>
-                            )}
                           </div>
                           <div style={{ fontSize: 10, color: '#64748b', maxHeight: 40, overflowY: 'auto' }}>
                             {group.members.length === 0 ? <em>Chưa có học viên</em> : group.members.map((m) => m.name).join(', ')}
                           </div>
                         </div>
-                      );
-                    })}
+                    ))}
                   </div>
                 </div>
               )}
@@ -1307,7 +1307,6 @@ export default function MaterialsDashboard() {
                   >
                     <option value="all">Toàn bộ lớp học</option>
                     <option value="group_random">Chia nhóm ngẫu nhiên</option>
-                    <option value="group_assigned">Chia nhóm chỉ định</option>
                   </select>
                 </div>
               </div>
@@ -1446,23 +1445,6 @@ export default function MaterialsDashboard() {
                   {isUploading ? 'Đang lưu...' : 'Lưu Thay Đổi'}
                 </button>
 
-                <button
-                  type="button"
-                  className={styles.btnSecondary}
-                  onClick={async () => {
-                    if (window.confirm('Đánh dấu hoàn thành toàn bộ học liệu này cho tất cả học sinh trong lớp?')) {
-                      try {
-                        await api.completeMaterialAll(editingMaterialId);
-                        showToast('Đã đánh dấu hoàn thành cho cả lớp!');
-                      } catch (err) {
-                        showToast(err.message || 'Thao tác thất bại.', 'info');
-                      }
-                    }
-                  }}
-                  style={{ background: '#ecfdf5', color: '#047857', borderColor: '#a7f3d0' }}
-                >
-                  Hoàn Thành Cả Lớp
-                </button>
 
                 <button
                   type="button"

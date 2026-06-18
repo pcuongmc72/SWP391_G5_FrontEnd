@@ -227,7 +227,7 @@ function ChangePasswordSection() {
     setSaving(true);
     // TODO: gọi API PUT /api/Auth/change-password
     setTimeout(() => {
-      setMsg('✅ Đổi mật khẩu thành công!');
+      setMsg('Đổi mật khẩu thành công!');
       setForm({ current: '', next: '', confirm: '' });
       setSaving(false);
     }, 800);
