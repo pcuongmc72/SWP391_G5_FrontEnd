@@ -153,7 +153,7 @@ function DashboardAdminPage() {
   /* ── Modal / Form States ── */
   const [isUserModalOpen, setIsUserModalOpen] = useState(false);
   const [editingUser, setEditingUser] = useState(null);
-  const [userForm, setUserForm] = useState({ id: '', username: '', name: '', email: '', role: 'Student', status: 'ACTIVE', password: '' });
+  const [userForm, setUserForm] = useState({ id: '', username: '', name: '', email: '', role: 'Student', status: 'ACTIVE', password: '', avatarUrl: '' });
 
   /* ── Toast ── */
   const [toast, setToast] = useState(null);
@@ -224,11 +224,12 @@ function DashboardAdminPage() {
         email: user.email,
         role: user.role,
         status: user.status,
-        password: user.password ?? ''
+        password: user.password ?? '',
+        avatarUrl: user.avatarUrl ?? ''
       });
     } else {
       setEditingUser(null);
-      setUserForm({ id: '', username: '', name: '', email: '', role: 'Student', status: 'ACTIVE', password: '' });
+      setUserForm({ id: '', username: '', name: '', email: '', role: 'Student', status: 'ACTIVE', password: '', avatarUrl: '' });
     }
     setIsUserModalOpen(true);
   };
@@ -264,6 +265,7 @@ function DashboardAdminPage() {
       role: userForm.role,
       status: userForm.status,
       isActive: userForm.status === 'ACTIVE',
+      avatarUrl: userForm.avatarUrl || null,
 
       // PascalCase fallback for C# model binders
       Id: cleanId,
@@ -273,7 +275,8 @@ function DashboardAdminPage() {
       Email: cleanEmail,
       Role: userForm.role,
       Status: userForm.status,
-      IsActive: userForm.status === 'ACTIVE'
+      IsActive: userForm.status === 'ACTIVE',
+      AvatarUrl: userForm.avatarUrl || null
     };
 
     // Nếu người dùng nhập mật khẩu thực tế (và khác với ký hiệu đại diện đại diện ••••••••), ta mới gửi lên để lưu
