@@ -11,6 +11,9 @@
 @tailwind components;
 @tailwind utilities;
 
+/* ===========================
+   Global Styles
+   =========================== */
 /* Reset */
 *,
 *::before,
@@ -86,6 +89,7 @@ button {
 input, textarea, select {
   font-family: inherit;
   font-size: inherit;
+  color: #1e293b;
 }
 
 /* Scrollbar */

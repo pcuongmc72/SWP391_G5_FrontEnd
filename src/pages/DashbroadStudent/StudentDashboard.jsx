@@ -141,47 +141,10 @@ export default function StudentDashboard() {
         const codeMatch = cls.courseCode.toLowerCase().includes(searchTerm.toLowerCase());
         const classIdMatch = cls.id.toLowerCase().includes(searchTerm.toLowerCase());
         return nameMatch || codeMatch || classIdMatch;
-
-    }
-);
-// Hàm sinh lộ trình học tập chuẩn dựa vào mã môn học (Copy từ ClassesDashboard.jsx của Admin)
-const generateRoadmap = (courseCode, courseName) => {
-    const code = String(courseCode || '').toUpperCase();
-    const name = String(courseName || '');
-    const isCSharp = code.includes('PRN') || code.includes('CS') || name.toLowerCase().includes('c#') || name.toLowerCase().includes('lập trình');
-    const isSWP = code.includes('SWP') || code.includes('PROJ') || name.toLowerCase().includes('dự án') || name.toLowerCase().includes('đồ án');
-
-    if (isCSharp) {
-        return [
-            { week: 'Tuần 1', title: 'Cài đặt môi trường & Cú pháp cơ bản .NET C#', status: 'COMPLETED', lessons: ['Khởi tạo dự án Console App trong Visual Studio', 'Biến, toán tử và các kiểu dữ liệu cơ bản', 'Cấu trúc điều kiện rẽ nhánh và vòng lặp'] },
-            { week: 'Tuần 2', title: 'Lập trình Hướng đối tượng (OOP) nâng cao', status: 'COMPLETED', lessons: ['Tính kế thừa, đóng gói, đa hình', 'Tính trừu tượng (Abstract class & Interface)'] },
-            { week: 'Tuần 3', title: 'Làm việc với Collections, LINQ & Generics', status: 'ACTIVE', lessons: ['Generic class & Generic method', 'Truy vấn dữ liệu nâng cao với LINQ'] },
-            { week: 'Tuần 4', title: 'Tương tác Database với Entity Framework Core', status: 'UPCOMING', lessons: ['Cài đặt EF Core Packages & DbContext', 'Thao tác CRUD với Database thực tế'] },
-            { week: 'Tuần 5', title: 'Xây dựng RESTful API với ASP.NET Core Web API', status: 'UPCOMING', lessons: ['Kiến trúc Controllers & API Routing', 'Dependency Injection trong ASP.NET Core'] }
-        ];
-    }
-
-    if (isSWP) {
-        return [
-            { week: 'Tuần 1', title: 'Thành lập nhóm & Định hình Ý tưởng Dự án', status: 'COMPLETED', lessons: ['Phân chia vai trò thành viên (WBS)', 'Lập tiến độ tổng quan (Gantt Chart)'] },
-            { week: 'Tuần 2', title: 'Phân tích Yêu cầu & Thiết kế Hệ thống', status: 'COMPLETED', lessons: ['Phân tích yêu cầu chức năng', 'Thiết kế Mockup UI/UX ban đầu bằng Figma'] },
-            { week: 'Tuần 3', title: 'Thiết kế Cấu trúc CSDL (ERD) & Khung dự án', status: 'ACTIVE', lessons: ['Vẽ sơ đồ ERD tối ưu hóa quan hệ', 'Cấu trúc Skeleton dự án FrontEnd và BackEnd'] },
-            { week: 'Tuần 4', title: 'Sprint 1: Xây dựng các tính năng Core & Auth', status: 'UPCOMING', lessons: ['Code giao diện Đăng nhập, Đăng ký', 'Xây dựng API đăng nhập & lưu trữ Token'] },
-            { week: 'Tuần 5', title: 'Sprint 2: Tính năng nghiệp vụ chính & Quản trị', status: 'UPCOMING', lessons: ['Phát triển giao diện Dashboard Admin', 'Code các luồng giao dịch nghiệp vụ cốt lõi'] }
-        ];
-    }
-
-    return [
-        { week: 'Chặng 1', title: 'Làm quen & Khái niệm nền tảng cốt lõi', status: 'COMPLETED', lessons: ['Giới thiệu đề cương học phần', 'Các công cụ làm việc cơ bản'] },
-        { week: 'Chặng 2', title: 'Nghiên cứu chuyên sâu lý thuyết chuyên ngành', status: 'ACTIVE', lessons: ['Các mô hình kiến trúc cốt lõi', 'Slide chuyên đề 2'] },
-        { week: 'Chặng 3', title: 'Thực hành ứng dụng & Giải quyết case-study', status: 'UPCOMING', lessons: ['Giải quyết bài toán thực tế (Case study)', 'Thực hành viết báo cáo phân tích'] }
-    ];
-};
-
+    });
 
 
     return (
-        <>
         <div style={{ padding: '4px' }}>
             {/* Thanh giao diện Tìm kiếm & Bộ lọc */}
             <div style={{

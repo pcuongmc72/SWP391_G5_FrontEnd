@@ -2,17 +2,19 @@ import { useState, useEffect, useRef } from 'react';
 import { Eye, EyeOff } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { login, getRole } from '../../services/authService';
+import { getDashboardPathForRole } from '../../constants/roles';
+import { parseLoginResponse, persistAuth } from '../../utils/authStorage';
 import styles from './AuthModal.module.css';
 
 /**
  * AuthModal — Modal Đăng nhập (email + mật khẩu)
- * Sau khi đăng nhập thành công → navigate('/dashboard')
+ * Sau khi đăng nhập thành công → chuyển theo role tương ứng (admin -> /dashboard/admin, lecturer -> /lecturer/dashboard, etc.)
  */
 function AuthModal({ onClose }) {
   const navigate = useNavigate();
 
-  const [form, setForm]       = useState({ email: '', password: '' });
-  const [errors, setErrors]   = useState({});
+  const [form, setForm] = useState({ email: '', password: '' });
+  const [errors, setErrors] = useState({});
   const [apiError, setApiError] = useState('');
   const [loading, setLoading] = useState(false);
   const [showPwd, setShowPwd] = useState(false);
@@ -52,8 +54,8 @@ function AuthModal({ onClose }) {
   const handleChange = (e) => {
     const { name, value } = e.target;
     setForm((prev) => ({ ...prev, [name]: value }));
-    if (errors[name])  setErrors((prev)  => ({ ...prev, [name]: '' }));
-    if (apiError)      setApiError('');
+    if (errors[name]) setErrors((prev) => ({ ...prev, [name]: '' }));
+    if (apiError) setApiError('');
   };
 
   const handleSubmit = async (e) => {
@@ -66,46 +68,52 @@ function AuthModal({ onClose }) {
     setApiError('');
 
     try {
-      const data = await login(form.email, form.password);
+      const response = await login(form.email, form.password);
 
       // Log response ra console để debug
-      console.log('API Response:', data);
+      console.log('API Response:', response);
 
-      // Cố gắng lấy token từ các field phổ biến
-      const token = typeof data === 'string'
-        ? data
-        : (
-            data?.token ||
-            data?.accessToken ||
-            data?.access_token ||
-            data?.jwt ||
-            data?.data?.token ||
-            data?.data?.accessToken ||
-            data?.data?.access_token ||
-            data?.data?.jwt
-          );
-      
-      if (token) {
-        localStorage.setItem('access_token', token);
-        
-        const user = data?.user || data?.userInfo || data?.data?.user || data?.data?.userInfo || data?.data || {};
-        localStorage.setItem('user', JSON.stringify(user));
+      // Parse token và user từ response
+      const { token: parsedToken, user: parsedUser } = parseLoginResponse(response);
 
-        // Redirect theo role
-        const role = getRole();
+      // Fallback thủ công nếu parseLoginResponse không tìm được
+      const token =
+        parsedToken ||
+        (typeof response === 'string' ? response : null) ||
+        response?.token ||
+        response?.accessToken ||
+        response?.access_token ||
+        response?.jwt ||
+        response?.data?.token ||
+        response?.data?.accessToken ||
+        response?.data?.access_token ||
+        response?.data?.jwt;
+
+      const user =
+        parsedUser ||
+        response?.user ||
+        response?.userInfo ||
+        response?.data?.user ||
+        response?.data?.userInfo;
+
+      if (token && user) {
+        // Lưu token và user vào localStorage TRƯỚC khi navigate
+        persistAuth({ token, user });
+
+        // Lấy role từ user object (ưu tiên) hoặc từ localStorage
+        const role = user.role || user.Role || getRole() || '';
+
         onClose();
-        if (role === 'admin') {
-          navigate('/dashboard/admin', { replace: true });
-        } else if (role === 'student') {
-          navigate('/dashboard/student', { replace: true });
-        } else if (role === 'lecturer' || role === 'teacher') {
-          navigate('/dashboard/lecturer', { replace: true });
-        } else {
-          navigate('/', { replace: true });
-        }
+
+        // Điều hướng theo role
+        const path = getDashboardPathForRole(role);
+        navigate(path, { replace: true });
       } else {
-        // Nếu không tìm thấy token trong response
-        setApiError('Đăng nhập thành công nhưng không tìm thấy token. API trả về: ' + JSON.stringify(data));
+        // Không tìm thấy token hoặc user trong response
+        setApiError(
+          'Đăng nhập thành công nhưng không nhận được token hoặc thông tin người dùng. ' +
+          'API trả về: ' + JSON.stringify(response)
+        );
       }
 
     } catch (err) {
@@ -114,7 +122,7 @@ function AuthModal({ onClose }) {
       setLoading(false);
     }
   };
-
+  
   /* ─── Render ─────────────────────────────── */
   return (
     <div
@@ -137,6 +145,7 @@ function AuthModal({ onClose }) {
 
         {/* Header */}
         <div className={styles.header}>
+          <div className={styles.iconWrap} aria-hidden="true">🔑</div>
           <h2 id="modal-title" className={styles.title}>Đăng nhập</h2>
           <p className={styles.subtitle}>Vui lòng nhập thông tin để tiếp tục.</p>
         </div>

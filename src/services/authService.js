@@ -39,6 +39,13 @@ export const getToken = () => localStorage.getItem('access_token');
  */
 export const isAuthenticated = () => !!getToken();
 
+export const updateProfile = async (userData) => {
+  const response = await api.put('/api/Auth/profile', userData);
+  return response.data;
+};
+
+export { getStoredUser, getUserRole, getHomePathForCurrentUser } from '../utils/authStorage';
+
 /**
  * Lấy thông tin user đang lưu
  * @returns {object|null}
