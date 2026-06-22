@@ -73,7 +73,7 @@ function AuthModal({ onClose }) {
       // Log response ra console để debug
       console.log('API Response:', response);
 
-      // Parse token và user từ response
+      // Parse token và user từ response (Dùng logic mới từ HEAD để linh hoạt với API)
       const { token: parsedToken, user: parsedUser } = parseLoginResponse(response);
 
       // Fallback thủ công nếu parseLoginResponse không tìm được
@@ -115,7 +115,6 @@ function AuthModal({ onClose }) {
           'API trả về: ' + JSON.stringify(response)
         );
       }
-
     } catch (err) {
       setApiError(err.message || 'Đăng nhập thất bại. Vui lòng thử lại.');
     } finally {

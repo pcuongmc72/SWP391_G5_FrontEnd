@@ -1,141 +1,125 @@
-import React, { useState, useEffect } from 'react';
-import { getAcademicTerms, getStudentClasses, getClassStudents } from '../../services/studentService';
-import { BookOpen, User, Calendar, Loader2, X, Users, Milestone, Award } from 'lucide-react';
-import styles from './DashbroadStudent.module.css'; // Sử dụng lại CSS module của Dashboard
+import React, { useState, useEffect, useMemo } from 'react';
+import { fetchAcademicTerms } from '../../services/academicTermService';
+import { getUserClasses, getClassStudents } from '../../services/classService';
+import { getUser } from '../../services/authService';
+import { BookOpen, User, Calendar, Loader2, X, Users, Milestone, Award, Search, Filter } from 'lucide-react';
+import styles from './DashbroadStudent.module.css';
 
 export default function StudentDashboard() {
+    const currentUser = useMemo(() => getUser(), []);
     const [terms, setTerms] = useState([]);
-
-    // Thêm các State mới phục vụ tìm kiếm & lọc
-    const [years, setYears] = useState([]);                 // Danh sách các Năm học trích xuất được
-    const [selectedYear, setSelectedYear] = useState('');   // Năm học đang chọn (Ví dụ: 2026)
-    const [selectedSemester, setSelectedSemester] = useState(''); // Kỳ học đang chọn (Spring/Summer/Fall)
-    const [searchTerm, setSearchTerm] = useState('');       // Từ khóa tìm kiếm môn học
-
     const [classes, setClasses] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState('');
 
+    // State bộ lọc năm học & kỳ học
+    const [years, setYears] = useState([]);
+    const [selectedYear, setSelectedYear] = useState('');
+    const [selectedSemester, setSelectedSemester] = useState('all');
+    const [searchTerm, setSearchTerm] = useState('');
+
     // Các state phục vụ Modal chi tiết lớp học
     const [selectedClass, setSelectedClass] = useState(null); // Lớp đang được mở chi tiết
     const [classStudents, setClassStudents] = useState([]);   // Danh sách bạn học trong lớp đó
+    const [loadingDetails, setLoadingDetails] = useState(false);
     const [loadingStudents, setLoadingStudents] = useState(false);
     const [studentSearchTerm, setStudentSearchTerm] = useState(''); // Tìm kiếm bạn học
 
-    // 1. Tải danh sách Học kỳ và trích xuất danh sách các Năm học
+
+    // 1. Initial Data Fetch
     useEffect(() => {
-        const fetchTerms = async () => {
+        const loadInitialData = async () => {
             try {
-                const response = await getAcademicTerms();
-                if (response.success && response.data.length > 0) {
-                    const termsData = response.data;
-                    setTerms(termsData);
+                setLoading(true);
+                const termsResponse = await fetchAcademicTerms();
+                const fetchedTerms = Array.isArray(termsResponse) ? termsResponse : (termsResponse?.data || []);
+                setTerms(fetchedTerms);
 
-                    // Trích xuất danh sách Năm học không trùng lặp từ startDate
-                    const uniqueYears = [
-                        ...new Set(termsData.map(term => term.startDate.split('-')[0])) // Cắt lấy 4 ký tự năm
-                    ].sort((a, b) => b - a);
-
-
+                if (fetchedTerms.length > 0) {
+                    // Extract unique years
+                    const uniqueYears = [...new Set(fetchedTerms.map(t => new Date(t.startDate).getFullYear().toString()))].sort((a, b) => b - a);
                     setYears(uniqueYears);
 
-                    // Xác định Năm học và Kỳ học hiện tại dựa trên ngày hôm nay
-                    const today = new Date();
-                    const currentTerm = termsData.find(term => {
-                        const start = new Date(term.startDate);
-                        const end = new Date(term.endDate);
-                        return today >= start && today <= end;
-                    });
+                    // Find active term or default to newest
+                    const now = new Date();
+                    const currentTerm = fetchedTerms.find(t => {
+                        const start = new Date(t.startDate);
+                        const end = new Date(t.endDate);
+                        return now >= start && now <= end;
+                    }) || fetchedTerms[0];
 
                     if (currentTerm) {
-                        setSelectedYear(currentTerm.startDate.split('-')[0]); // Cắt lấy năm học hiện tại
-                        // Xác định kỳ học dựa trên tên hoặc mã viết tắt (SP/SU/FA)
-                        const nameLower = currentTerm.name.toLowerCase();
-                        const codeLower = (currentTerm.termCode || '').toLowerCase();
-
-                        if (nameLower.includes('spring') || codeLower.includes('sp')) setSelectedSemester('Spring');
-                        else if (nameLower.includes('summer') || codeLower.includes('su')) setSelectedSemester('Summer');
-                        else if (nameLower.includes('fall') || codeLower.includes('fa')) setSelectedSemester('Fall');
-
-                    } else if (uniqueYears.length > 0) {
-                        // Mặc định chọn năm đầu tiên và kỳ Spring
-                        setSelectedYear(uniqueYears[0].toString());
-                        setSelectedSemester('Spring');
+                        setSelectedYear(new Date(currentTerm.startDate).getFullYear().toString());
                     }
-                } else {
-                    setError('Không tìm thấy học kỳ nào trong hệ thống.');
-                    setLoading(false);
                 }
             } catch (err) {
-                setError(err.message || 'Lỗi tải danh sách học kỳ.');
+                console.error('Error loading dashboard data:', err);
+                setError('Không thể tải danh sách học kỳ.');
+            } finally {
                 setLoading(false);
             }
         };
-        fetchTerms();
+        loadInitialData();
     }, []);
 
-    // 2. Tự động tìm AcademicTermId tương ứng khi thay đổi selectedYear hoặc selectedSemester
+    // 2. Fetch Classes when filters change
     useEffect(() => {
-        if (!selectedYear || !selectedSemester || terms.length === 0) return;
-
-        // Tìm học kỳ có Năm trùng với selectedYear và khớp tên/mã học kỳ
-        const matchedTerm = terms.find(term => {
-            const termYear = term.startDate.split('-')[0]; // Lấy năm học an toàn
-            const termNameLower = term.name.toLowerCase();
-            const termCodeLower = (term.termCode || '').toLowerCase();
-
-            // Khớp kỳ Spring nếu tên chứa "spring" hoặc mã chứa "sp"
-            const isSpring = selectedSemester === 'Spring' && (termNameLower.includes('spring') || termCodeLower.includes('sp'));
-            // Khớp kỳ Summer nếu tên chứa "summer" hoặc mã chứa "su"
-            const isSummer = selectedSemester === 'Summer' && (termNameLower.includes('summer') || termCodeLower.includes('su'));
-            // Khớp kỳ Fall nếu tên chứa "fall" hoặc mã chứa "fa"
-            const isFall = selectedSemester === 'Fall' && (termNameLower.includes('fall') || termCodeLower.includes('fa'));
-
-            return termYear === selectedYear && (isSpring || isSummer || isFall);
-        });
-
+        if (!currentUser || terms.length === 0 || !selectedYear) return;
 
         const fetchClasses = async () => {
             setLoading(true);
-            setError('');
             try {
-                if (matchedTerm) {
-                    const response = await getStudentClasses(matchedTerm.id);
-                    if (response.success) {
-                        setClasses(response.data);
+                // Find term matching year and semester
+                const matchedTerm = terms.find(t => {
+                    const tYear = new Date(t.startDate).getFullYear().toString();
+                    const nameLower = t.name.toLowerCase();
+                    const codeLower = (t.termCode || '').toLowerCase();
+
+                    const matchesYear = tYear === selectedYear;
+                    let matchesSemester = true;
+                    if (selectedSemester !== 'all') {
+                        if (selectedSemester === 'Spring') matchesSemester = nameLower.includes('spring') || codeLower.includes('sp');
+                        else if (selectedSemester === 'Summer') matchesSemester = nameLower.includes('summer') || codeLower.includes('su');
+                        else if (selectedSemester === 'Fall') matchesSemester = nameLower.includes('fall') || codeLower.includes('fa');
                     }
+                    return matchesYear && matchesSemester;
+                });
+
+                if (matchedTerm) {
+                    const res = await getUserClasses(currentUser.id, matchedTerm.id, currentUser.role);
+                    const list = Array.isArray(res) ? res : (res?.data || []);
+                    setClasses(list);
                 } else {
-                    // Nếu không có học kỳ nào khớp (ví dụ: Không có kỳ Fall trong năm 2024)
                     setClasses([]);
                 }
             } catch (err) {
-                setError(err.message || 'Lỗi tải danh sách lớp học.');
+                console.error('Error fetching classes:', err);
+                setError('Lỗi khi tải danh sách lớp học.');
             } finally {
                 setLoading(false);
             }
         };
 
         fetchClasses();
-    }, [selectedYear, selectedSemester, terms]);
+    }, [selectedYear, selectedSemester, terms, currentUser]);
 
     // Xử lý khi nhấn "Vào lớp" hoặc click Card lớp học
     const handleOpenClassDetail = async (cls) => {
         setSelectedClass(cls);
-        setLoadingStudents(true);
+        setLoadingDetails(true);
         setStudentSearchTerm('');
         try {
-            const response = await getClassStudents(cls.id);
-            if (response.success) {
-                setClassStudents(response.data);
-            }
+            const res = await getClassStudents(cls.id);
+            const students = Array.isArray(res) ? res : (res?.data || []);
+            setClassStudents(students);
         } catch (err) {
-            console.error('Lỗi tải danh sách sinh viên cùng lớp:', err);
+            console.error('Error fetching class students:', err);
         } finally {
-            setLoadingStudents(false);
+            setLoadingDetails(false);
         }
     };
 
-    // 3. Logic tìm kiếm môn học (Lọc trực tiếp từ danh sách lớp đã tải về)
+    // Filtering logic (Search)
     const filteredClasses = classes.filter(cls => {
         const nameMatch = cls.courseName.toLowerCase().includes(searchTerm.toLowerCase());
         const codeMatch = cls.courseCode.toLowerCase().includes(searchTerm.toLowerCase());
@@ -145,6 +129,7 @@ export default function StudentDashboard() {
 
 
     return (
+        <>
         <div style={{ padding: '4px' }}>
             {/* Thanh giao diện Tìm kiếm & Bộ lọc */}
             <div style={{
@@ -185,211 +170,89 @@ export default function StudentDashboard() {
                     />
                 </div>
 
-                {/* 2. Bộ lọc Năm học & Kỳ học */}
-                <div style={{ display: 'flex', gap: '16px', flexWrap: 'wrap' }}>
-                    {/* Thẻ chọn năm học */}
-                    <div>
-                        <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: 700, color: '#64748b', marginBottom: '6px', textTransform: 'uppercase' }}>
-                            Năm học
-                        </label>
-                        <select
-                            value={selectedYear}
-                            onChange={(e) => setSelectedYear(e.target.value)}
-                            style={{
-                                padding: '10px 16px',
-                                borderRadius: '8px',
-                                border: '1px solid #cbd5e1',
-                                backgroundColor: '#fff',
-                                fontSize: '0.875rem',
-                                fontWeight: 600,
-                                color: '#334155',
-                                outline: 'none',
-                                cursor: 'pointer',
-                                minWidth: '120px'
-                            }}
-                        >
-                            {years.map(year => (
-                                <option key={year} value={year}>
-                                    Năm học {year}
-                                </option>
-                            ))}
-                        </select>
-                    </div>
+                {/* Year Filter */}
+                <div className="w-full md:w-48">
+                    <label className="block text-[10px] font-extrabold text-slate-400 uppercase tracking-widest mb-2">Năm học</label>
+                    <select
+                        className="w-full px-4 py-2.5 bg-slate-50 border border-slate-100 rounded-xl text-sm font-semibold text-slate-700 outline-none"
+                        value={selectedYear}
+                        onChange={(e) => setSelectedYear(e.target.value)}
+                    >
+                        {years.map(y => <option key={y} value={y}>Năm {y}</option>)}
+                    </select>
+                </div>
 
-                    {/* Thẻ chọn kỳ học */}
-                    <div>
-                        <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: 700, color: '#64748b', marginBottom: '6px', textTransform: 'uppercase' }}>
-                            Kỳ học
-                        </label>
-                        <select
-                            value={selectedSemester}
-                            onChange={(e) => setSelectedSemester(e.target.value)}
-                            style={{
-                                padding: '10px 16px',
-                                borderRadius: '8px',
-                                border: '1px solid #cbd5e1',
-                                backgroundColor: '#fff',
-                                fontSize: '0.875rem',
-                                fontWeight: 600,
-                                color: '#334155',
-                                outline: 'none',
-                                cursor: 'pointer',
-                                minWidth: '120px'
-                            }}
-                        >
-                            <option value="Spring">Kỳ Spring</option>
-                            <option value="Summer">Kỳ Summer</option>
-                            <option value="Fall">Kỳ Fall</option>
-                        </select>
-                    </div>
+                {/* Semester Filter */}
+                <div className="w-full md:w-48">
+                    <label className="block text-[10px] font-extrabold text-slate-400 uppercase tracking-widest mb-2">Kỳ học</label>
+                    <select
+                        className="w-full px-4 py-2.5 bg-slate-50 border border-slate-100 rounded-xl text-sm font-semibold text-slate-700 outline-none"
+                        value={selectedSemester}
+                        onChange={(e) => setSelectedSemester(e.target.value)}
+                    >
+                        <option value="all">Tất cả kỳ</option>
+                        <option value="Spring">Kỳ Spring</option>
+                        <option value="Summer">Kỳ Summer</option>
+                        <option value="Fall">Kỳ Fall</option>
+                    </select>
                 </div>
             </div>
 
-            {/* Thông báo lỗi */}
+            {/* Error Message */}
             {error && (
-                <div style={{
-                    padding: '16px',
-                    backgroundColor: '#fef2f2',
-                    border: '1px solid #fee2e2',
-                    borderRadius: '12px',
-                    color: '#b91c1c',
-                    marginBottom: '24px',
-                    fontSize: '0.875rem'
-                }}>
+                <div className="bg-red-50 text-red-600 p-4 rounded-2xl border border-red-100 text-sm font-medium">
                     {error}
                 </div>
             )}
 
-            {/* Thay thế phần render danh sách lớp cũ bằng biến filteredClasses mới lọc */}
+            {/* Content List */}
             {loading ? (
-                <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '200px', gap: '8px' }}>
-                    <Loader2 className="animate-spin" style={{ color: '#0D3E26' }} />
-                    <span style={{ color: '#64748b', fontSize: '0.875rem' }}>Đang tải danh sách lớp học...</span>
+                <div className="flex justify-center py-12">
+                    <Loader2 className="w-8 h-8 text-emerald-500 animate-spin" />
                 </div>
-            ) : filteredClasses.length === 0 ? (
-                <div style={{
-                    textAlign: 'center',
-                    padding: '48px 24px',
-                    backgroundColor: '#fff',
-                    borderRadius: '16px',
-                    border: '1px dashed #cbd5e1'
-                }}>
-                    <div style={{ fontSize: '3rem', marginBottom: '16px' }}>🎒</div>
-                    <h3 style={{ fontSize: '1.125rem', fontWeight: 600, color: '#334155', margin: 0 }}>
-                        Không tìm thấy lớp học nào
-                    </h3>
-                    <p style={{ color: '#64748b', fontSize: '0.875rem', marginTop: '6px', margin: 0 }}>
-                        {searchTerm ? 'Không tìm thấy lớp học nào khớp với từ khóa tìm kiếm.' : 'Không có lớp học nào trong học kỳ được chọn.'}
-                    </p>
-                </div>
-            ) : (
-                /* Lưới hiển thị các lớp học đã lọc */
-                <div style={{
-                    display: 'grid',
-                    gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))',
-                    gap: '24px'
-                }}>
-                    {filteredClasses.map((cls) => (
+            ) : filteredClasses.length > 0 ? (
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    {filteredClasses.map(cls => (
                         <div
                             key={cls.id}
-                            style={{
-                                backgroundColor: '#fff',
-                                borderRadius: '16px',
-                                border: '1px solid #e2e8f0',
-                                padding: '20px',
-                                boxShadow: '0 1px 3px rgba(0,0,0,0.05)',
-                                display: 'flex',
-                                flexDirection: 'column',
-                                justifyContent: 'space-between',
-                                transition: 'transform 0.2s, box-shadow 0.2s',
-                                cursor: 'pointer'
-                            }}
-                            onMouseEnter={(e) => {
-                                e.currentTarget.style.transform = 'translateY(-2px)';
-                                e.currentTarget.style.boxShadow = '0 10px 15px -3px rgba(0, 0, 0, 0.1)';
-                            }}
-                            onMouseLeave={(e) => {
-                                e.currentTarget.style.transform = 'none';
-                                e.currentTarget.style.boxShadow = '0 1px 3px rgba(0,0,0,0.05)';
-                            }}
+                            className="bg-white rounded-3xl border border-slate-100 shadow-sm overflow-hidden hover:shadow-xl transition-all cursor-pointer group"
+                            onClick={() => handleOpenClassDetail(cls)}
                         >
-                            <div>
-                                {/* Mã Lớp */}
-                                <div style={{
-                                    display: 'inline-flex',
-                                    alignItems: 'center',
-                                    gap: '6px',
-                                    backgroundColor: '#e6f4ea',
-                                    color: '#0d3e26',
-                                    fontSize: '0.75rem',
-                                    fontWeight: 700,
-                                    padding: '4px 10px',
-                                    borderRadius: '9999px',
-                                    marginBottom: '12px'
-                                }}>
-                                    <BookOpen size={12} />
-                                    {cls.id}
+                            <div className="h-2 bg-emerald-500 group-hover:h-3 transition-all" />
+                            <div className="p-6">
+                                <div className="flex justify-between items-start mb-4">
+                                    <span className="bg-emerald-50 text-emerald-700 text-[10px] font-bold px-2 py-1 rounded-lg uppercase tracking-wider">{cls.courseCode || 'CODE'}</span>
+                                    <span className="flex items-center text-slate-400 text-[10px] gap-1 font-medium"><Calendar size={12}/> {cls.termCode || 'Kỳ học'}</span>
                                 </div>
-
-                                {/* Tên môn học */}
-                                <h4 style={{
-                                    fontSize: '1.125rem',
-                                    fontWeight: 700,
-                                    color: '#1e293b',
-                                    margin: '0 0 12px 0',
-                                    lineHeight: '1.4'
-                                }}>
-                                    {cls.courseName} ({cls.courseCode})
-                                </h4>
-
-                                {/* Giảng viên */}
-                                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '12px', color: '#475569' }}>
-                                    <User size={16} style={{ color: '#94a3b8' }} />
-                                    <span style={{ fontSize: '0.875rem' }}>GV: <strong>{cls.lecturerName}</strong></span>
+                                <h3 className="text-lg font-bold text-slate-800 mb-4 group-hover:text-emerald-700 transition-colors line-clamp-2">{cls.courseName || cls.name}</h3>
+                                <div className="space-y-3 pt-4 border-t border-slate-50">
+                                    <div className="flex items-center gap-3">
+                                        <div className="w-8 h-8 rounded-full bg-slate-100 flex items-center justify-center text-slate-500 text-sm font-bold">
+                                            {cls.lecturerName ? cls.lecturerName[0].toUpperCase() : 'G'}
+                                        </div>
+                                        <div>
+                                            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest leading-none mb-1">Giảng viên</p>
+                                            <p className="text-sm font-bold text-slate-700">{cls.lecturerName || 'Chưa phân công'}</p>
+                                        </div>
+                                    </div>
+                                    <div className="flex justify-between items-center text-[10px] text-slate-400 font-bold uppercase tracking-widest">
+                                        <span>Sĩ số: {cls.totalStudents || 0} HV</span>
+                                        <button className="px-3 py-1 bg-slate-900 text-white rounded-lg hover:bg-emerald-700 transition-colors">Vào lớp</button>
+                                    </div>
                                 </div>
-                            </div>
-
-                            {/* Hạn học kỳ / Action */}
-                            <div style={{
-                                marginTop: '16px',
-                                paddingTop: '16px',
-                                borderTop: '1px solid #f1f5f9',
-                                display: 'flex',
-                                justifyContent: 'space-between',
-                                alignItems: 'center'
-                            }}>
-                                <div style={{ display: 'flex', alignItems: 'center', gap: '6px', color: '#64748b', fontSize: '0.75rem' }}>
-                                    <Calendar size={14} />
-                                    <span>{cls.startDate || 'N/A'} - {cls.endDate || 'N/A'}</span>
-                                </div>
-
-                                <button
-                                    onClick={(e) => {
-                                        e.stopPropagation();
-                                        handleOpenClassDetail(cls);
-                                    }}
-                                    style={{
-                                        padding: '6px 12px',
-                                        backgroundColor: '#0D3E26',
-                                        color: '#fff',
-                                        border: 'none',
-                                        borderRadius: '8px',
-                                        fontSize: '0.875rem',
-                                        fontWeight: 600,
-                                        cursor: 'pointer',
-                                        transition: 'background-color 0.2s'
-                                    }}
-                                    onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#072416'}
-                                    onMouseLeave={(e) => e.currentTarget.style.backgroundColor = '#0D3E26'}
-                                >
-                                    Vào lớp
-                                </button>
                             </div>
                         </div>
                     ))}
                 </div>
+            ) : (
+                <div className="bg-white p-20 rounded-3xl border border-dashed border-slate-200 text-center">
+                    <div className="w-16 h-16 bg-slate-50 rounded-full flex items-center justify-center mx-auto mb-4">
+                        <BookOpen className="w-8 h-8 text-slate-200" />
+                    </div>
+                    <h3 className="text-xl font-bold text-slate-800">Không tìm thấy lớp học nào</h3>
+                    <p className="text-slate-500 mt-2">Hãy thử thay đổi năm học hoặc kỳ học để xem các lớp khác.</p>
+                </div>
             )}
-        </div>
 
             {/* ── Modal chi tiết lớp học ── */ }
     {
@@ -498,6 +361,7 @@ export default function StudentDashboard() {
             </div>
         )
     }
+        </div>
         </>
     );
 }
