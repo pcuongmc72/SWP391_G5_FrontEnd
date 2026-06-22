@@ -77,6 +77,7 @@ export default function DashbroadStudent() {
   const [selectedCourse, setSelectedCourse] = useState(null);
   const [currentView, setCurrentView] = useState("overview"); // "overview" | "player"
   const [activeCourseTab, setActiveCourseTab] = useState("stream"); // "stream" | "classwork" | "people"
+  const [sidebarOpen, setSidebarOpen] = useState(true); // Sidebar toggle state
 
   // Announcements State
   const [announcementText, setAnnouncementText] = useState("");
@@ -383,6 +384,7 @@ export default function DashbroadStudent() {
 
   const studentName = currentUser?.fullName || currentUser?.email || 'Học viên';
   const studentCode = currentUser?.username || 'SV-2026';
+  const studentEmail = currentUser?.email || '';
 
   return (
     <div id="flipped-classroom-app-root" className="bg-slate-50 min-h-screen flex flex-col font-sans transition select-text">
@@ -396,7 +398,10 @@ export default function DashbroadStudent() {
         resetProgress={resetProgress}
         studentName={studentName}
         studentCode={studentCode}
+        studentEmail={studentEmail}
         onLogout={handleLogout}
+        onToggleSidebar={() => setSidebarOpen(prev => !prev)}
+        sidebarOpen={sidebarOpen}
       />
 
       {/* Visual notification banner */}
@@ -418,85 +423,61 @@ export default function DashbroadStudent() {
       <div className="flex-1 flex overflow-hidden">
 
         {/* Left Side Navigation Rail */}
-        <aside className="hidden md:flex flex-col w-18 lg:w-20 bg-white border-r border-gray-200 shrink-0 select-none py-4 items-center justify-between">
-          <div className="flex flex-col gap-6 items-center w-full">
+        <aside
+          className={`hidden md:flex flex-col bg-white border-r border-gray-200 shrink-0 select-none py-4 items-center justify-between overflow-hidden transition-all duration-300 ease-in-out ${
+            sidebarOpen ? 'w-56 opacity-100' : 'w-0 opacity-0 border-r-0'
+          }`}
+        >
+          <div className="flex flex-col gap-1 items-start w-full px-3">
 
             {/* 1. Home button */}
-            <div className="group relative flex justify-center w-full">
-              <button
-                onClick={() => setSelectedCourse(null)}
-                className={`p-3 rounded-xl transition cursor-pointer ${!selectedCourse
-                  ? "bg-emerald-50 text-emerald-700"
-                  : "text-gray-550 hover:bg-gray-100 hover:text-gray-800"
-                  }`}
-                title="Lớp học của tôi"
-              >
-                <Home size={20} className="stroke-[2.2]" />
-              </button>
-              <span className="absolute left-16 top-3 bg-gray-800 text-white text-[10px] scale-0 group-hover:scale-100 transition px-2.5 py-1 rounded shadow-md font-medium z-40 whitespace-nowrap">
-                Trang chủ Lớp học
-              </span>
-            </div>
-
-            {/* 2. Calendar button */}
-            <div className="group relative flex justify-center w-full">
-              <button
-                onClick={() => alert("Thời khóa biểu cá nhân: Bạn không có lịch thi đấu hoặc báo cáo bài tập hôm nay.")}
-                className="p-3 rounded-xl text-gray-500 hover:bg-gray-100 hover:text-gray-800 transition cursor-pointer"
-                title="Lịch học tập"
-              >
-                <Calendar size={20} className="stroke-[2.2]" />
-              </button>
-              <span className="absolute left-16 top-3 bg-gray-800 text-white text-[10px] scale-0 group-hover:scale-100 transition px-2.5 py-1 rounded shadow-md font-medium z-40 whitespace-nowrap">
-                Lịch học đảo ngược
-              </span>
-            </div>
+            <button
+              onClick={() => setSelectedCourse(null)}
+              className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl transition cursor-pointer text-left ${!selectedCourse
+                ? "bg-emerald-50 text-emerald-700"
+                : "text-gray-600 hover:bg-gray-100 hover:text-gray-900"
+                }`}
+              title="Lớp học của tôi"
+            >
+              <Home size={20} className="stroke-[2.2] shrink-0" />
+              <span className="text-xs font-semibold whitespace-nowrap">Trang chủ</span>
+            </button>
 
             {/* 3. Tasks checklist */}
-            <div className="group relative flex justify-center w-full">
-              <button
-                onClick={() => alert(`Trạng thái: Bạn đã đánh dấu học xong ${completedLecturesCount}/${totalLecturesCount} học liệu lý thuyết môn học hiện tại.`)}
-                className="p-3 rounded-xl text-gray-500 hover:bg-gray-100 hover:text-gray-800 transition cursor-pointer"
-                title="Danh sách cần tự học"
-              >
-                <ClipboardCheck size={20} className="stroke-[2.2]" />
-              </button>
-              <span className="absolute left-16 top-3 bg-gray-800 text-white text-[10px] scale-0 group-hover:scale-100 transition px-2.5 py-1 rounded shadow-md font-medium z-40 whitespace-nowrap">
-                Việc cần làm (To-Do)
-              </span>
-            </div>
+            <button
+              onClick={() => alert(`Trạng thái: Bạn đã đánh dấu học xong ${completedLecturesCount}/${totalLecturesCount} học liệu lý thuyết môn học hiện tại.`)}
+              className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-gray-600 hover:bg-gray-100 hover:text-gray-900 transition cursor-pointer text-left"
+              title="Danh sách cần tự học"
+            >
+              <ClipboardCheck size={20} className="stroke-[2.2] shrink-0" />
+              <span className="text-xs font-semibold whitespace-nowrap">Bài tập nhà</span>
+            </button>
 
             {/* 4. Enrolled courses collection list icon */}
-            <div className="group relative flex justify-center w-full">
-              <button
-                onClick={() => setSelectedCourse(null)}
-                className="p-3 rounded-xl text-gray-500 hover:bg-gray-100 hover:text-gray-800 transition cursor-pointer"
-                title="Khóa đào tạo"
-              >
-                <GraduationCap size={20} className="stroke-[2.2]" />
-              </button>
-              <span className="absolute left-16 top-3 bg-gray-800 text-white text-[10px] scale-0 group-hover:scale-100 transition px-2.5 py-1 rounded shadow-md font-medium z-40 whitespace-nowrap">
-                Học kỳ hiện tại
-              </span>
-            </div>
+            <button
+              onClick={() => setSelectedCourse(null)}
+              className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-gray-600 hover:bg-gray-100 hover:text-gray-900 transition cursor-pointer text-left"
+              title="Khóa đào tạo"
+            >
+              <GraduationCap size={20} className="stroke-[2.2] shrink-0" />
+              <span className="text-xs font-semibold whitespace-nowrap">Học kỳ hiện tại</span>
+            </button>
           </div>
 
           {/* Quick Settings widget at bottom */}
-          <div className="group relative flex justify-center w-full">
+          <div className="w-full px-3">
             <button
               onClick={() => {
                 if (confirm("Bạn có muốn tải lại và reset sạch toàn bộ lịch sử điểm tự học?")) {
                   resetProgress();
                 }
               }}
-              className="p-3 rounded-xl text-gray-400 hover:bg-gray-100 hover:text-red-500 transition cursor-pointer"
+              className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-gray-400 hover:bg-red-50 hover:text-red-500 transition cursor-pointer text-left"
               title="Đặt lại thông tin tiến độ"
             >
-              <Settings size={20} />
+              <Settings size={20} className="shrink-0" />
+              <span className="text-xs font-semibold whitespace-nowrap">Reset dữ liệu</span>
             </button>
-            <span className="absolute left-16 bottom-3 bg-gray-800 text-white text-[10px] scale-0 group-hover:scale-100 transition px-2.5 py-1 rounded shadow-md font-medium z-40 whitespace-nowrap">
-              Reset dữ liệu (Debug)
-            </span>
           </div>
         </aside>
 
