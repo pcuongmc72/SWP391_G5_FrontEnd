@@ -49,11 +49,11 @@ api.interceptors.response.use(
 
     if (status === 401 && !originalRequest._retry) {
       originalRequest._retry = true;
-      // Tránh lặp vô tận hoặc redirect cứng làm mất state ứng dụng
+      // TODO: Implement token refresh logic here
+      // await refreshToken();
+      // return api(originalRequest);
       localStorage.removeItem('access_token');
-      localStorage.removeItem('user');
-      // Tùy chọn: Bạn có thể emit một event hoặc dùng state management để báo logout
-      // Thay vì window.location.href = '/', hãy để component xử lý hoặc dùng navigate nếu có thể
+      window.location.href = '/';
     }
 
     // Chuẩn hóa error message

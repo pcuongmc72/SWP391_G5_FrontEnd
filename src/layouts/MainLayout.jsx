@@ -1,5 +1,5 @@
-import { useState, useEffect } from 'react';
-import { Outlet, useNavigate, useLocation } from 'react-router-dom';
+import { useState } from 'react';
+import { Outlet, useNavigate } from 'react-router-dom';
 import Navbar from '../components/Navbar/Navbar';
 import Footer from '../components/Footer/Footer';
 import AuthModal from '../components/AuthModal/AuthModal';
@@ -13,19 +13,9 @@ function MainLayout({ onLogin }) {
   const [showLogin, setShowLogin]   = useState(false);
   const [activeView, setActiveView] = useState('home');
   const navigate = useNavigate();
-  const location = useLocation();
-
-  // Sync activeView with URL
-  useEffect(() => {
-    const path = location.pathname;
-    if (path === '/') setActiveView('home');
-    else if (path.startsWith('/courses')) setActiveView('courses');
-    else if (path.startsWith('/blog')) setActiveView('blog');
-    else if (path.startsWith('/about')) setActiveView('about');
-    else if (path.startsWith('/contact')) setActiveView('contact');
-  }, [location.pathname]);
 
   const handleNavigate = (view) => {
+    setActiveView(view);
     const routes = {
       home:    '/',
       courses: '/courses',

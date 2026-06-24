@@ -29,17 +29,6 @@ export const getClasses = async (termId) => {
 };
 
 /**
- * Lấy danh sách lớp học của một user cụ thể (sinh viên/giảng viên)
- * @param {string} userId
- * @param {string} [termId] - Nếu truyền vào sẽ filter theo học kỳ (query param)
- */
-export const getUserClasses = async (userId, academicTermId, role) => {
-  const params = { academicTermId, role };
-  const res = await api.get(`/api/Classes/user/${userId}`, { params });
-  return res.data;
-};
-
-/**
  * Lấy thông tin một lớp học theo ID
  * @param {string} id
  */
