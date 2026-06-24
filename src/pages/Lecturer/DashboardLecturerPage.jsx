@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import {
   BookOpen, Upload, CheckSquare, MessageSquare, TrendingUp, Award,
-  LogOut, Search, Bell, Calendar, ChevronDown,
+  LogOut, Search, Bell, ChevronDown,
   User, KeyRound, X, Pencil, Check, Mail, Phone, MapPin, Briefcase, Users,
 } from 'lucide-react';
 import { logout, updateProfile } from '../../services/authService';
@@ -18,7 +18,6 @@ import FeedbackDashboard from './FeedbackDashboard';
 import ProgressDashboard from './ProgressDashboard';
 import PromotionDashboard from './PromotionDashboard';
 import ClassListDashboard from './ClassListDashboard';
-import LecturerSchedulePage from './LecturerSchedulePage';
 
 const SIDEBAR_ITEMS = [
   { id: 'materials',   label: 'Tài liệu học tập',    icon: BookOpen, path: '/dashboard/lecturer/materials' },
@@ -333,35 +332,20 @@ function LecturerLayoutInner() {
         <div className={styles.sectionLabel}>CHỨC NĂNG LÀM VIỆC</div>
 
         <nav className={styles.nav} aria-label="Menu giảng viên">
-          {(() => {
-            const isScheduleActive = window.location.pathname.startsWith('/lecturer/classes');
+          {SIDEBAR_ITEMS.map(({ id, label, icon: Icon, path }) => {
+            const isActive = location.pathname === path || (id === 'materials' && location.pathname === '/dashboard/lecturer');
             return (
-              <>
-                {SIDEBAR_ITEMS.map(({ id, label, icon: Icon, path }) => {
-                  const isActive = location.pathname === path || (id === 'materials' && location.pathname === '/dashboard/lecturer');
-                  return (
-                    <button
-                      key={id}
-                      type="button"
-                      className={`${styles.navBtn} ${isActive ? styles.navBtnActive : ''}`}
-                      onClick={() => { setActiveSubTab(id); navigate(path); }}
-                    >
-                      <Icon size={18} />
-                      <span>{label}</span>
-                    </button>
-                  );
-                })}
-                <button
-                  type="button"
-                  className={`${styles.navBtn} ${isScheduleActive ? styles.navBtnActive : ''}`}
-                  onClick={() => navigate('/dashboard/lecturer/schedule')}
-                >
-                  <Calendar size={18} />
-                  <span>Lịch học</span>
-                </button>
-              </>
+              <button
+                key={id}
+                type="button"
+                className={`${styles.navBtn} ${isActive ? styles.navBtnActive : ''}`}
+                onClick={() => { setActiveSubTab(id); navigate(path); }}
+              >
+                <Icon size={18} />
+                <span>{label}</span>
+              </button>
             );
-          })()}
+          })}
         </nav>
 
         <button type="button" className={styles.logoutBtn} onClick={handleLogout}>
@@ -485,8 +469,6 @@ function LecturerLayoutInner() {
             <ProgressDashboard />
           ) : location.pathname === '/dashboard/lecturer/promotion' ? (
             <PromotionDashboard />
-          ) : location.pathname === '/dashboard/lecturer/schedule' || location.pathname.startsWith('/dashboard/lecturer/schedule/') ? (
-            <LecturerSchedulePage />
           ) : (
             <MaterialsDashboard />
           )}

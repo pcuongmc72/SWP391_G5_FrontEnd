@@ -288,7 +288,7 @@ function SubjectDropdown({ value, onChange, existingSubjects, hasError = false, 
 
 export default function MaterialsDashboard() {
   const {
-    currentUser, users, selectedClassId,
+    currentUser, users, classrooms, selectedClassId,
     classesLoading, classesError, workspaceLoading,
     materials, searchQuery, setSearchQuery, api,
   } = useLecturerWorkspace();
@@ -299,7 +299,6 @@ export default function MaterialsDashboard() {
   const [isAddMaterialModalOpen, setIsAddMaterialModalOpen] = useState(false);
   const [expandedChapters, setExpandedChapters] = useState({});
   const [filterType, setFilterType] = useState('all'); // all | video | pdf | document | quiz
-  const [filterSubject, setFilterSubject] = useState('all'); // all | <subject code>
   const [hasSubmitAttempted, setHasSubmitAttempted] = useState(false);
 
   const [newMaterialForm, setNewMaterialForm] = useState({
@@ -384,43 +383,32 @@ export default function MaterialsDashboard() {
     if (filterType !== 'all') {
       list = list.filter((m) => m.type === filterType);
     }
-    // Filter by subject
-    if (filterSubject !== 'all') {
-      list = list.filter((m) => {
-        if (!m.chapter) return filterSubject === 'Học liệu chung';
-        const subj = m.chapter.includes(' ÷ ') ? m.chapter.split(' ÷ ')[0].trim() : 'Học liệu chung';
-        return subj === filterSubject;
-      });
-    }
     return list;
-  }, [materials, searchQuery, filterType, filterSubject]);
+  }, [materials, searchQuery, filterType]);
 
-  const groupedBySubjectAndChapter = useMemo(() => {
+  const groupedByChapter = useMemo(() => {
     const groups = {};
     classroomMaterials.forEach((m) => {
-      let subject = 'Học liệu chung';
       let chapter = 'Học liệu chung';
       if (m.chapter && m.chapter.includes(' ÷ ')) {
         const parts = m.chapter.split(' ÷ ');
-        subject = parts[0].trim();
         chapter = parts[1].trim();
       } else if (m.chapter) {
         chapter = m.chapter.trim();
       }
-      if (!groups[subject]) groups[subject] = {};
-      if (!groups[subject][chapter]) groups[subject][chapter] = [];
-      groups[subject][chapter].push(m);
+      if (!groups[chapter]) groups[chapter] = [];
+      groups[chapter].push(m);
     });
     return groups;
   }, [classroomMaterials]);
 
-  const sortedSubjects = useMemo(() => {
-    return Object.keys(groupedBySubjectAndChapter).sort((a, b) => {
+  const sortedChapters = useMemo(() => {
+    return Object.keys(groupedByChapter).sort((a, b) => {
       if (a === 'Học liệu chung') return 1;
       if (b === 'Học liệu chung') return -1;
       return a.localeCompare(b, undefined, { numeric: true, sensitivity: 'base' });
     });
-  }, [groupedBySubjectAndChapter]);
+  }, [groupedByChapter]);
 
   const existingSubjects = useMemo(() => {
     return Array.from(new Set(materials.map(m => m.chapter).filter(Boolean).map(ch => {
@@ -617,6 +605,14 @@ export default function MaterialsDashboard() {
     setIsUploading(true);
     const compoundChapter = `${newMaterialForm.subject} ÷ ${newMaterialForm.chapter}`;
     try {
+      let finalUrl = '#';
+      let finalFileSize = '';
+      if (newMaterialForm.fileObj) {
+        const uploadResult = await api.uploadFile(newMaterialForm.fileObj);
+        finalUrl = uploadResult.url;
+        finalFileSize = `${(uploadResult.size / (1024 * 1024)).toFixed(1)} MB`;
+      }
+
       const payload = {
         title: newMaterialForm.title,
         description: serializeMaterialDesc({
@@ -628,8 +624,8 @@ export default function MaterialsDashboard() {
           comments: newMaterialForm.comments,
         }),
         type: newMaterialForm.type,
-        fileSize: newMaterialForm.fileName ? newMaterialForm.fileSize : '',
-        url: newMaterialForm.fileName ? `#file:${newMaterialForm.fileName}` : '#',
+        fileSize: finalFileSize || (newMaterialForm.fileName ? newMaterialForm.fileSize : ''),
+        url: finalUrl !== '#' ? finalUrl : (newMaterialForm.fileName ? `#file:${newMaterialForm.fileName}` : '#'),
         chapter: compoundChapter,
         lesson: null,
       };
@@ -659,6 +655,18 @@ export default function MaterialsDashboard() {
     setIsUploading(true);
     const compoundChapter = `${editMaterialForm.subject} ÷ ${editMaterialForm.chapter}`;
     try {
+      let finalUrl = editMaterialForm.fileName ? `#file:${editMaterialForm.fileName}` : '#';
+      let finalFileSize = editMaterialForm.fileName ? editMaterialForm.fileSize : '';
+
+      if (editMaterialForm.fileObj) {
+        const uploadResult = await api.uploadFile(editMaterialForm.fileObj);
+        finalUrl = uploadResult.url;
+        finalFileSize = `${(uploadResult.size / (1024 * 1024)).toFixed(1)} MB`;
+      } else if (editMaterialForm.fileName && !editMaterialForm.fileName.startsWith('#file:')) {
+        // Keeps the existing file url if it's not a dummy
+        finalUrl = editMaterialForm.fileName;
+      }
+
       const payload = {
         title: editMaterialForm.title,
         description: serializeMaterialDesc({
@@ -670,8 +678,8 @@ export default function MaterialsDashboard() {
           comments: editMaterialForm.comments,
         }),
         type: editMaterialForm.type,
-        fileSize: editMaterialForm.fileName ? editMaterialForm.fileSize : '',
-        url: editMaterialForm.fileName ? `#file:${editMaterialForm.fileName}` : '#',
+        fileSize: finalFileSize,
+        url: finalUrl,
         chapter: compoundChapter,
         lesson: null,
       };
@@ -786,37 +794,11 @@ export default function MaterialsDashboard() {
             {/* Divider */}
             <span style={{ width: 1, height: 20, background: '#e2e8f0', margin: '0 4px' }} />
 
-            {/* Subject filters */}
-            {[
-              { key: 'all', label: 'Tất cả môn' },
-              ...existingSubjects.map(s => ({ key: s, label: s })),
-              ...(existingSubjects.length === 0 ? [] : []),
-            ].map(({ key, label }) => (
-              <button
-                key={key}
-                type="button"
-                onClick={() => setFilterSubject(key)}
-                style={{
-                  padding: '4px 12px',
-                  borderRadius: 999,
-                  fontSize: 12,
-                  fontWeight: 600,
-                  cursor: 'pointer',
-                  border: `1.5px solid ${filterSubject === key ? '#7c3aed' : '#cbd5e1'}`,
-                  background: filterSubject === key ? '#f5f3ff' : '#fff',
-                  color: filterSubject === key ? '#6d28d9' : '#475569',
-                  transition: 'all 0.15s',
-                }}
-              >
-                {label}
-              </button>
-            ))}
-
             {/* Clear all filters */}
-            {(filterType !== 'all' || filterSubject !== 'all' || searchQuery) && (
+            {(filterType !== 'all' || searchQuery) && (
               <button
                 type="button"
-                onClick={() => { setFilterType('all'); setFilterSubject('all'); setSearchQuery(''); }}
+                onClick={() => { setFilterType('all'); setSearchQuery(''); }}
                 style={{
                   padding: '4px 12px', borderRadius: 999, fontSize: 12, fontWeight: 700,
                   cursor: 'pointer', border: '1.5px solid #fca5a5',
@@ -838,143 +820,130 @@ export default function MaterialsDashboard() {
               type="button"
               className={styles.btnEmerald}
               style={{ width: 'auto', padding: '8px 16px', display: 'flex', alignItems: 'center', gap: 6, margin: 0 }}
-              onClick={() => setIsAddMaterialModalOpen(true)}
+              onClick={() => {
+                const activeClass = classrooms?.find(c => c.id === selectedClassId);
+                const activeClassName = activeClass ? activeClass.name : '';
+                setNewMaterialForm(prev => ({ ...prev, subject: activeClassName }));
+                setIsAddMaterialModalOpen(true);
+              }}
             >
               <Plus size={16} /> Đăng tải học liệu mới
             </button>
           </div>
 
           <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
-            {sortedSubjects.map((subjectCode) => {
-              const chapters = groupedBySubjectAndChapter[subjectCode] || {};
-              const sortedChapters = Object.keys(chapters).sort((a, b) => {
-                if (a === 'Học liệu chung') return 1;
-                if (b === 'Học liệu chung') return -1;
-                return a.localeCompare(b, undefined, { numeric: true, sensitivity: 'base' });
-              });
+            <div className={styles.chaptersList}>
+              {sortedChapters.map((chName) => {
+                const list = groupedByChapter[chName] || [];
+                const chKey = chName;
+                const isExpanded = !!expandedChapters[chKey];
 
-              return (
-                <div key={subjectCode} className={styles.subjectBlock}>
-                  <div className={styles.subjectHeader}>
-                    <Award size={18} color="#7c3aed" />
-                    <h4 className={styles.subjectTitle}>{subjectCode}</h4>
-                  </div>
+                return (
+                  <div key={chName} className={styles.chapterCard}>
+                    <div
+                      className={styles.chapterHeader}
+                      onClick={() => toggleChapter(chKey)}
+                      style={{ cursor: 'pointer' }}
+                    >
+                      <div className={styles.chapterHeaderLeft}>
+                        <BookOpen size={16} color="#059669" />
+                        <span className={styles.chapterTitle}>{chName}</span>
+                        <span className={styles.materialsCount}>({list.length} bài học)</span>
+                      </div>
+                      <ChevronRight
+                        size={16}
+                        style={{
+                          transform: isExpanded ? 'rotate(90deg)' : 'rotate(0deg)',
+                          transition: 'transform 0.2s',
+                        }}
+                      />
+                    </div>
 
-                  <div className={styles.chaptersList}>
-                    {sortedChapters.map((chName) => {
-                      const chKey = `${subjectCode} / ${chName}`;
-                      const list = chapters[chName] || [];
-                      const isExpanded = !!expandedChapters[chKey];
-
-                      return (
-                        <div key={chName} className={styles.chapterCard}>
-                          <div
-                            className={styles.chapterHeader}
-                            onClick={() => toggleChapter(chKey)}
-                            style={{ cursor: 'pointer' }}
-                          >
-                            <div className={styles.chapterHeaderLeft}>
-                              <BookOpen size={16} color="#059669" />
-                              <span className={styles.chapterTitle}>{chName}</span>
-                              <span className={styles.materialsCount}>({list.length} bài học)</span>
-                            </div>
-                            <ChevronRight
-                              size={16}
-                              style={{
-                                transform: isExpanded ? 'rotate(90deg)' : 'rotate(0deg)',
-                                transition: 'transform 0.2s',
-                              }}
-                            />
-                          </div>
-
-                          {isExpanded && (
-                            <div className={styles.chapterBody}>
-                              <div className={styles.materialsGrid}>
-                                {list.map((m) => {
-                                  const meta = parseMaterialDesc(m.description);
-                                  const commentsCount = meta.comments?.length || 0;
-                                  return (
-                                    <div
-                                      key={m.id}
-                                      className={`${styles.materialCard} ${m.isDisabled ? styles.disabledCard : ''}`}
-                                    >
-                                      <div className={styles.materialIconArea}>
-                                        {renderFileIcon(m.type)}
-                                      </div>
-                                      <div className={styles.materialContent}>
-                                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                                          <h5 className={styles.materialTitle}>
-                                            {m.title} {m.isDisabled && <span className={styles.disabledTag}>Đã VH</span>}
-                                          </h5>
-                                          <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                                            <button
-                                              type="button"
-                                              className={styles.editBtn}
-                                              style={{ 
-                                                color: m.completedByUsers?.length > 0 && users.length > 0 ? '#10b981' : '#cbd5e1',
-                                                borderColor: m.completedByUsers?.length > 0 && users.length > 0 ? '#10b981' : '#e2e8f0',
-                                                background: m.completedByUsers?.length > 0 && users.length > 0 ? '#ecfdf5' : '#fff',
-                                                cursor: m.completedByUsers?.length > 0 && users.length > 0 ? 'default' : 'pointer'
-                                              }}
-                                              title={m.completedByUsers?.length > 0 && users.length > 0 ? 'Đã hoàn thành' : 'Đánh dấu hoàn thành'}
-                                              onClick={async (e) => {
-                                                e.stopPropagation();
-                                                if (m.completedByUsers?.length > 0 && users.length > 0) return;
-                                                if (window.confirm(`Đánh dấu hoàn thành bài học "${m.title}" cho toàn bộ học sinh?`)) {
-                                                  try {
-                                                    await api.completeMaterialAll(m.id);
-                                                    showToast('Đã đánh dấu hoàn thành!');
-                                                  } catch (err) {
-                                                    showToast(err.message || 'Lỗi khi đánh dấu', 'info');
-                                                  }
-                                                }
-                                              }}
-                                            >
-                                              <CheckCircle size={14} strokeWidth={2.5} />
-                                            </button>
-                                            <button
-                                              type="button"
-                                              className={styles.editBtn}
-                                              onClick={() => handleEditMaterialStart(m)}
-                                              title="Chỉnh sửa"
-                                            >
-                                              <Pencil size={13} />
-                                            </button>
-                                          </div>
-                                        </div>
-                                        <p className={styles.materialDesc}>
-                                          {meta.desc || 'Không có mô tả chi tiết.'}
-                                        </p>
-                                        <div className={styles.materialMetaGrid}>
-                                          {meta.publishDate && (
-                                            <span>Ngày mở: {meta.publishDate}</span>
-                                          )}
-                                          {meta.deadline && (
-                                            <span>Hạn nộp: {meta.deadline}</span>
-                                          )}
-                                          {m.fileSize && <span>Dung lượng: {m.fileSize}</span>}
-                                        </div>
-                                        {commentsCount > 0 && (
-                                          <div style={{ marginTop: 8, fontSize: 10, color: '#059669', fontWeight: 600, display: 'flex', alignItems: 'center', gap: 4 }}>
-                                            <MessageSquare size={10} /> {commentsCount} thảo luận/ghi chú
-                                          </div>
-                                        )}
-                                      </div>
+                    {isExpanded && (
+                      <div className={styles.chapterBody}>
+                        <div className={styles.materialsGrid}>
+                          {list.map((m) => {
+                            const meta = parseMaterialDesc(m.description);
+                            const commentsCount = meta.comments?.length || 0;
+                            return (
+                              <div
+                                key={m.id}
+                                className={`${styles.materialCard} ${m.isDisabled ? styles.disabledCard : ''}`}
+                              >
+                                <div className={styles.materialIconArea}>
+                                  {renderFileIcon(m.type)}
+                                </div>
+                                <div className={styles.materialContent}>
+                                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                                    <h5 className={styles.materialTitle}>
+                                      {m.title} {m.isDisabled && <span className={styles.disabledTag}>Đã VH</span>}
+                                    </h5>
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                                      <button
+                                        type="button"
+                                        className={styles.editBtn}
+                                        style={{ 
+                                          color: m.completedByUsers?.length > 0 && users.length > 0 ? '#10b981' : '#cbd5e1',
+                                          borderColor: m.completedByUsers?.length > 0 && users.length > 0 ? '#10b981' : '#e2e8f0',
+                                          background: m.completedByUsers?.length > 0 && users.length > 0 ? '#ecfdf5' : '#fff',
+                                          cursor: m.completedByUsers?.length > 0 && users.length > 0 ? 'default' : 'pointer'
+                                        }}
+                                        title={m.completedByUsers?.length > 0 && users.length > 0 ? 'Đã hoàn thành' : 'Đánh dấu hoàn thành'}
+                                        onClick={async (e) => {
+                                          e.stopPropagation();
+                                          if (m.completedByUsers?.length > 0 && users.length > 0) return;
+                                          if (window.confirm(`Đánh dấu hoàn thành bài học "${m.title}" cho toàn bộ học sinh?`)) {
+                                            try {
+                                              await api.completeMaterialAll(m.id);
+                                              showToast('Đã đánh dấu hoàn thành!');
+                                            } catch (err) {
+                                              showToast(err.message || 'Lỗi khi đánh dấu', 'info');
+                                            }
+                                          }
+                                        }}
+                                      >
+                                        <CheckCircle size={14} strokeWidth={2.5} />
+                                      </button>
+                                      <button
+                                        type="button"
+                                        className={styles.editBtn}
+                                        onClick={() => handleEditMaterialStart(m)}
+                                        title="Chỉnh sửa"
+                                      >
+                                        <Pencil size={13} />
+                                      </button>
                                     </div>
-                                  );
-                                })}
+                                  </div>
+                                  <p className={styles.materialDesc}>
+                                    {meta.desc || 'Không có mô tả chi tiết.'}
+                                  </p>
+                                  <div className={styles.materialMetaGrid}>
+                                    {meta.publishDate && (
+                                      <span>Ngày mở: {meta.publishDate}</span>
+                                    )}
+                                    {meta.deadline && (
+                                      <span>Hạn nộp: {meta.deadline}</span>
+                                    )}
+                                    {m.fileSize && <span>Dung lượng: {m.fileSize}</span>}
+                                  </div>
+                                  {commentsCount > 0 && (
+                                    <div style={{ marginTop: 8, fontSize: 10, color: '#059669', fontWeight: 600, display: 'flex', alignItems: 'center', gap: 4 }}>
+                                      <MessageSquare size={10} /> {commentsCount} thảo luận/ghi chú
+                                    </div>
+                                  )}
+                                </div>
                               </div>
-                            </div>
-                          )}
+                            );
+                          })}
                         </div>
-                      );
-                    })}
+                      </div>
+                    )}
                   </div>
-                </div>
-              );
-            })}
+                );
+              })}
+            </div>
 
-            {sortedSubjects.length === 0 && (
+            {sortedChapters.length === 0 && (
               <div className={styles.emptyBox}>Chưa có tài liệu học tập nào trong lớp học này.</div>
             )}
           </div>
@@ -994,13 +963,16 @@ export default function MaterialsDashboard() {
             </div>
             <form onSubmit={handleAddMaterial}>
               <div className={styles.field}>
-                <label>Môn học &nbsp;<span style={{ color: '#ef4444' }}>*</span></label>
-                <SubjectDropdown
-                  value={newMaterialForm.subject}
-                  onChange={(s) => setNewMaterialForm({ ...newMaterialForm, subject: s, chapter: '' })}
-                  existingSubjects={existingSubjects}
-                  hasError={hasSubmitAttempted && !newMaterialForm.subject}
-                />
+                <label>Môn học</label>
+                <div style={{ position: 'relative' }}>
+                  <Award size={14} color="#64748b" style={{ position: 'absolute', left: 12, top: 12 }} />
+                  <input
+                    className={styles.input}
+                    value={newMaterialForm.subject || 'Không xác định'}
+                    disabled
+                    style={{ paddingLeft: 34, background: '#f1f5f9', color: '#334155', fontWeight: 600, cursor: 'not-allowed', border: '1.5px solid #e2e8f0' }}
+                  />
+                </div>
               </div>
 
               <div className={styles.field}>
@@ -1213,13 +1185,16 @@ export default function MaterialsDashboard() {
               </div>
 
               <div className={styles.field}>
-                <label>Môn học &nbsp;<span style={{ color: '#ef4444' }}>*</span></label>
-                <SubjectDropdown
-                  value={editMaterialForm.subject}
-                  onChange={(s) => setEditMaterialForm({ ...editMaterialForm, subject: s, chapter: '' })}
-                  existingSubjects={existingSubjects}
-                  hasError={!editMaterialForm.subject}
-                />
+                <label>Môn học</label>
+                <div style={{ position: 'relative' }}>
+                  <Award size={14} color="#64748b" style={{ position: 'absolute', left: 12, top: 12 }} />
+                  <input
+                    className={styles.input}
+                    value={editMaterialForm.subject || 'Không xác định'}
+                    disabled
+                    style={{ paddingLeft: 34, background: '#f1f5f9', color: '#334155', fontWeight: 600, cursor: 'not-allowed', border: '1.5px solid #e2e8f0' }}
+                  />
+                </div>
               </div>
 
               <div className={styles.field}>

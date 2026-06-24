@@ -13,6 +13,7 @@ export default function GradingDashboard() {
   const [gradingSubmission, setGradingSubmission] = useState(null);
   const [gradeInput, setGradeInput] = useState(10);
   const [gradeFeedback, setGradeFeedback] = useState('');
+  const [activeAsgId, setActiveAsgId] = useState(null);
 
   const showToast = (message, type = 'success') => {
     setToast({ message, type });
@@ -25,9 +26,13 @@ export default function GradingDashboard() {
     return submissions.filter((s) => activeAsgIds.includes(s.assignmentId));
   }, [submissions, activeAsgIds]);
 
-  const pendingGradeCount = useMemo(() => {
-    return activeSubmissions.filter((s) => s.status === 'SUBMITTED').length;
-  }, [activeSubmissions]);
+  const currentAsgId = activeAsgId || (assignments.length > 0 ? assignments[0].id : null);
+  const currentAsg = assignments.find(a => a.id === currentAsgId);
+
+  const currentSubmissions = useMemo(() => {
+    if (!currentAsgId) return [];
+    return submissions.filter((s) => s.assignmentId === currentAsgId);
+  }, [submissions, currentAsgId]);
 
   const handleOpenGrading = (sub) => {
     const asg = assignments.find(a => a.id === sub.assignmentId);
@@ -69,108 +74,141 @@ export default function GradingDashboard() {
         </p>
       )}
 
-      <div className={styles.panel}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
-          <h3 className={styles.panelTitle} style={{ margin: 0 }}>Chấm điểm bài nộp học viên</h3>
-          <span style={{ fontSize: 12, padding: '4px 10px', background: '#fef3c7', color: '#d97706', borderRadius: 20, fontWeight: 700 }}>
-            {pendingGradeCount} bài đợi chấm
-          </span>
-        </div>
-
-        <div className={styles.tableWrapper}>
-          <table className={styles.table}>
-            <thead>
-              <tr>
-                <th>Học viên</th>
-                <th>Bài tập</th>
-                <th>Tệp đính kèm</th>
-                <th>Thời gian nộp</th>
-                <th>Thời gian chấm điểm</th>
-                <th>Trạng thái</th>
-                <th>Điểm số</th>
-                
-                <th>Thao tác</th>
-                
-              </tr>
-            </thead>
-            <tbody>
-              {activeSubmissions.map((sub) => {
-                const asg = assignments.find((a) => a.id === sub.assignmentId);
-                const student = users.find((s) => s.id === sub.studentId);
-                
+        <div className={styles.splitLayout}>
+          <div className={styles.sidebar}>
+            <h3 className={styles.sidebarTitle}>Danh sách Bài tập</h3>
+            {assignments.length === 0 ? (
+              <div className={styles.emptyBox}>Chưa có bài tập nào.</div>
+            ) : (
+              assignments.map(asg => {
+                const asgPendingCount = submissions.filter(s => s.assignmentId === asg.id && s.status === 'SUBMITTED').length;
                 return (
-                  <tr key={sub.id}>
-                    <td>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                        <img
-                          src={student?.avatarUrl || `https://api.dicebear.com/7.x/initials/svg?seed=${sub.studentId}`}
-                          alt=""
-                          style={{ width: 28, height: 28, borderRadius: '50%' }}
-                        />
-                        <div>
-                          <p style={{ margin: 0, fontWeight: 600, fontSize: 13 }}>{sub.studentName || student?.name}</p>
-                          <small style={{ color: '#64748b' }}>{sub.studentId}</small>
-                        </div>
-                      </div>
-                    </td>
-                    <td>{asg?.title || 'Bài tập đã xóa'}</td>
-                    <td>
-                      {sub.fileName ? (
-                        <a href={`#download:${sub.fileName}`} className={styles.fileLink} style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}>
-                          <FileText size={14} /> {sub.fileName}
-                        </a>
-                      ) : (
-                        <span style={{ color: '#94a3b8', fontSize: 12 }}>Không có file</span>
-                      )}
-                    </td>
-                    <td>
-                      {sub.submittedAt ? new Date(sub.submittedAt).toLocaleString('vi-VN') : 'N/A'}
-                    </td>
-                    <td>
-                      {sub.gradedAt ? new Date(sub.gradedAt).toLocaleString('vi-VN') : '—'}
-                    </td>
-                    <td>
-                      <span
-                        className={`${styles.statusBadge} ${
-                          sub.status === 'GRADED'
-                            ? styles.statusSuccess
-                            : sub.status === 'SUBMITTED'
-                            ? styles.statusWarning
-                            : styles.statusDanger
-                        }`}
-                      >
-                        {sub.status === 'GRADED' ? 'Đã chấm' : sub.status === 'SUBMITTED' ? 'Chưa chấm' : 'Chưa nộp'}
+                  <button
+                    key={asg.id}
+                    type="button"
+                    className={`${styles.sidebarItem} ${currentAsgId === asg.id ? styles.sidebarItemActive : ''}`}
+                    onClick={() => setActiveAsgId(asg.id)}
+                  >
+                    <span>{asg.title}</span>
+                    {asgPendingCount > 0 && (
+                      <span style={{ fontSize: 11, background: '#fef3c7', color: '#d97706', padding: '2px 6px', borderRadius: 10, fontWeight: 700 }}>
+                        {asgPendingCount}
                       </span>
-                    </td>
-                    
-                    <td style={{ fontWeight: 700, fontSize: 14 }}>
-                      {sub.status === 'GRADED' ? `${sub.grade}/${asg?.maxPoints || 10}` : '—'}
-                    </td>
-                    <td>
-                      <button
-                        type="button"
-                        className={styles.btnSecondary}
-                        style={{ padding: '4px 8px', fontSize: 11, display: 'inline-flex', alignItems: 'center', gap: 4 }}
-                        onClick={() => handleOpenGrading(sub)}
-                      >
-                        <Pencil size={11} /> {sub.status === 'GRADED' ? 'Sửa điểm' : 'Chấm điểm'}
-                      </button>
-                    </td>
-                  </tr>
-                );
-              })}
+                    )}
+                  </button>
+                )
+              })
+            )}
+          </div>
 
-              {activeSubmissions.length === 0 && (
-                <tr>
-                  <td colSpan="7" style={{ textAlign: 'center', color: '#64748b', padding: 24 }}>
-                    Chưa có học viên nào nộp bài.
-                  </td>
-                </tr>
+          <div className={styles.mainContent}>
+            <div className={styles.panel} style={{ margin: 0 }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
+                <h3 className={styles.panelTitle} style={{ margin: 0 }}>
+                  {currentAsg ? `Chấm điểm: ${currentAsg.title}` : 'Chấm điểm bài nộp'}
+                </h3>
+                {currentAsgId && (
+                  <span style={{ fontSize: 12, padding: '4px 10px', background: '#fef3c7', color: '#d97706', borderRadius: 20, fontWeight: 700 }}>
+                    {submissions.filter(s => s.assignmentId === currentAsgId && s.status === 'SUBMITTED').length} bài đợi chấm
+                  </span>
+                )}
+              </div>
+
+              {currentAsgId ? (
+                <div className={styles.tableWrapper}>
+                  <table className={styles.table}>
+                    <thead>
+                      <tr>
+                        <th>Học viên</th>
+                        <th>Tệp đính kèm</th>
+                        <th>Thời gian nộp</th>
+                        <th>Thời gian chấm</th>
+                        <th>Trạng thái</th>
+                        <th>Điểm số</th>
+                        <th>Thao tác</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {currentSubmissions.map((sub) => {
+                        const student = users.find((s) => s.id === sub.studentId);
+                        
+                        return (
+                          <tr key={sub.id}>
+                            <td>
+                              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                                <img
+                                  src={student?.avatarUrl || `https://api.dicebear.com/7.x/initials/svg?seed=${sub.studentId}`}
+                                  alt=""
+                                  style={{ width: 28, height: 28, borderRadius: '50%' }}
+                                />
+                                <div>
+                                  <p style={{ margin: 0, fontWeight: 600, fontSize: 13 }}>{sub.studentName || student?.name}</p>
+                                  <small style={{ color: '#64748b' }}>{sub.studentId}</small>
+                                </div>
+                              </div>
+                            </td>
+                            <td>
+                              {sub.fileName ? (
+                                <a href={`#download:${sub.fileName}`} className={styles.fileLink} style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+                                  <FileText size={14} /> {sub.fileName}
+                                </a>
+                              ) : (
+                                <span style={{ color: '#94a3b8', fontSize: 12 }}>Không có file</span>
+                              )}
+                            </td>
+                            <td>
+                              {sub.submittedAt ? new Date(sub.submittedAt).toLocaleString('vi-VN') : 'N/A'}
+                            </td>
+                            <td>
+                              {sub.gradedAt ? new Date(sub.gradedAt).toLocaleString('vi-VN') : '—'}
+                            </td>
+                            <td>
+                              <span
+                                className={`${styles.statusBadge} ${
+                                  sub.status === 'GRADED'
+                                    ? styles.statusSuccess
+                                    : sub.status === 'SUBMITTED'
+                                    ? styles.statusWarning
+                                    : styles.statusDanger
+                                }`}
+                              >
+                                {sub.status === 'GRADED' ? 'Đã chấm' : sub.status === 'SUBMITTED' ? 'Chưa chấm' : 'Chưa nộp'}
+                              </span>
+                            </td>
+                            
+                            <td style={{ fontWeight: 700, fontSize: 14 }}>
+                              {sub.status === 'GRADED' ? `${sub.grade}/${currentAsg?.maxPoints || 10}` : '—'}
+                            </td>
+                            <td>
+                              <button
+                                type="button"
+                                className={styles.btnSecondary}
+                                style={{ padding: '4px 8px', fontSize: 11, display: 'inline-flex', alignItems: 'center', gap: 4 }}
+                                onClick={() => handleOpenGrading(sub)}
+                              >
+                                <Pencil size={11} /> {sub.status === 'GRADED' ? 'Sửa điểm' : 'Chấm điểm'}
+                              </button>
+                            </td>
+                          </tr>
+                        );
+                      })}
+
+                      {currentSubmissions.length === 0 && (
+                        <tr>
+                          <td colSpan="7" style={{ textAlign: 'center', color: '#64748b', padding: 24 }}>
+                            Chưa có bài nộp nào cho bài tập này.
+                          </td>
+                        </tr>
+                      )}
+                    </tbody>
+                  </table>
+                </div>
+              ) : (
+                <div className={styles.emptyBox}>Hãy chọn một bài tập ở danh sách bên trái để bắt đầu chấm điểm.</div>
               )}
-            </tbody>
-          </table>
+            </div>
+          </div>
         </div>
-      </div>
 
       {gradingSubmission && (
         <div className={styles.modalOverlay} onClick={() => setGradingSubmission(null)}>

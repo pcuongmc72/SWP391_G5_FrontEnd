@@ -165,3 +165,15 @@ export const promoteStudentInClass = async (classId, studentId, role = 'assistan
   );
   return unwrap(response);
 };
+
+// File Upload
+export const uploadFile = async (file) => {
+  const formData = new FormData();
+  formData.append('file', file);
+  const response = await api.post('/api/Upload', formData, {
+    headers: {
+      'Content-Type': 'multipart/form-data',
+    },
+  });
+  return response.data?.data ?? response.data;
+};
