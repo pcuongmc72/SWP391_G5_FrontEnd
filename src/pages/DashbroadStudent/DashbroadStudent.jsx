@@ -1,12 +1,15 @@
-import StudentDashboard from './StudentDashboard';
-import { useState, useEffect } from 'react';
+import React, { useMemo } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import {
-    BookOpen, LogOut, LayoutGrid, GraduationCap,
-    Upload, MessageSquare, Star, BookMarked
+    BookOpen, LogOut, BookMarked,
+    Upload, MessageSquare, Star
 } from 'lucide-react';
 import { logout, getUser } from '../../services/authService';
 import styles from './DashbroadStudent.module.css';
+
+// Components
+import StudentDashboard from './StudentDashboard';
+import SharedBlogForum from '../../components/SharedBlogForum/SharedBlogForum';
 
 /* ── Sidebar tabs cho student ── */
 const SIDEBAR_TABS = [
@@ -19,7 +22,7 @@ const SIDEBAR_TABS = [
 ];
 
 function DashbroadStudent() {
-    const currentUser = getUser();
+    const currentUser = useMemo(() => getUser(), []);
     const navigate = useNavigate();
     const location = useLocation();
 
@@ -28,9 +31,16 @@ function DashbroadStudent() {
         window.location.replace('/');
     };
 
+    const renderContent = () => {
+        if (location.pathname === '/dashboard/student/forum') {
+            return <SharedBlogForum />;
+        }
+        // Default to dashboard
+        return <StudentDashboard />;
+    };
+
     return (
         <div className={styles.page}>
-
             {/* ── Sidebar ── */}
             <aside className={styles.sidebar}>
                 <div className={styles.sidebarLogo}>
@@ -72,7 +82,7 @@ function DashbroadStudent() {
                     <div className={styles.topbarRight}>
                         <div className={styles.userBadge}>
                             <div className={styles.avatar}>
-                                {currentUser?.fullName?.[0]?.toUpperCase() || currentUser?.email?.[0]?.toUpperCase() || 'S'}
+                                {currentUser?.fullName?.[0]?.toUpperCase() || 'S'}
                             </div>
                             <div className={styles.userInfo}>
                                 <span className={styles.userName}>{currentUser?.fullName || 'Học viên'}</span>
@@ -83,25 +93,9 @@ function DashbroadStudent() {
                 </header>
 
                 {/* Content Area */}
-                {/* Content Area */}
-                {/* Content Area */}
                 <div className={styles.content}>
-                    {/* Nếu đang ở trang mặc định (Lớp học của tôi) thì render StudentDashboard */}
-                    {location.pathname === '/dashboard/student' ? (
-                        <StudentDashboard />
-                    ) : (
-                        <div className="bg-white rounded-3xl p-6 border border-slate-100 shadow-sm">
-                            <h2 className="text-xl font-bold text-slate-800">
-                                Trang chức năng khác
-                            </h2>
-                            <p className="text-slate-500 text-sm mt-1">
-                                Nội dung đang được cập nhật...
-                            </p>
-                        </div>
-                    )}
+                    {renderContent()}
                 </div>
-
-
             </div>
         </div>
     );
