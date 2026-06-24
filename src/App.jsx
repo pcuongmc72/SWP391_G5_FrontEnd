@@ -19,6 +19,7 @@ import DashbroadStudentPage from './pages/DashbroadStudent/DashbroadStudent';
 import AuthModal from './components/AuthModal/AuthModal';
 import ProtectedRoute from './components/ProtectedRoute/ProtectedRoute';
 import RoleProtectedRoute from './components/RoleProtectedRoute/RoleProtectedRoute';
+import SharedBlogForum from './components/SharedBlogForum/SharedBlogForum';
 
 function AuthenticatedHomeRedirect() {
   return <Navigate to={getHomePathForCurrentUser()} replace />;
@@ -107,6 +108,8 @@ function App() {
                 : <HomePage />
             }
           />
+          <Route path="/blog-forum" element={<SharedBlogForum />} />
+          <Route path="/blog" element={<SharedBlogForum />} />
         </Route>
 
         {/* ── Trang Admin — chỉ role 'admin' ── */}
@@ -116,6 +119,7 @@ function App() {
           <Route path="/dashboard/admin/courses-management" element={<DashboardAdminPage />} />
           <Route path="/dashboard/admin/terms-management" element={<DashboardAdminPage />} />
           <Route path="/dashboard/admin/classes-management" element={<DashboardAdminPage />} />
+          <Route path="/dashboard/admin/blog-management" element={<DashboardAdminPage />} />
         </Route>
 
 
@@ -130,6 +134,7 @@ function App() {
       <Route path="/dashboard/lecturer/feedback" element={<DashboardLecturerPage />} />
       <Route path="/dashboard/lecturer/progress" element={<DashboardLecturerPage />} />
       <Route path="/dashboard/lecturer/promotion" element={<DashboardLecturerPage />} />
+      <Route path="/dashboard/lecturer/blog" element={<DashboardLecturerPage />} />
       <Route path="/dashboard/lecturer/schedule" element={<DashboardLecturerPage />} />
       <Route path="/dashboard/lecturer/schedule/:classId" element={<DashboardLecturerPage />} />
       <Route path="/lecturer/classes" element={<Navigate to="/dashboard/lecturer/schedule" replace />} />
@@ -138,7 +143,7 @@ function App() {
         {/* ── Trang Student — chỉ role 'student' ── */}
     <Route element={<ProtectedRoute allowedRoles={['student']} />}>
       <Route path="/dashboard/student" element={<DashbroadStudentPage />} />
-
+      <Route path="/dashboard/student/blog" element={<DashbroadStudentPage />} />
     </Route>
 
     {/* ── Redirect /dashboard → trang đúng role ── */}

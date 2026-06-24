@@ -19,6 +19,7 @@ import ProgressDashboard from './ProgressDashboard';
 import PromotionDashboard from './PromotionDashboard';
 import ClassListDashboard from './ClassListDashboard';
 import LecturerSchedulePage from './LecturerSchedulePage';
+import SharedBlogForum from '../../components/SharedBlogForum/SharedBlogForum';
 
 const SIDEBAR_ITEMS = [
   { id: 'materials',   label: 'Tài liệu học tập',    icon: BookOpen, path: '/dashboard/lecturer/materials' },
@@ -28,7 +29,7 @@ const SIDEBAR_ITEMS = [
   { id: 'feedback',   label: 'Phản hồi hỗ trợ',     icon: MessageSquare, path: '/dashboard/lecturer/feedback' },
   { id: 'progress',   label: 'Tiến độ học viên',     icon: TrendingUp, path: '/dashboard/lecturer/progress' },
   { id: 'promotion',  label: 'Thăng cấp học thuật',  icon: Award, path: '/dashboard/lecturer/promotion' },
-
+  { id: 'blog',       label: 'Blog & Diễn đàn',     icon: MessageSquare, path: '/dashboard/lecturer/blog' },
 ];
 
 /* ─── Profile Modal ─────────────────────────────────── */
@@ -485,8 +486,8 @@ function LecturerLayoutInner() {
             <ProgressDashboard />
           ) : location.pathname === '/dashboard/lecturer/promotion' ? (
             <PromotionDashboard />
-          ) : location.pathname === '/dashboard/lecturer/schedule' || location.pathname.startsWith('/dashboard/lecturer/schedule/') ? (
-            <LecturerSchedulePage />
+          ) : location.pathname === '/dashboard/lecturer/blog' ? (
+            <SharedBlogForum />
           ) : (
             <MaterialsDashboard />
           )}

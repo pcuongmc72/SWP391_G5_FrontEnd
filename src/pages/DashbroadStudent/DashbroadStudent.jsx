@@ -6,6 +6,7 @@ import {
     Upload, MessageSquare, Star, BookMarked
 } from 'lucide-react';
 import { logout, getUser } from '../../services/authService';
+import SharedBlogForum from '../../components/SharedBlogForum/SharedBlogForum';
 import styles from './DashbroadStudent.module.css';
 
 /* ── Sidebar tabs cho student ── */
@@ -15,7 +16,7 @@ const SIDEBAR_TABS = [
     { key: 'materials', label: 'Học liệu', icon: BookMarked, path: '/dashboard/student/materials' },
     { key: 'submissions', label: 'Bài tập và deadline', icon: Upload, path: '/dashboard/student/submissions' },
     { key: 'grades', label: 'Điểm và nhận xét', icon: Star, path: '/dashboard/student/grades' },
-
+    { key: 'blog', label: 'Blog & Diễn đàn', icon: MessageSquare, path: '/dashboard/student/blog' },
 ];
 
 function DashbroadStudent() {
@@ -83,12 +84,11 @@ function DashbroadStudent() {
                 </header>
 
                 {/* Content Area */}
-                {/* Content Area */}
-                {/* Content Area */}
                 <div className={styles.content}>
-                    {/* Nếu đang ở trang mặc định (Lớp học của tôi) thì render StudentDashboard */}
                     {location.pathname === '/dashboard/student' ? (
                         <StudentDashboard />
+                    ) : location.pathname === '/dashboard/student/blog' ? (
+                        <SharedBlogForum />
                     ) : (
                         <div className="bg-white rounded-3xl p-6 border border-slate-100 shadow-sm">
                             <h2 className="text-xl font-bold text-slate-800">

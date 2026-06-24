@@ -1,7 +1,7 @@
 import { useState, useEffect, useMemo, useCallback } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import {
-  LayoutGrid, Users, LogOut, BookOpen, Calendar, GraduationCap
+  LayoutGrid, Users, LogOut, BookOpen, Calendar, GraduationCap, MessageSquare
 } from 'lucide-react';
 import { logout, getUser } from '../../services/authService';
 import { getUsers, createUser, updateUser } from '../../services/userService';
@@ -11,6 +11,7 @@ import AdminDashboard from './AdminDashboard';
 import TermsDashboard from './TermsDashboard';
 import ClassesDashboard from './ClassesDashboard';
 import CoursesDashboard from './CoursesDashboard';
+import SharedBlogForum from '../../components/SharedBlogForum/SharedBlogForum';
 
 /* ── Sidebar tabs definition ── */
 const SIDEBAR_TABS = [
@@ -19,6 +20,7 @@ const SIDEBAR_TABS = [
   { key: 'courses', label: 'Quản lý môn học', icon: GraduationCap, path: '/dashboard/admin/courses-management' },
   { key: 'terms', label: 'Quản lý kỳ học', icon: Calendar, path: '/dashboard/admin/terms-management' },
   { key: 'classes', label: 'Quản lý lớp học', icon: BookOpen, path: '/dashboard/admin/classes-management' },
+  { key: 'blog', label: 'Blog & Diễn đàn', icon: MessageSquare, path: '/dashboard/admin/blog-management' },
 ];
 /**
  * normalizeUser — Tự động chuẩn hóa dữ liệu từ backend trả về
@@ -471,6 +473,8 @@ function DashboardAdminPage() {
               toast={toast}
               showToast={showToast}
             />
+          ) : location.pathname === '/dashboard/admin/blog-management' ? (
+            <SharedBlogForum />
           ) : (
             /* ══ TRANG QUẢN LÝ TÀI KHOẢN (ACCOUNT MANAGEMENT) ══ */
             <AdminDashboard
