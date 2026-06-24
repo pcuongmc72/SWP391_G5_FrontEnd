@@ -18,6 +18,7 @@ export default function StudentDashboard() {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState('');
 
+<<<<<<< HEAD
     // Các state phục vụ Modal chi tiết lớp học
     const [selectedClass, setSelectedClass] = useState(null); // Lớp đang được mở chi tiết
     const [classStudents, setClassStudents] = useState([]);   // Danh sách bạn học trong lớp đó
@@ -25,6 +26,23 @@ export default function StudentDashboard() {
     const [studentSearchTerm, setStudentSearchTerm] = useState(''); // Tìm kiếm bạn học
 
     // 1. Tải danh sách Học kỳ và trích xuất danh sách các Năm học
+=======
+    // State bộ lọc năm học & kỳ học
+    const [years, setYears] = useState([]);
+    const [selectedYear, setSelectedYear] = useState('');
+    const [selectedSemester, setSelectedSemester] = useState('all');
+    const [searchTerm, setSearchTerm] = useState('');
+
+    // Các state phục vụ Modal chi tiết lớp học
+    const [selectedClass, setSelectedClass] = useState(null); // Lớp đang được mở chi tiết
+    const [classStudents, setClassStudents] = useState([]);   // Danh sách bạn học trong lớp đó
+    const [loadingDetails, setLoadingDetails] = useState(false);
+    const [loadingStudents, setLoadingStudents] = useState(false);
+    const [studentSearchTerm, setStudentSearchTerm] = useState(''); // Tìm kiếm bạn học
+
+
+    // 1. Initial Data Fetch
+>>>>>>> cuongnphe194338
     useEffect(() => {
         const fetchTerms = async () => {
             try {
@@ -147,6 +165,10 @@ export default function StudentDashboard() {
 
 
     return (
+<<<<<<< HEAD
+=======
+        <>
+>>>>>>> cuongnphe194338
         <div style={{ padding: '4px' }}>
             {/* Thanh giao diện Tìm kiếm & Bộ lọc */}
             <div style={{
@@ -186,6 +208,7 @@ export default function StudentDashboard() {
                         onBlur={(e) => e.target.style.borderColor = '#cbd5e1'}
                     />
                 </div>
+<<<<<<< HEAD
 
                 {/* 2. Bộ lọc Năm học & Kỳ học */}
                 <div style={{ display: 'flex', gap: '16px', flexWrap: 'wrap' }}>
@@ -217,6 +240,8 @@ export default function StudentDashboard() {
                             ))}
                         </select>
                     </div>
+=======
+>>>>>>> cuongnphe194338
 
                     {/* Thẻ chọn kỳ học */}
                     <div>
@@ -294,6 +319,7 @@ export default function StudentDashboard() {
                     {filteredClasses.map((cls) => (
                         <div
                             key={cls.id}
+<<<<<<< HEAD
                             style={{
                                 backgroundColor: '#fff',
                                 borderRadius: '16px',
@@ -314,6 +340,10 @@ export default function StudentDashboard() {
                                 e.currentTarget.style.transform = 'none';
                                 e.currentTarget.style.boxShadow = '0 1px 3px rgba(0,0,0,0.05)';
                             }}
+=======
+                            className="bg-white rounded-3xl border border-slate-100 shadow-sm overflow-hidden hover:shadow-xl transition-all cursor-pointer group"
+                            onClick={() => handleOpenClassDetail(cls)}
+>>>>>>> cuongnphe194338
                         >
                             <div>
                                 {/* Mã Lớp */}
@@ -389,6 +419,7 @@ export default function StudentDashboard() {
                 </div>
             )}
 
+<<<<<<< HEAD
             {/* Modal Chi tiết lớp học & Tiến độ */}
             {selectedClass && (() => {
 
@@ -522,6 +553,116 @@ export default function StudentDashboard() {
                     </div>
                 );
             })()}
+=======
+            {/* ── Modal chi tiết lớp học ── */ }
+    {
+        selectedClass && (
+            <div
+                onClick={() => setSelectedClass(null)}
+                style={{
+                    position: 'fixed', inset: 0, backgroundColor: 'rgba(0,0,0,0.45)',
+                    display: 'flex', justifyContent: 'center', alignItems: 'center',
+                    zIndex: 9999, padding: '16px'
+                }}
+            >
+                <div
+                    onClick={e => e.stopPropagation()}
+                    style={{
+                        backgroundColor: '#fff', borderRadius: '20px',
+                        width: '100%', maxWidth: '600px', maxHeight: '88vh',
+                        overflowY: 'auto', boxShadow: '0 25px 60px rgba(0,0,0,0.25)',
+                        display: 'flex', flexDirection: 'column'
+                    }}
+                >
+                    {/* Modal Header */}
+                    <div style={{ padding: '24px 24px 16px', borderBottom: '1px solid #f1f5f9', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                        <div>
+                            <div style={{ display: 'inline-flex', alignItems: 'center', gap: 6, backgroundColor: '#e6f4ea', color: '#0d3e26', fontSize: '0.75rem', fontWeight: 700, padding: '3px 10px', borderRadius: 999, marginBottom: 8 }}>
+                                <BookOpen size={11} /> {selectedClass.id}
+                            </div>
+                            <h2 style={{ fontSize: '1.125rem', fontWeight: 700, color: '#1e293b', margin: '0 0 6px' }}>
+                                {selectedClass.courseName} ({selectedClass.courseCode})
+                            </h2>
+                            <div style={{ display: 'flex', gap: 16, flexWrap: 'wrap' }}>
+                                <span style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: '0.8125rem', color: '#64748b' }}>
+                                    <User size={13} /> GV: <strong style={{ color: '#334155' }}>{selectedClass.lecturerName || '—'}</strong>
+                                </span>
+                                <span style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: '0.8125rem', color: '#64748b' }}>
+                                    <Calendar size={13} /> {selectedClass.startDate || 'N/A'} – {selectedClass.endDate || 'N/A'}
+                                </span>
+                            </div>
+                        </div>
+                        <button
+                            onClick={() => setSelectedClass(null)}
+                            style={{ background: '#f1f5f9', border: 'none', borderRadius: 8, width: 32, height: 32, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', fontSize: '1rem', color: '#64748b', flexShrink: 0 }}
+                            onMouseEnter={e => e.currentTarget.style.background = '#e2e8f0'}
+                            onMouseLeave={e => e.currentTarget.style.background = '#f1f5f9'}
+                        >✕</button>
+                    </div>
+
+                    {/* Student list section */}
+                    <div style={{ padding: '16px 24px 24px', flex: 1 }}>
+                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
+                            <h3 style={{ fontSize: '0.9375rem', fontWeight: 700, color: '#1e293b', margin: 0, display: 'flex', alignItems: 'center', gap: 6 }}>
+                                <Users size={16} color="#0D3E26" /> Danh sách học viên
+                                {!loadingStudents && (
+                                    <span style={{ fontSize: '0.75rem', fontWeight: 600, background: '#e6f4ea', color: '#0d3e26', padding: '2px 8px', borderRadius: 999 }}>
+                                        {classStudents.length} người
+                                    </span>
+                                )}
+                            </h3>
+                        </div>
+
+                        {/* Search students */}
+                        <input
+                            type="text"
+                            placeholder="Tìm kiếm học viên..."
+                            value={studentSearchTerm}
+                            onChange={e => setStudentSearchTerm(e.target.value)}
+                            style={{ width: '100%', padding: '8px 14px', borderRadius: 8, border: '1px solid #cbd5e1', fontSize: '0.875rem', outline: 'none', marginBottom: 14, boxSizing: 'border-box', color: '#334155' }}
+                            onFocus={e => e.target.style.borderColor = '#0D3E26'}
+                            onBlur={e => e.target.style.borderColor = '#cbd5e1'}
+                        />
+
+                        {loadingStudents ? (
+                            <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: 100, gap: 8 }}>
+                                <Loader2 size={18} style={{ color: '#0D3E26', animation: 'spin 1s linear infinite' }} />
+                                <span style={{ color: '#64748b', fontSize: '0.875rem' }}>Đang tải danh sách...</span>
+                            </div>
+                        ) : classStudents.length === 0 ? (
+                            <div style={{ textAlign: 'center', padding: '24px', color: '#94a3b8', fontSize: '0.875rem' }}>
+                                Chưa có học viên nào trong lớp này.
+                            </div>
+                        ) : (
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                                {classStudents
+                                    .filter(s => {
+                                        const q = studentSearchTerm.toLowerCase();
+                                        return !q || s.fullName?.toLowerCase().includes(q) || s.id?.toLowerCase().includes(q) || s.email?.toLowerCase().includes(q);
+                                    })
+                                    .map((s, idx) => (
+                                        <div key={s.id || idx} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '10px 14px', borderRadius: 10, background: '#f8fafc', border: '1px solid #e2e8f0' }}>
+                                            <div style={{ width: 34, height: 34, borderRadius: '50%', background: 'linear-gradient(135deg, #0D3E26, #10b981)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontWeight: 700, fontSize: '0.875rem', flexShrink: 0 }}>
+                                                {(s.fullName || s.id || '?')[0].toUpperCase()}
+                                            </div>
+                                            <div style={{ minWidth: 0, flex: 1 }}>
+                                                <div style={{ fontWeight: 600, fontSize: '0.875rem', color: '#1e293b', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                                                    {s.fullName || '—'}
+                                                </div>
+                                                <div style={{ fontSize: '0.75rem', color: '#94a3b8' }}>{s.email || s.id}</div>
+                                            </div>
+                                        </div>
+                                    ))
+                                }
+                            </div>
+                        )}
+                    </div>
+                </div>
+            </div>
+        )
+    }
+>>>>>>> cuongnphe194338
         </div>
+        </>
     );
 }

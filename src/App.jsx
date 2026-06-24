@@ -31,12 +31,10 @@ function AuthenticatedHomeRedirect() {
 function RoleRedirect() {
   if (!isAuthenticated()) return <Navigate to="/" replace />;
   const role = getRole();
+
   if (role === 'admin') return <Navigate to="/dashboard/admin" replace />;
-
-  if (role === 'lecturer') return <Navigate to="/lecturer/dashboard" replace />;
-
-
-  if (role === 'student') return <Navigate to="/dashboard/student" replace />;  // ← THÊM DÒNG NÀY
+  if (role === 'student') return <Navigate to="/dashboard/student" replace />;
+  if (role === 'lecturer') return <Navigate to="/dashboard/lecturer" replace />;
 
   return <Navigate to="/" replace />;
 }
@@ -147,7 +145,7 @@ function App() {
     </Route>
 
     {/* ── Redirect /dashboard → trang đúng role ── */}
-    <Route path="/dashboard" element={<AuthenticatedHomeRedirect />} />
+    <Route path="/dashboard" element={<RoleRedirect />} />
     <Route path="/db" element={<Navigate to="/dashboard" replace />} />
 
     {/* ── Không có quyền ── */}

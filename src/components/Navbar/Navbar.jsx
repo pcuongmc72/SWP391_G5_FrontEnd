@@ -13,7 +13,6 @@ function Navbar({ onNavigate, activeView, onOpenLogin }) {
   const navItems = [
     { key: 'home',    label: 'Trang chủ' },
     { key: 'courses', label: 'Khóa học' },
-
     { key: 'about',   label: 'Giới thiệu' },
     { key: 'contact', label: 'Liên hệ' },
   ];

@@ -121,7 +121,7 @@ function AuthModal({ onClose }) {
       setLoading(false);
     }
   };
-
+  
   /* ─── Render ─────────────────────────────── */
   return (
     <div

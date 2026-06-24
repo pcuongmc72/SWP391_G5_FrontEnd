@@ -19,38 +19,41 @@ export const getStudentClasses = async (academicTermId) => {
     const response = await api.get(url);
     return response.data; // Trả về { success: true, data: [...] }
 };
+
 /**
- * Lấy danh sách các sinh viên cùng học trong lớp
+ * Lấy danh sách sinh viên cùng lớp (dùng cho Student xem danh sách bạn học)
+ * GET /api/student-classes/{classId}/students
  * @param {string} classId - Mã lớp học
  */
 export const getClassStudents = async (classId) => {
     const response = await api.get(`/api/student-classes/${classId}/students`);
-    return response.data;
+    return response.data; // Trả về { success: true, data: [...] }
 };
 
 /**
- * Lấy danh sách học liệu của lớp kèm trạng thái hoàn thành của sinh viên hiện tại.
- * @param {string} classId
+ * Lấy lộ trình học tập của sinh viên theo lớp học (nhóm theo Chapter)
+ * GET /api/student-classes/{classId}/roadmap
  */
 export const getStudentLearningMaterials = async (classId) => {
-    const response = await api.get(`/api/student-learning-materials/class/${classId}`);
-    return response.data;
+    const response = await api.get(`/api/student-classes/${classId}/roadmap`);
+    return response.data; // Trả về { success: true, data: { classId, className, chapters: [...] } }
 };
 
 /**
- * Đánh dấu hoàn thành một học liệu.
- * @param {string} materialId
+ * Đánh dấu hoàn thành tài liệu học tập
+ * POST /api/student-classes/materials/{materialId}/complete
  */
 export const completeMaterial = async (materialId) => {
-    const response = await api.post(`/api/student-learning-materials/${materialId}/complete`);
+    const response = await api.post(`/api/student-classes/materials/${materialId}/complete`);
     return response.data;
 };
 
 /**
- * Bỏ đánh dấu hoàn thành một học liệu.
- * @param {string} materialId
+ * Hủy đánh dấu hoàn thành tài liệu học tập
+ * POST /api/student-classes/materials/{materialId}/uncomplete
  */
 export const uncompleteMaterial = async (materialId) => {
-    const response = await api.delete(`/api/student-learning-materials/${materialId}/complete`);
+    const response = await api.post(`/api/student-classes/materials/${materialId}/uncomplete`);
     return response.data;
 };
+
