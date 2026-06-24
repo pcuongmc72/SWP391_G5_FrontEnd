@@ -29,3 +29,31 @@ export const getClassStudents = async (classId) => {
     const response = await api.get(`/api/student-classes/${classId}/students`);
     return response.data; // Trả về { success: true, data: [...] }
 };
+
+/**
+ * Lấy lộ trình học tập của sinh viên theo lớp học (nhóm theo Chapter)
+ * GET /api/student-classes/{classId}/roadmap
+ */
+export const getStudentLearningMaterials = async (classId) => {
+    const response = await api.get(`/api/student-classes/${classId}/roadmap`);
+    return response.data; // Trả về { success: true, data: { classId, className, chapters: [...] } }
+};
+
+/**
+ * Đánh dấu hoàn thành tài liệu học tập
+ * POST /api/student-classes/materials/{materialId}/complete
+ */
+export const completeMaterial = async (materialId) => {
+    const response = await api.post(`/api/student-classes/materials/${materialId}/complete`);
+    return response.data;
+};
+
+/**
+ * Hủy đánh dấu hoàn thành tài liệu học tập
+ * POST /api/student-classes/materials/{materialId}/uncomplete
+ */
+export const uncompleteMaterial = async (materialId) => {
+    const response = await api.post(`/api/student-classes/materials/${materialId}/uncomplete`);
+    return response.data;
+};
+

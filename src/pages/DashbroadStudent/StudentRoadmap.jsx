@@ -2,7 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import {
     BookOpen, User, Calendar, Loader2, FileText,
     Play, FileQuestion, File, CheckCircle, Circle,
-    Search, ExternalLink, Award, ArrowLeft, Map, ChevronRight
+    Search, ExternalLink, Award, ArrowLeft, Map, ChevronRight, ChevronDown
 } from 'lucide-react';
 import {
     getAcademicTerms,
@@ -21,6 +21,22 @@ const TYPE_CONFIG = {
 
 function getTypeConfig(type) {
     return TYPE_CONFIG[type?.toLowerCase()] || TYPE_CONFIG.document;
+}
+
+/**
+ * Parse chuỗi chapter từ DB có dạng "TênMôn ÷ TênChương" → chỉ trả về "TênChương".
+ * Nếu không có dấu phân cách " ÷ " thì trả nguyên chuỗi gốc.
+ * Ví dụ: "PRN ÷ Chương 1" → "Chương 1"
+ *         "Chương 2"       → "Chương 2"
+ *         null/""          → "Chung"
+ */
+function parseChapterName(raw) {
+    if (!raw || !raw.trim()) return 'Chung';
+    const SEPARATOR = ' ÷ ';
+    if (raw.includes(SEPARATOR)) {
+        return raw.split(SEPARATOR)[1].trim();
+    }
+    return raw.trim();
 }
 
 function formatDate(dateStr) {
@@ -283,54 +299,108 @@ function ClassListScreen({ onSelectClass }) {
 // ─── Roadmap Timeline Screen ───────────────────────────────────────────────────
 
 function RoadmapScreen({ cls, onBack }) {
-    const [materials, setMaterials] = useState([]);
+    const [chapters, setChapters] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState('');
     const [filterType, setFilterType] = useState('ALL');
     const [searchQuery, setSearchQuery] = useState('');
     const [togglingId, setTogglingId] = useState(null);
+    const [openChapters, setOpenChapters] = useState({});
 
     useEffect(() => {
-        /** Tải danh sách học liệu và trạng thái hoàn thành của lớp được chọn. */
-        const fetchMaterials = async () => {
+        /** Tải lộ trình học tập của lớp được chọn. */
+        const fetchRoadmap = async () => {
             setLoading(true);
             setError('');
             try {
                 const res = await getStudentLearningMaterials(cls.id);
-                setMaterials(res?.data || []);
+                setChapters(res?.data?.chapters || []);
             } catch (e) {
                 setError(e.message || 'Không thể tải học liệu.');
             } finally {
                 setLoading(false);
             }
         };
-        fetchMaterials();
+        fetchRoadmap();
     }, [cls.id]);
 
-    /** Đánh dấu / bỏ đánh dấu hoàn thành học liệu. Cập nhật UI tức thì rồi sync với server. */
+    /** Đánh dấu / bỏ hoàn thành học liệu. */
     const handleToggleComplete = useCallback(async (material) => {
         if (togglingId === material.id) return;
         setTogglingId(material.id);
         const wasCompleted = material.isCompleted;
-        setMaterials(prev => prev.map(m => m.id === material.id ? { ...m, isCompleted: !wasCompleted } : m));
+
+        // Cập nhật UI lập tức
+        setChapters(prev => prev.map(ch => ({
+            ...ch,
+            materials: ch.materials.map(m => m.id === material.id ? { ...m, isCompleted: !wasCompleted } : m)
+        })));
+
         try {
-            if (wasCompleted) await uncompleteMaterial(material.id);
-            else await completeMaterial(material.id);
+            if (wasCompleted) {
+                await uncompleteMaterial(material.id);
+            } else {
+                await completeMaterial(material.id);
+            }
         } catch {
-            setMaterials(prev => prev.map(m => m.id === material.id ? { ...m, isCompleted: wasCompleted } : m));
+            // Revert nếu lỗi
+            setChapters(prev => prev.map(ch => ({
+                ...ch,
+                materials: ch.materials.map(m => m.id === material.id ? { ...m, isCompleted: wasCompleted } : m)
+            })));
         } finally {
             setTogglingId(null);
         }
     }, [togglingId]);
 
+    // Lấy danh sách học liệu phẳng phục vụ tính toán phần trăm hoàn thành
+    const materials = React.useMemo(() => {
+        return chapters.flatMap(c => c.materials);
+    }, [chapters]);
+
     const completedCount = materials.filter(m => m.isCompleted).length;
     const progressPercent = materials.length > 0 ? Math.round((completedCount / materials.length) * 100) : 0;
 
-    const filteredMaterials = materials.filter(m => {
-        const typeMatch = filterType === 'ALL' || m.materialType?.toLowerCase() === filterType;
-        const searchMatch = !searchQuery.trim() || m.title.toLowerCase().includes(searchQuery.toLowerCase());
-        return typeMatch && searchMatch;
-    });
+    // Lọc học liệu theo từ khóa tìm kiếm và loại học liệu
+    // Đồng thời bỏ nhóm "Chung" (học liệu chưa được giảng viên gán chương)
+    const filteredChapters = React.useMemo(() => {
+        return chapters.map(ch => {
+            const filtered = ch.materials.filter(m => {
+                const typeMatch = filterType === 'ALL' || m.type?.toLowerCase() === filterType || m.materialType?.toLowerCase() === filterType;
+                const searchMatch = !searchQuery.trim() || m.title.toLowerCase().includes(searchQuery.toLowerCase());
+                return typeMatch && searchMatch;
+            });
+            return {
+                ...ch,
+                materials: filtered
+            };
+        }).filter(ch =>
+            ch.materials.length > 0 &&
+            parseChapterName(ch.chapterName) !== 'Chung'  // ẩn nhóm không có chapter
+        );
+    }, [chapters, filterType, searchQuery]);
+
+    // Quản lý việc đóng mở Accordion
+    const toggleChapter = (chapterName) => {
+        setOpenChapters(prev => ({
+            ...prev,
+            [chapterName]: !prev[chapterName]
+        }));
+    };
+
+    const isAllExpanded = chapters.length > 0 && chapters.every(ch => openChapters[ch.chapterName]);
+
+    const toggleAllSections = () => {
+        if (isAllExpanded) {
+            setOpenChapters({});
+        } else {
+            const newState = {};
+            chapters.forEach(ch => {
+                newState[ch.chapterName] = true;
+            });
+            setOpenChapters(newState);
+        }
+    };
 
     return (
         <div style={{ padding: '4px', display: 'flex', flexDirection: 'column', gap: 20 }}>
@@ -426,128 +496,165 @@ function RoadmapScreen({ cls, onBack }) {
                 </div>
             )}
 
-            {/* ── Timeline ── */}
+            {/* ── Accordion List ── */}
             {loading ? (
                 <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: 200, gap: 10 }}>
                     <Loader2 size={20} style={{ color: '#0D3E26', animation: 'spin 1s linear infinite' }} />
-                    <span style={{ color: '#64748b', fontSize: '0.875rem' }}>Đang tải học liệu...</span>
+                    <span style={{ color: '#64748b', fontSize: '0.875rem' }}>Đang tải lộ trình học tập...</span>
                 </div>
-            ) : filteredMaterials.length === 0 ? (
+            ) : filteredChapters.length === 0 ? (
                 <div style={{ textAlign: 'center', padding: '48px 24px', backgroundColor: '#fff', borderRadius: '16px', border: '1px dashed #cbd5e1' }}>
                     <div style={{ fontSize: '2.5rem', marginBottom: 12 }}>📂</div>
                     <h3 style={{ fontSize: '1rem', fontWeight: 600, color: '#334155', margin: 0 }}>
-                        {materials.length === 0 ? 'Lớp học chưa có học liệu nào' : 'Không tìm thấy học liệu phù hợp'}
+                        {chapters.length === 0 ? 'Lớp học chưa có học liệu nào' : 'Không tìm thấy học liệu phù hợp'}
                     </h3>
                 </div>
             ) : (
-                <div style={{ position: 'relative', paddingLeft: 28, borderLeft: '2.5px dashed #cbd5e1', marginLeft: 8, display: 'flex', flexDirection: 'column', gap: 20 }}>
-                    {filteredMaterials.map(material => {
-                        const cfg = getTypeConfig(material.materialType);
-                        const TypeIcon = cfg.icon;
-                        const isCompleted = material.isCompleted;
-                        const isToggling = togglingId === material.id;
-                        return (
-                            <div key={material.id} style={{ position: 'relative' }}>
-                                {/* Timeline dot */}
-                                <div style={{
-                                    position: 'absolute', left: -37, top: 18,
-                                    width: 14, height: 14, borderRadius: '50%',
-                                    background: isCompleted ? '#10b981' : '#e2e8f0',
-                                    border: `3px solid ${isCompleted ? '#ecfdf5' : '#fff'}`,
-                                    boxShadow: isCompleted ? '0 0 0 3px rgba(16,185,129,0.2)' : 'none',
-                                    transition: 'all 0.3s ease', zIndex: 2,
-                                }} />
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+                    {/* Header of Accordion section */}
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                        <span style={{ fontSize: '0.875rem', fontWeight: 600, color: '#475569' }}>
+                            {chapters.length} chương • {materials.length} học liệu
+                        </span>
+                        <button
+                            onClick={toggleAllSections}
+                            style={{
+                                background: 'none', border: 'none', color: '#0D3E26',
+                                fontSize: '0.875rem', fontWeight: 700, cursor: 'pointer',
+                                padding: '4px 8px', transition: 'opacity 0.2s'
+                            }}
+                            onMouseEnter={e => e.currentTarget.style.opacity = 0.8}
+                            onMouseLeave={e => e.currentTarget.style.opacity = 1}
+                        >
+                            {isAllExpanded ? 'Thu gọn tất cả' : 'Mở rộng tất cả'}
+                        </button>
+                    </div>
 
-                                {/* Card */}
-                                <div
-                                    style={{
-                                        background: '#fff', borderRadius: '16px',
-                                        border: `1.5px solid ${isCompleted ? '#a7f3d0' : '#e2e8f0'}`,
-                                        padding: '16px 18px',
-                                        boxShadow: isCompleted ? '0 2px 12px rgba(16,185,129,0.07)' : '0 1px 3px rgba(0,0,0,0.05)',
-                                        transition: 'all 0.2s ease',
-                                    }}
-                                    onMouseEnter={e => { e.currentTarget.style.transform = 'translateX(3px)'; e.currentTarget.style.boxShadow = '0 6px 20px rgba(0,0,0,0.08)'; }}
-                                    onMouseLeave={e => { e.currentTarget.style.transform = 'none'; e.currentTarget.style.boxShadow = isCompleted ? '0 2px 12px rgba(16,185,129,0.07)' : '0 1px 3px rgba(0,0,0,0.05)'; }}
-                                >
-                                    {/* Card header */}
-                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 12, marginBottom: 10 }}>
-                                        <div style={{ display: 'flex', alignItems: 'center', gap: 10, minWidth: 0 }}>
-                                            <div style={{ width: 36, height: 36, borderRadius: 10, background: cfg.bg, border: `1px solid ${cfg.border}`, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                                                <TypeIcon size={16} color={cfg.color} />
+                    {/* Accordion Container */}
+                    <div style={{ display: 'flex', flexDirection: 'column', border: '1px solid #e2e8f0', borderRadius: '16px', overflow: 'hidden', backgroundColor: '#fff', boxShadow: '0 1px 3px rgba(0,0,0,0.02)' }}>
+                        {filteredChapters.map((ch, index) => {
+                            const isOpen = !!openChapters[ch.chapterName];
+                            const chapterCompletedCount = ch.materials.filter(m => m.isCompleted).length;
+                            const totalChapterMaterials = ch.materials.length;
+                            // Parse tên chương: tách bỏ phần "TênMôn ÷ " nếu có
+                            const displayName = parseChapterName(ch.chapterName);
+
+                            return (
+                                <div key={ch.chapterName} style={{ borderBottom: index < filteredChapters.length - 1 ? '1px solid #e2e8f0' : 'none' }}>
+                                    {/* Accordion Header */}
+                                    <div
+                                        onClick={() => toggleChapter(ch.chapterName)}
+                                        style={{
+                                            display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+                                            padding: '16px 20px', cursor: 'pointer', userSelect: 'none',
+                                            backgroundColor: isOpen ? '#f8fafc' : '#fff',
+                                            transition: 'background-color 0.2s'
+                                        }}
+                                        onMouseEnter={e => e.currentTarget.style.backgroundColor = '#f1f5f9'}
+                                        onMouseLeave={e => e.currentTarget.style.backgroundColor = isOpen ? '#f8fafc' : '#fff'}
+                                    >
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: 12, minWidth: 0 }}>
+                                            {/* Chevron Icon */}
+                                            <div style={{ transform: isOpen ? 'rotate(180deg)' : 'rotate(0deg)', transition: 'transform 0.2s ease', color: '#64748b', flexShrink: 0 }}>
+                                                <ChevronDown size={18} />
                                             </div>
-                                            <div style={{ minWidth: 0 }}>
-                                                <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 2, flexWrap: 'wrap' }}>
-                                                    <span style={{ fontSize: 10, fontWeight: 700, color: cfg.color, background: cfg.bg, border: `1px solid ${cfg.border}`, padding: '1px 7px', borderRadius: 999 }}>
-                                                        {cfg.label}
-                                                    </span>
-                                                    <span style={{ fontSize: 10, color: '#94a3b8', display: 'flex', alignItems: 'center', gap: 3 }}>
-                                                        <Calendar size={10} /> {formatDate(material.uploadedAt)}
-                                                    </span>
-                                                    {material.fileSize && (
-                                                        <span style={{ fontSize: 10, color: '#94a3b8' }}>{material.fileSize}</span>
-                                                    )}
-                                                </div>
-                                                <h4 style={{ margin: 0, fontSize: '0.9375rem', fontWeight: 700, color: '#0f172a', lineHeight: 1.3 }}>
-                                                    {material.title}
-                                                </h4>
-                                            </div>
+                                            <span style={{ fontSize: '0.9375rem', fontWeight: 700, color: '#1e293b', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                                                {displayName}
+                                            </span>
                                         </div>
 
-                                        {/* Complete toggle */}
-                                        <button
-                                            onClick={() => handleToggleComplete(material)}
-                                            disabled={isToggling}
-                                            title={isCompleted ? 'Bỏ hoàn thành' : 'Đánh dấu đã học'}
-                                            style={{
-                                                display: 'flex', alignItems: 'center', gap: 5, padding: '6px 12px',
-                                                borderRadius: 10, border: 'none',
-                                                background: isCompleted ? '#ecfdf5' : '#f8fafc',
-                                                color: isCompleted ? '#065f46' : '#64748b',
-                                                outline: `1.5px solid ${isCompleted ? '#a7f3d0' : '#e2e8f0'}`,
-                                                fontSize: '0.78rem', fontWeight: 700,
-                                                cursor: isToggling ? 'wait' : 'pointer',
-                                                opacity: isToggling ? 0.6 : 1,
-                                                transition: 'all 0.2s', flexShrink: 0,
-                                            }}
-                                            onMouseEnter={e => { if (!isToggling) { e.currentTarget.style.background = isCompleted ? '#d1fae5' : '#ecfdf5'; e.currentTarget.style.color = '#065f46'; e.currentTarget.style.outlineColor = '#a7f3d0'; } }}
-                                            onMouseLeave={e => { if (!isToggling) { e.currentTarget.style.background = isCompleted ? '#ecfdf5' : '#f8fafc'; e.currentTarget.style.color = isCompleted ? '#065f46' : '#64748b'; e.currentTarget.style.outlineColor = isCompleted ? '#a7f3d0' : '#e2e8f0'; } }}
-                                        >
-                                            {isCompleted
-                                                ? <><CheckCircle size={13} /> Đã hoàn thành</>
-                                                : <><Circle size={13} /> Đánh dấu đã học</>}
-                                        </button>
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: 12, fontSize: '0.8125rem', color: '#64748b', flexShrink: 0 }}>
+                                            <span>{totalChapterMaterials} bài học</span>
+                                            <span style={{ height: 12, width: 1, backgroundColor: '#cbd5e1' }} />
+                                            <span style={{ fontWeight: 700, color: chapterCompletedCount === totalChapterMaterials ? '#10b981' : '#64748b' }}>
+                                                Đã học {chapterCompletedCount}/{totalChapterMaterials}
+                                            </span>
+                                        </div>
                                     </div>
 
-                                    {/* Description */}
-                                    {material.description && (() => {
-                                        try {
-                                            const parsed = JSON.parse(material.description);
-                                            return parsed.desc
-                                                ? <p style={{ margin: '0 0 12px', fontSize: '0.8125rem', color: '#475569', lineHeight: 1.6 }}>{parsed.desc}</p>
-                                                : null;
-                                        } catch {
-                                            return <p style={{ margin: '0 0 12px', fontSize: '0.8125rem', color: '#475569', lineHeight: 1.6 }}>{material.description}</p>;
-                                        }
-                                    })()}
+                                    {/* Accordion Body */}
+                                    {isOpen && (
+                                        <div style={{
+                                            padding: '8px 20px 20px 20px', backgroundColor: '#f8fafc',
+                                            display: 'flex', flexDirection: 'column', gap: 12
+                                        }}>
+                                            {ch.materials.map(material => {
+                                                const cfg = getTypeConfig(material.type || material.materialType);
+                                                const TypeIcon = cfg.icon;
+                                                const isCompleted = material.isCompleted;
+                                                const isToggling = togglingId === material.id;
 
-                                    {/* File link */}
-                                    {material.fileUrl && material.fileUrl !== '#' && (
-                                        <a
-                                            href={material.fileUrl}
-                                            target="_blank"
-                                            rel="noopener noreferrer"
-                                            style={{ display: 'inline-flex', alignItems: 'center', gap: 5, fontSize: '0.78rem', fontWeight: 600, color: '#1d4ed8', background: '#eff6ff', border: '1px solid #bfdbfe', padding: '5px 12px', borderRadius: 8, textDecoration: 'none', transition: 'all 0.15s' }}
-                                            onMouseEnter={e => e.currentTarget.style.background = '#dbeafe'}
-                                            onMouseLeave={e => e.currentTarget.style.background = '#eff6ff'}
-                                        >
-                                            <ExternalLink size={12} /> Xem / Tải xuống
-                                        </a>
+                                                return (
+                                                    <div
+                                                        key={material.id}
+                                                        style={{
+                                                            display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+                                                            padding: '12px 16px', borderRadius: '12px',
+                                                            backgroundColor: '#fff', border: `1.5px solid ${isCompleted ? '#a7f3d0' : '#e2e8f0'}`,
+                                                            boxShadow: isCompleted ? '0 1px 4px rgba(16,185,129,0.04)' : '0 1px 2px rgba(0,0,0,0.02)',
+                                                            transition: 'all 0.15s ease'
+                                                        }}
+                                                    >
+                                                        <div style={{ display: 'flex', alignItems: 'center', gap: 12, minWidth: 0 }}>
+                                                            {/* Status Checkbox Icon */}
+                                                            <button
+                                                                onClick={() => handleToggleComplete(material)}
+                                                                disabled={isToggling}
+                                                                style={{
+                                                                    background: 'none', border: 'none', padding: 0, cursor: isToggling ? 'wait' : 'pointer',
+                                                                    color: isCompleted ? '#10b981' : '#cbd5e1', display: 'flex', alignItems: 'center',
+                                                                    transition: 'color 0.2s'
+                                                                }}
+                                                            >
+                                                                {isCompleted ? <CheckCircle size={18} /> : <Circle size={18} />}
+                                                            </button>
+
+                                                            {/* Material Type Icon */}
+                                                            <div style={{ width: 32, height: 32, borderRadius: 8, background: cfg.bg, border: `1px solid ${cfg.border}`, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                                                                <TypeIcon size={14} color={cfg.color} />
+                                                            </div>
+
+                                                            <div style={{ minWidth: 0 }}>
+                                                                <span style={{ fontSize: '0.875rem', fontWeight: 600, color: '#334155', display: 'block', lineHeight: '1.4', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                                                                    {material.title}
+                                                                </span>
+                                                                <span style={{ fontSize: '0.75rem', color: '#94a3b8', display: 'flex', gap: 6, alignItems: 'center', flexWrap: 'wrap' }}>
+                                                                    <span>{cfg.label}</span>
+                                                                    {material.fileSize && <span>• {material.fileSize}</span>}
+                                                                    <span>• {formatDate(material.uploadedAt)}</span>
+                                                                </span>
+                                                            </div>
+                                                        </div>
+
+                                                        {/* Actions */}
+                                                        <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexShrink: 0 }}>
+                                                            {material.fileUrl && material.fileUrl !== '#' && (
+                                                                <a
+                                                                    href={material.fileUrl}
+                                                                    target="_blank"
+                                                                    rel="noopener noreferrer"
+                                                                    style={{
+                                                                        display: 'inline-flex', alignItems: 'center', gap: 5, fontSize: '0.75rem',
+                                                                        fontWeight: 600, color: '#1d4ed8', background: '#eff6ff',
+                                                                        border: '1px solid #bfdbfe', padding: '6px 12px', borderRadius: 8,
+                                                                        textDecoration: 'none', transition: 'all 0.15s'
+                                                                    }}
+                                                                    onMouseEnter={e => e.currentTarget.style.background = '#dbeafe'}
+                                                                    onMouseLeave={e => e.currentTarget.style.background = '#eff6ff'}
+                                                                >
+                                                                    <ExternalLink size={12} /> Xem bài học
+                                                                </a>
+                                                            )}
+                                                        </div>
+                                                    </div>
+                                                );
+                                            })}
+                                        </div>
                                     )}
                                 </div>
-                            </div>
-                        );
-                    })}
+                            );
+                        })}
+                    </div>
                 </div>
             )}
         </div>
@@ -556,12 +663,15 @@ function RoadmapScreen({ cls, onBack }) {
 
 // ─── Root Component ─────────────────────────────────────────────────────────────
 
-export default function StudentRoadmap() {
-    const [selectedClass, setSelectedClass] = useState(null);
+export default function StudentRoadmap({ cls, onBack }) {
+    const [selectedClassState, setSelectedClassState] = useState(null);
 
-    if (selectedClass) {
-        return <RoadmapScreen cls={selectedClass} onBack={() => setSelectedClass(null)} />;
+    const activeClass = cls || selectedClassState;
+    const handleBack = onBack || (() => setSelectedClassState(null));
+
+    if (activeClass) {
+        return <RoadmapScreen cls={activeClass} onBack={handleBack} />;
     }
 
-    return <ClassListScreen onSelectClass={setSelectedClass} />;
+    return <ClassListScreen onSelectClass={setSelectedClassState} />;
 }

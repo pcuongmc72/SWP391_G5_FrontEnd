@@ -25,6 +25,7 @@ import HeaderLMS from './lms/HeaderLMS';
 import CourseDirectory from './lms/CourseDirectory';
 import LessonPlayer from './lms/LessonPlayer';
 import SidebarSyllabus from './lms/SidebarSyllabus';
+import StudentRoadmap from './StudentRoadmap';
 
 const INITIAL_PROGRESS = {
   completedLectures: ["l-1-1"],
@@ -819,14 +820,8 @@ export default function DashbroadStudent() {
 
                 {/* Classwork tab content */}
                 {activeCourseTab === "classwork" && (
-                  <div className="bg-white border border-gray-200 rounded-2xl p-12 shadow-2xs flex flex-col items-center justify-center text-center space-y-3">
-                    <div className="w-16 h-16 rounded-full bg-emerald-50 text-emerald-600 flex items-center justify-center shadow-3xs">
-                      <FolderOpen size={28} />
-                    </div>
-                    <h3 className="text-base font-bold text-gray-800">Đang cập nhật lộ trình học tập</h3>
-                    <p className="text-xs text-gray-400 max-w-sm leading-relaxed">
-                      Lộ trình tự học và tài liệu của lớp học đang được chuẩn bị. Vui lòng quay lại sau hoặc liên hệ giảng viên để biết thêm chi tiết.
-                    </p>
+                  <div className="bg-white border border-gray-200 rounded-2xl p-6 shadow-2xs">
+                    <StudentRoadmap cls={selectedCourse} onBack={() => setActiveCourseTab("stream")} />
                   </div>
                 )}
 
@@ -890,7 +885,7 @@ export default function DashbroadStudent() {
                                 </div>
                                 <div className="flex-1 flex items-center justify-between pr-2.5">
                                   <div>
-                                    <span className="text-sm font-semibold text-gray-850 flex items-center gap-2">
+                                    <span className="text-sm font-semibold text-emerald-700 flex items-center gap-2">
                                       {std.fullName}
                                       {isMe && (
                                         <span className="bg-emerald-50 text-emerald-700 font-extrabold text-[8px] px-1.5 py-0.5 rounded border border-emerald-100 uppercase scale-90">Bạn</span>
