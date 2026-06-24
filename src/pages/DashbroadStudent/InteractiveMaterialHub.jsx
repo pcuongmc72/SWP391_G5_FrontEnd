@@ -221,7 +221,7 @@ function InteractiveMaterialHub({ material, isInitiallyCompleted, onClose, onCom
                             <div className={styles.videoSection}>
                                 <div className={styles.videoBox}>
                                     <video
-                                        src={material.url || 'https://www.w3schools.com/html/mov_bbb.mp4'}
+                                        src={material.fileUrl || ''}
                                         controls
                                         onPlay={() => setIsVideoPlaying(true)}
                                         onPause={() => setIsVideoPlaying(false)}

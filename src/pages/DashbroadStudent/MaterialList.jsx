@@ -57,7 +57,7 @@ function MaterialList({ selectedClass, onBack }) {
             searchText === '' ||
             m.title?.toLowerCase().includes(searchText.toLowerCase()) ||
             m.description?.toLowerCase().includes(searchText.toLowerCase());
-        const matchType = typeFilter === 'all' || m.type === typeFilter;
+        const matchType = typeFilter === 'all' || m.materialType === typeFilter;
         return matchSearch && matchType;
     });
 
@@ -184,7 +184,7 @@ function MaterialList({ selectedClass, onBack }) {
                 {filteredMaterials.length > 0 ? (
                     <div className={styles.grid}>
                         {filteredMaterials.map(m => {
-                            const typeMeta = getTypeMeta(m.type);
+                            const typeMeta = getTypeMeta(m.materialType);
                             return (
                                 <div key={m.id} className={styles.card}>
                                     {/* Card header */}

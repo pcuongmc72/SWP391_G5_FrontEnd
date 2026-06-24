@@ -407,17 +407,10 @@ function AssignmentDetailView({ assignment, classInfo, onBack }) {
             const result = await submitAssignment({
                 assignmentId: assignment.id,
                 fileName: file.name,
-                fileUrl: '#',
                 studentNotes: notes,
             });
 
-            const newSub = result?.data || {
-                id: `sub_${Date.now()}`,
-                fileName: file.name,
-                submittedAt: new Date().toLocaleString('vi-VN'),
-                status: days !== null && days < 0 ? 'LATE' : 'SUBMITTED',
-                grade: null, feedback: null,
-            };
+            const newSub = result?.data || result;
 
             setSubmittedData(newSub);
             setShowResubmit(false);
