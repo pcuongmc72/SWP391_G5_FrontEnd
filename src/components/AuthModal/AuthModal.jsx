@@ -2,11 +2,13 @@ import { useState, useEffect, useRef } from 'react';
 import { Eye, EyeOff } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { login, getRole } from '../../services/authService';
+import { getDashboardPathForRole } from '../../constants/roles';
+import { parseLoginResponse, persistAuth } from '../../utils/authStorage';
 import styles from './AuthModal.module.css';
 
 /**
  * AuthModal — Modal Đăng nhập (email + mật khẩu)
- * Sau khi đăng nhập thành công → navigate('/dashboard')
+ * Sau khi đăng nhập thành công → chuyển theo role tương ứng (admin -> /dashboard/admin, lecturer -> /lecturer/dashboard, etc.)
  */
 function AuthModal({ onClose }) {
   const navigate = useNavigate();
@@ -71,7 +73,7 @@ function AuthModal({ onClose }) {
       // Log response ra console để debug
       console.log('API Response:', response);
 
-      // Parse token và user từ response (Dùng logic mới từ HEAD để linh hoạt với API)
+      // Parse token và user từ response
       const { token: parsedToken, user: parsedUser } = parseLoginResponse(response);
 
       // Fallback thủ công nếu parseLoginResponse không tìm được
@@ -142,6 +144,7 @@ function AuthModal({ onClose }) {
 
         {/* Header */}
         <div className={styles.header}>
+          <div className={styles.iconWrap} aria-hidden="true">🔑</div>
           <h2 id="modal-title" className={styles.title}>Đăng nhập</h2>
           <p className={styles.subtitle}>Vui lòng nhập thông tin để tiếp tục.</p>
         </div>
