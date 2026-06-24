@@ -88,11 +88,11 @@ function AdminDashboard({
               <Search className="absolute left-3 top-2.5 h-4 w-4 text-slate-400" />
               <input type="text" placeholder="Tìm tài khoản theo tên, email, ID..."
                 value={searchQuery} onChange={e => setSearchQuery(e.target.value)}
-                className="w-full bg-white border border-slate-200 rounded-xl pl-9 pr-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-800 focus:border-emerald-800" />
+                className="w-full bg-white border border-slate-200 rounded-xl pl-9 pr-4 py-2 text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-emerald-800 focus:border-emerald-800" />
             </div>
             <div className="flex gap-2">
               <select value={roleFilter} onChange={e => setRoleFilter(e.target.value)}
-                className="bg-white border border-slate-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-800">
+                className="bg-white border border-slate-200 rounded-xl px-3 py-2 text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-emerald-800">
                 <option value="ALL">Tất cả</option>
                 <option value="Admin">Admin</option>
                 <option value="Lecturer">Lecturer</option>
@@ -240,18 +240,18 @@ function AdminDashboard({
                 </label>
                 <input value={userForm.id} onChange={e => setUserForm({ ...userForm, id: e.target.value })}
                   disabled={!!editingUser}
-                  className="w-full border border-slate-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-800 disabled:bg-slate-50 disabled:text-slate-400 disabled:border-slate-100"
+                  className="w-full border border-slate-200 rounded-xl px-3 py-2 text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-emerald-800 disabled:bg-slate-50 disabled:text-slate-400 disabled:border-slate-100"
                   placeholder="VD: SV001" />
               </div>
               <div>
                 <label className="block text-sm font-semibold text-slate-700 mb-1">Họ tên <span className="text-rose-500">*</span></label>
                 <input value={userForm.name} onChange={e => setUserForm({ ...userForm, name: e.target.value })}
-                  className="w-full border border-slate-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-800" placeholder="Nguyễn Văn A" />
+                  className="w-full border border-slate-200 rounded-xl px-3 py-2 text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-emerald-800" placeholder="Nguyễn Văn A" />
               </div>
               <div>
                 <label className="block text-sm font-semibold text-slate-700 mb-1">Email <span className="text-rose-500">*</span></label>
                 <input type="email" value={userForm.email} onChange={e => setUserForm({ ...userForm, email: e.target.value })}
-                  className="w-full border border-slate-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-800" placeholder="example@email.com" />
+                  className="w-full border border-slate-200 rounded-xl px-3 py-2 text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-emerald-800" placeholder="example@email.com" />
               </div>
               <div>
                 <label className="block text-sm font-semibold text-slate-700 mb-1">
@@ -262,7 +262,7 @@ function AdminDashboard({
                     type={showPassword ? "text" : "password"}
                     value={userForm.password || ''}
                     onChange={e => setUserForm({ ...userForm, password: e.target.value })}
-                    className="w-full border border-slate-200 rounded-xl pl-3 pr-10 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-800"
+                    className="w-full border border-slate-200 rounded-xl pl-3 pr-10 py-2 text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-emerald-800"
                     placeholder="Nhập mật khẩu tài khoản"
                   />
                   <button
@@ -282,7 +282,7 @@ function AdminDashboard({
                 <div>
                   <label className="block text-sm font-semibold text-slate-700 mb-1">Vai trò</label>
                   <select value={userForm.role} onChange={e => setUserForm({ ...userForm, role: e.target.value })}
-                    className="w-full border border-slate-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-800">
+                    className="w-full border border-slate-200 rounded-xl px-3 py-2 text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-emerald-800">
                     <option value="Student">Student</option>
                     <option value="Lecturer">Lecturer</option>
                     <option value="Admin">Admin</option>
@@ -291,7 +291,7 @@ function AdminDashboard({
                 <div>
                   <label className="block text-sm font-semibold text-slate-700 mb-1">Trạng thái</label>
                   <select value={userForm.status} onChange={e => setUserForm({ ...userForm, status: e.target.value })}
-                    className="w-full border border-slate-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-800">
+                    className="w-full border border-slate-200 rounded-xl px-3 py-2 text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-emerald-800">
                     <option value="ACTIVE">Hoạt động</option>
                     <option value="INACTIVE">Khóa</option>
                   </select>
