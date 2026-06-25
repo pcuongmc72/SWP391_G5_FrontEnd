@@ -3,6 +3,7 @@ import {
   Calendar, Tag, ChevronRight, 
   Lock, Globe, Edit2, Trash2 
 } from 'lucide-react';
+import RoleBadge from './RoleBadge';
 
 function BlogCard({ thread, onClick, onEdit, onDelete, onApprove, isAdmin, isPendingView, isAuthor, showStatus }) {
   const title = thread.title ?? thread.Title ?? '';
@@ -179,9 +180,10 @@ function BlogCard({ thread, onClick, onEdit, onDelete, onApprove, isAdmin, isPen
           }}>
             {authorName?.[0]?.toUpperCase() || 'U'}
           </div>
-          <div>
-            <div style={{ fontSize: '0.8125rem', fontWeight: 600, color: '#334155' }}>
+          <div style={{ textAlign: 'left' }}>
+            <div style={{ fontSize: '0.8125rem', fontWeight: 600, color: '#334155', display: 'flex', alignItems: 'center', gap: '6px' }}>
               {authorName}
+              <RoleBadge roleData={thread} />
             </div>
             <div style={{ fontSize: '0.7rem', color: '#94a3b8', display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
               <Calendar size={10} />

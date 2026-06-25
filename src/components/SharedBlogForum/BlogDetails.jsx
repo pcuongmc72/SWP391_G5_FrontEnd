@@ -1,11 +1,12 @@
 import React from 'react';
 import { 
   X, Calendar, Globe, Lock, 
-  ArrowLeft, BookOpen, GraduationCap 
+  ArrowLeft, BookOpen, GraduationCap, Edit2, Trash2 
 } from 'lucide-react';
 import CommentSection from './CommentSection';
+import RoleBadge from './RoleBadge';
 
-function BlogDetails({ blog, onClose }) {
+function BlogDetails({ blog, onBack, onEdit, onDelete, isAdmin, isAuthor }) {
   if (!blog) return null;
 
   const { title = '', content = '', authorFullName: authorName = 'Người dùng', createdAt, isPrivate } = blog;
@@ -23,57 +24,99 @@ function BlogDetails({ blog, onClose }) {
   return (
     <div 
       style={{
-        position: 'fixed',
-        inset: 0,
-        zIndex: 10000,
-        background: '#f8fafc',
+        width: '100%',
         display: 'flex',
         flexDirection: 'column',
-        animation: 'slideInRight 0.3s cubic-bezier(0.16, 1, 0.3, 1)',
+        animation: 'fadeIn 0.4s ease-out',
         fontFamily: 'Inter, sans-serif',
       }}
     >
       <style>{`
-        @keyframes slideInRight { from { transform: translateX(100%); } to { transform: translateX(0); } }
-        .details-container { max-width: 800px; margin: 0 auto; width: 100%; padding: 2rem 1.5rem; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        .details-container { max-width: 800px; margin: 0 auto; width: 100%; padding: 1rem 0; }
       `}</style>
 
-      {/* Sticky Header */}
-      <header style={{
-        padding: '1rem 1.5rem',
-        background: '#fff',
-        borderBottom: '1px solid #e2e8f0',
-        display: 'flex',
-        alignItems: 'center',
-        gap: '1rem',
-        position: 'sticky',
-        top: 0,
-        zIndex: 10,
-      }}>
-        <button 
-          onClick={onClose}
-          style={{
-            padding: '0.5rem',
-            borderRadius: '0.75rem',
-            border: 'none',
-            background: '#f1f5f9',
-            color: '#64748b',
-            cursor: 'pointer',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-          }}
-          onMouseEnter={e => e.currentTarget.style.background = '#e2e8f0'}
-          onMouseLeave={e => e.currentTarget.style.background = '#f1f5f9'}
-        >
-          <ArrowLeft size={20} />
-        </button>
-        <h2 style={{ fontSize: '1rem', fontWeight: 800, color: '#0f172a', margin: 0 }}>Quay lại danh sách</h2>
-      </header>
-
       {/* Main Content */}
-      <div style={{ flex: 1, overflowY: 'auto' }}>
+      <div style={{ flex: 1 }}>
         <div className="details-container">
+          <button 
+            onClick={onBack}
+            style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: 6,
+              padding: '6px 12px',
+              background: '#fff',
+              border: 'none',
+              borderRadius: 8,
+              fontSize: '0.8125rem',
+              fontWeight: 600,
+              color: '#475569',
+              cursor: 'pointer',
+              marginBottom: '2rem',
+              boxShadow: '0 1px 2px rgba(0,0,0,0.05)',
+              transition: 'all 0.15s',
+            }}
+            onMouseEnter={e => {
+              e.currentTarget.style.background = '#f1f5f9';
+              e.currentTarget.style.transform = 'translateX(-2px)';
+            }}
+            onMouseLeave={e => {
+              e.currentTarget.style.background = '#fff';
+              e.currentTarget.style.transform = 'translateX(0)';
+            }}
+          >
+            <ArrowLeft size={14} /> Quay lại danh sách
+          </button>
+          
+          {(isAdmin || isAuthor) && (
+            <div style={{ display: 'flex', gap: '0.75rem', marginBottom: '2rem', float: 'right' }}>
+              <button 
+                onClick={() => onEdit(blog)}
+                style={{
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: 6,
+                  padding: '8px 16px',
+                  background: '#f8fafc',
+                  border: '1px solid #e2e8f0',
+                  borderRadius: 10,
+                  fontSize: '0.8125rem',
+                  fontWeight: 700,
+                  color: '#334155',
+                  cursor: 'pointer',
+                  transition: 'all 0.2s',
+                }}
+                onMouseEnter={e => { e.currentTarget.style.background = '#fff'; e.currentTarget.style.borderColor = '#10b981'; e.currentTarget.style.color = '#059669'; }}
+                onMouseLeave={e => { e.currentTarget.style.background = '#f8fafc'; e.currentTarget.style.borderColor = '#e2e8f0'; e.currentTarget.style.color = '#334155'; }}
+              >
+                <Edit2 size={14} /> Chỉnh sửa
+              </button>
+              <button 
+                onClick={() => onDelete(blog.id)}
+                style={{
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: 6,
+                  padding: '8px 16px',
+                  background: '#fff1f2',
+                  border: '1px solid #fecdd3',
+                  borderRadius: 10,
+                  fontSize: '0.8125rem',
+                  fontWeight: 700,
+                  color: '#be123c',
+                  cursor: 'pointer',
+                  transition: 'all 0.2s',
+                }}
+                onMouseEnter={e => { e.currentTarget.style.background = '#fee2e2'; e.currentTarget.style.transform = 'scale(1.02)'; }}
+                onMouseLeave={e => { e.currentTarget.style.background = '#fff1f2'; e.currentTarget.style.transform = 'scale(1)'; }}
+              >
+                <Trash2 size={14} /> Xóa bài
+              </button>
+            </div>
+          )}
+          <div style={{ clear: 'both' }}></div>
+
           <article>
             {/* Meta Tags */}
             <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '1.5rem', flexWrap: 'wrap' }}>
@@ -99,7 +142,16 @@ function BlogDetails({ blog, onClose }) {
               </div>
             </div>
 
-            <h1 style={{ fontSize: '2.5rem', fontWeight: 900, color: '#0f172a', marginBottom: '1.5rem', lineHeight: 1.2, letterSpacing: '-0.02em' }}>
+            <h1 style={{ 
+              fontSize: '2.5rem', 
+              fontWeight: 900, 
+              color: '#0f172a', 
+              marginBottom: '1.5rem', 
+              lineHeight: 1.2, 
+              letterSpacing: '-0.02em',
+              wordBreak: 'break-word',
+              overflowWrap: 'anywhere'
+            }}>
               {title}
             </h1>
 
@@ -115,10 +167,15 @@ function BlogDetails({ blog, onClose }) {
                 {authorName[0]?.toUpperCase() || 'U'}
               </div>
               <div>
-                <div style={{ fontSize: '1rem', fontWeight: 700, color: '#1e293b' }}>{authorName}</div>
-                <div style={{ fontSize: '0.875rem', color: '#64748b', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                  <Calendar size={14} />
-                  Đã đăng vào {formatDate(createdAt)}
+                <div style={{ textAlign: 'left' }}>
+                  <div style={{ fontSize: '0.8125rem', fontWeight: 600, color: '#334155', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                    {authorName}
+                    <RoleBadge roleData={blog} />
+                  </div>
+                  <div style={{ color: '#64748b', fontSize: '0.8125rem', display: 'flex', alignItems: 'center', gap: '4px', marginTop: '2px' }}>
+                    <Calendar size={13} />
+                    Đã đăng vào {formatDate(createdAt)}
+                  </div>
                 </div>
               </div>
             </div>
@@ -127,6 +184,8 @@ function BlogDetails({ blog, onClose }) {
             <div style={{
               fontSize: '1.125rem', color: '#334155', lineHeight: 1.8,
               whiteSpace: 'pre-wrap', marginBottom: '3rem',
+              wordBreak: 'break-word',
+              overflowWrap: 'anywhere'
             }}>
               {content}
             </div>

@@ -1,5 +1,6 @@
 import React from 'react';
 import { Trash2, Calendar } from 'lucide-react';
+import RoleBadge from './RoleBadge';
 
 function CommentItem({ comment, onDelete, canDelete }) {
   const { authorFullName: authorName = 'Người dùng', content = '', createdAt, id } = comment;
@@ -23,8 +24,11 @@ function CommentItem({ comment, onDelete, canDelete }) {
           <div style={{ width: '2rem', height: '2rem', borderRadius: '50%', background: '#f1f5f9', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#64748b', fontWeight: 700, border: '1px solid #e2e8f0' }}>
             {authorName[0]?.toUpperCase() || 'U'}
           </div>
-          <div>
-            <div style={{ fontSize: '0.8125rem', fontWeight: 700, color: '#334155' }}>{authorName}</div>
+          <div style={{ textAlign: 'left' }}>
+            <div style={{ fontSize: '0.8125rem', fontWeight: 700, color: '#334155', display: 'flex', alignItems: 'center', gap: '6px' }}>
+              {authorName}
+              <RoleBadge roleData={comment} />
+            </div>
             <div style={{ fontSize: '0.7rem', color: '#94a3b8', display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
               <Calendar size={10} /> {formatDate(createdAt)}
             </div>

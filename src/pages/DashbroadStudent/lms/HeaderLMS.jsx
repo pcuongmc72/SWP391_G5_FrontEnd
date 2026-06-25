@@ -19,7 +19,8 @@ export default function HeaderLMS({
   studentEmail,
   onLogout,
   onToggleSidebar,
-  sidebarOpen
+  sidebarOpen,
+  onHome
 }) {
   const [showLauncher, setShowLauncher] = useState(false);
   const percentComplete = totalCount > 0 ? Math.round((completedCount / totalCount) * 100) : 0;
@@ -44,7 +45,10 @@ export default function HeaderLMS({
         </button>
 
         {/* Brand Logo */}
-        <div className="flex items-center gap-2.5 ml-1">
+        <div 
+          onClick={onHome}
+          className="flex items-center gap-2.5 ml-1 cursor-pointer hover:opacity-80 transition"
+        >
           <div className="text-emerald-600 bg-emerald-50 p-2 rounded-lg flex items-center justify-center shrink-0 border border-emerald-100">
             <BookOpen size={18} className="stroke-[2.5]" />
           </div>
@@ -62,14 +66,6 @@ export default function HeaderLMS({
       {/* Right side: Plus (+) and User Profile Pill with dropdown */}
       <div className="flex items-center gap-3">
 
-        {/* Plus icon */}
-        <button
-          onClick={() => alert(`Chào ${studentName}! Hãy gửi mã ID môn học mới cho Ban Công nghệ để tham gia lớp tự học đảo ngược bổ sung.`)}
-          className="p-2 text-gray-400 hover:text-gray-700 hover:bg-gray-100 rounded-full transition cursor-pointer"
-          title="Tạo hoặc tham gia lớp học"
-        >
-          <Plus size={20} className="stroke-[2.2]" />
-        </button>
 
         {/* User Profile Pill — click to open/close dropdown */}
         <div className="relative">
@@ -114,13 +110,6 @@ export default function HeaderLMS({
 
               {/* Action buttons */}
               <div className="space-y-2">
-                <button
-                  onClick={() => setShowLauncher(false)}
-                  className="w-full flex items-center gap-2 px-2 py-1.5 text-xs text-gray-600 hover:bg-gray-50 rounded-lg transition cursor-pointer"
-                >
-                  <User size={13} className="text-gray-500" />
-                  <span>Thông tin cá nhân</span>
-                </button>
 
                 <button
                   onClick={() => {

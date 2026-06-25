@@ -1,11 +1,3 @@
-<<<<<<< HEAD
-import StudentDashboard from './StudentDashboard';
-import { useState, useEffect } from 'react';
-import { useNavigate, useLocation } from 'react-router-dom';
-import {
-    BookOpen, LogOut, LayoutGrid, GraduationCap,
-    Upload, MessageSquare, Star, BookMarked
-=======
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import {
@@ -22,113 +14,12 @@ import {
   Loader2,
   CheckCircle2,
   CircleAlert
->>>>>>> cuongnphe194338
 } from 'lucide-react';
 
 // Services
 import { logout, getUser } from '../../services/authService';
-<<<<<<< HEAD
-import SharedBlogForum from '../../components/SharedBlogForum/SharedBlogForum';
-import styles from './DashbroadStudent.module.css';
-
-/* ── Sidebar tabs cho student ── */
-const SIDEBAR_TABS = [
-    { key: 'classes', label: 'Lớp học của tôi', icon: BookOpen, path: '/dashboard/student' },
-    { key: 'roadmap', label: 'Lộ trình học tập', icon: BookMarked, path: '/dashboard/student/roadmap' },
-    { key: 'materials', label: 'Học liệu', icon: BookMarked, path: '/dashboard/student/materials' },
-    { key: 'submissions', label: 'Bài tập và deadline', icon: Upload, path: '/dashboard/student/submissions' },
-    { key: 'grades', label: 'Điểm và nhận xét', icon: Star, path: '/dashboard/student/grades' },
-    { key: 'blog', label: 'Blog & Diễn đàn', icon: MessageSquare, path: '/dashboard/student/blog' },
-];
-
-function DashbroadStudent() {
-    const currentUser = getUser();
-    const navigate = useNavigate();
-    const location = useLocation();
-
-    const handleLogout = () => {
-        logout();
-        window.location.replace('/');
-    };
-
-    return (
-        <div className={styles.page}>
-
-            {/* ── Sidebar ── */}
-            <aside className={styles.sidebar}>
-                <div className={styles.sidebarLogo}>
-                    <div className={styles.sidebarLogoIcon}><BookOpen /></div>
-                    <div>
-                        <span className={styles.sidebarLogoText}>FLIPPED LMS</span>
-                        <span className={styles.sidebarLogoSub}>Học viên</span>
-                    </div>
-                </div>
-
-                <nav className={styles.sidebarNav} aria-label="Student navigation">
-                    <div className={styles.navGroupLabel}>Chức năng học tập</div>
-                    {SIDEBAR_TABS.map(({ key, label, icon: Icon, path }) => {
-                        const isActive = location.pathname === path;
-                        return (
-                            <button
-                                key={key}
-                                className={`${styles.navItem} ${isActive ? styles.active : ''}`}
-                                onClick={() => navigate(path)}
-                            >
-                                <Icon className={styles.navIcon} />
-                                <span>{label}</span>
-                            </button>
-                        );
-                    })}
-                </nav>
-
-                <button className={styles.logoutBtn} onClick={handleLogout}>
-                    <LogOut className={styles.navIcon} />
-                    <span>Đăng xuất</span>
-                </button>
-            </aside>
-
-            {/* ── Main ── */}
-            <div className={styles.main}>
-                {/* Topbar */}
-                <header className={styles.topbar}>
-                    <div />
-                    <div className={styles.topbarRight}>
-                        <div className={styles.userBadge}>
-                            <div className={styles.avatar}>
-                                {currentUser?.fullName?.[0]?.toUpperCase() || currentUser?.email?.[0]?.toUpperCase() || 'S'}
-                            </div>
-                            <div className={styles.userInfo}>
-                                <span className={styles.userName}>{currentUser?.fullName || 'Học viên'}</span>
-                                <span className={styles.userRole}>Student</span>
-                            </div>
-                        </div>
-                    </div>
-                </header>
-
-                {/* Content Area */}
-                <div className={styles.content}>
-                    {location.pathname === '/dashboard/student' ? (
-                        <StudentDashboard />
-                    ) : location.pathname === '/dashboard/student/blog' ? (
-                        <SharedBlogForum />
-                    ) : (
-                        <div className="bg-white rounded-3xl p-6 border border-slate-100 shadow-sm">
-                            <h2 className="text-xl font-bold text-slate-800">
-                                Trang chức năng khác
-                            </h2>
-                            <p className="text-slate-500 text-sm mt-1">
-                                Nội dung đang được cập nhật...
-                            </p>
-                        </div>
-                    )}
-                </div>
-
-
-            </div>
-        </div>
-    );
-=======
 import { getAcademicTerms, getStudentClasses, getClassStudents } from '../../services/studentService';
+import { fetchClassBlogs, createBlog } from '../../services/blogService';
 
 // LMS Components
 import HeaderLMS from './lms/HeaderLMS';
@@ -136,6 +27,7 @@ import CourseDirectory from './lms/CourseDirectory';
 import LessonPlayer from './lms/LessonPlayer';
 import SidebarSyllabus from './lms/SidebarSyllabus';
 import StudentRoadmap from './StudentRoadmap';
+import SharedBlogForum from '../../components/SharedBlogForum/SharedBlogForum';
 
 const INITIAL_PROGRESS = {
   completedLectures: ["l-1-1"],
@@ -160,7 +52,6 @@ const INITIAL_PROGRESS = {
 // Helper mapping backend course to its syllabus/sections
 function getSyllabusForCourse(courseCode) {
   return [];
->>>>>>> cuongnphe194338
 }
 
 export default function DashbroadStudent() {
@@ -180,6 +71,9 @@ export default function DashbroadStudent() {
   // Class details students list state
   const [classStudents, setClassStudents] = useState([]);
   const [loadingStudents, setLoadingStudents] = useState(false);
+  const [classBlogs, setClassBlogs] = useState([]);
+  const [loadingBlogs, setLoadingBlogs] = useState(false);
+  const [refreshBlogsKey, setRefreshBlogsKey] = useState(0);
 
   // Filter States
   const [searchTerm, setSearchTerm] = useState('');
@@ -193,9 +87,10 @@ export default function DashbroadStudent() {
 
   // Announcements State
   const [announcementText, setAnnouncementText] = useState("");
+  const [announcementTitle, setAnnouncementTitle] = useState("");
   const [isExpandingPublisher, setIsExpandingPublisher] = useState(false);
   const [commentInputs, setCommentInputs] = useState({});
-  const [announcements, setAnnouncements] = useState({});
+  const [blogForDetail, setBlogForDetail] = useState(null);
 
   // Study progress state
   const [progress, setProgress] = useState(() => {
@@ -335,6 +230,28 @@ export default function DashbroadStudent() {
 
     fetchClassmates();
   }, [selectedCourse]);
+  
+  // 4. Load class blogs when a course is selected
+  useEffect(() => {
+    if (!selectedCourse) {
+      setClassBlogs([]);
+      return;
+    }
+
+    const fetchBlogs = async () => {
+      setLoadingBlogs(true);
+      try {
+        const blogsData = await fetchClassBlogs(selectedCourse.id);
+        setClassBlogs(Array.isArray(blogsData) ? blogsData : []);
+      } catch (err) {
+        console.error('Lỗi tải danh sách bài viết lớp:', err);
+      } finally {
+        setLoadingBlogs(false);
+      }
+    };
+
+    fetchBlogs();
+  }, [selectedCourse, refreshBlogsKey]);
 
   // Action: Select Course Card
   const handleSelectCourse = (course) => {
@@ -417,6 +334,46 @@ export default function DashbroadStudent() {
     });
   };
 
+  const formatDate = (dateString) => {
+    if (!dateString) return 'Vừa xong';
+    return new Date(dateString).toLocaleDateString('vi-VN', { 
+      day: '2-digit', month: '2-digit', year: 'numeric',
+      hour: '2-digit', minute: '2-digit', timeZone: 'Asia/Ho_Chi_Minh'
+    });
+  };
+
+  const handlePostBlog = async () => {
+    if (!announcementText.trim() || !announcementTitle.trim() || !selectedCourse) {
+      triggerNotification("⚠️ Vui lòng nhập đầy đủ tiêu đề và nội dung thảo luận.", "info");
+      return;
+    }
+    
+    try {
+      setLoadingBlogs(true);
+      const payload = {
+        title: announcementTitle,
+        content: announcementText,
+        courseId: selectedCourse.courseId || selectedCourse.id,
+        classId: selectedCourse.id,
+        authorId: currentUser?.id,
+        isPrivate: true, // Default to class-level discussion
+        keywords: null
+      };
+
+      await createBlog(payload);
+      setAnnouncementText("");
+      setAnnouncementTitle("");
+      setIsExpandingPublisher(false);
+      setRefreshBlogsKey(prev => prev + 1);
+      triggerNotification("📣 Đã đăng bài thảo luận thành công!", "success");
+    } catch (err) {
+      console.error('Lỗi khi đăng bài:', err);
+      triggerNotification("❌ Lỗi khi đăng bài: " + (err.response?.data?.message || err.message), "error");
+    } finally {
+      setLoadingBlogs(false);
+    }
+  };
+
   const handleAddNote = (content) => {
     if (!activeLecture) return;
     setProgress((prev) => {
@@ -495,7 +452,7 @@ export default function DashbroadStudent() {
   );
 
   const studentName = currentUser?.fullName || currentUser?.email || 'Học viên';
-  const studentCode = currentUser?.username || 'SV-2026';
+  const studentCode = currentUser?.username || currentUser?.id || 'SV-2026';
   const studentEmail = currentUser?.email || '';
 
   return (
@@ -514,6 +471,10 @@ export default function DashbroadStudent() {
         onLogout={handleLogout}
         onToggleSidebar={() => setSidebarOpen(prev => !prev)}
         sidebarOpen={sidebarOpen}
+        onHome={() => {
+          setSelectedCourse(null);
+          navigate('/dashboard/student');
+        }}
       />
 
       {/* Visual notification banner */}
@@ -536,23 +497,25 @@ export default function DashbroadStudent() {
 
         {/* Left Side Navigation Rail */}
         <aside
-          className={`hidden md:flex flex-col bg-white border-r border-gray-200 shrink-0 select-none py-4 items-center justify-between overflow-hidden transition-all duration-300 ease-in-out ${
-            sidebarOpen ? 'w-56 opacity-100' : 'w-0 opacity-0 border-r-0'
-          }`}
+          className={`hidden md:flex flex-col bg-white border-r border-gray-200 shrink-0 select-none py-4 items-center justify-between overflow-hidden transition-all duration-300 ease-in-out ${sidebarOpen ? 'w-56 opacity-100' : 'w-0 opacity-0 border-r-0'
+            }`}
         >
           <div className="flex flex-col gap-1 items-start w-full px-3">
 
             {/* 1. Home button */}
             <button
-              onClick={() => setSelectedCourse(null)}
-              className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl transition cursor-pointer text-left ${!selectedCourse
+              onClick={() => {
+                setSelectedCourse(null);
+                navigate('/dashboard/student');
+              }}
+              className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl transition cursor-pointer text-left ${!selectedCourse && location.pathname === '/dashboard/student'
                 ? "bg-emerald-50 text-emerald-700"
                 : "text-gray-600 hover:bg-gray-100 hover:text-gray-900"
                 }`}
               title="Lớp học của tôi"
             >
               <Home size={20} className="stroke-[2.2] shrink-0" />
-              <span className="text-xs font-semibold whitespace-nowrap">Trang chủ</span>
+              <span className="text-xs font-semibold whitespace-nowrap">Lớp học</span>
             </button>
 
             {/* 3. Tasks checklist */}
@@ -562,35 +525,41 @@ export default function DashbroadStudent() {
               title="Danh sách cần tự học"
             >
               <ClipboardCheck size={20} className="stroke-[2.2] shrink-0" />
-              <span className="text-xs font-semibold whitespace-nowrap">Bài tập nhà</span>
+              <span className="text-xs font-semibold whitespace-nowrap">Bài tập</span>
             </button>
 
             {/* 4. Enrolled courses collection list icon */}
             <button
-              onClick={() => setSelectedCourse(null)}
+              onClick={() => {
+                setSelectedCourse(null);
+                navigate('/dashboard/student');
+              }}
               className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-gray-600 hover:bg-gray-100 hover:text-gray-900 transition cursor-pointer text-left"
               title="Khóa đào tạo"
             >
               <GraduationCap size={20} className="stroke-[2.2] shrink-0" />
               <span className="text-xs font-semibold whitespace-nowrap">Học kỳ hiện tại</span>
             </button>
-          </div>
 
-          {/* Quick Settings widget at bottom */}
-          <div className="w-full px-3">
+            {/* Blog button */}
             <button
               onClick={() => {
-                if (confirm("Bạn có muốn tải lại và reset sạch toàn bộ lịch sử điểm tự học?")) {
-                  resetProgress();
-                }
+                setSelectedCourse(null);
+                navigate('/dashboard/student/blog');
               }}
-              className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-gray-400 hover:bg-red-50 hover:text-red-500 transition cursor-pointer text-left"
-              title="Đặt lại thông tin tiến độ"
+              className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl transition cursor-pointer text-left ${location.pathname === '/dashboard/student/blog'
+                ? "bg-emerald-50 text-emerald-700"
+                : "text-gray-600 hover:bg-gray-100 hover:text-gray-900"
+                }`}
+              title="Blog & Diễn đàn"
             >
-              <Settings size={20} className="shrink-0" />
-              <span className="text-xs font-semibold whitespace-nowrap">Reset dữ liệu</span>
+              <MessageSquare size={20} className="stroke-[2.2] shrink-0" />
+              <span className="text-xs font-semibold whitespace-nowrap">Blog & Diễn đàn</span>
             </button>
           </div>
+
+
+
         </aside>
 
         {/* Right workspace core content frame */}
@@ -602,7 +571,14 @@ export default function DashbroadStudent() {
             </div>
           )}
 
-          {!selectedCourse ? (
+          {location.pathname === "/dashboard/student/blog" ? (
+            <div className="animate-fade-in">
+              <SharedBlogForum 
+                initialSelectedBlog={blogForDetail} 
+                onClearInitialBlog={() => setBlogForDetail(null)}
+              />
+            </div>
+          ) : !selectedCourse ? (
             /* STEP 1: CLASSROOM DIRECTORY DASHBOARD DISPLAY */
             loading ? (
               <div className="flex-1 flex flex-col justify-center items-center gap-3 py-16">
@@ -750,17 +726,27 @@ export default function DashbroadStudent() {
                                 </div>
                               </div>
 
-                              <textarea
-                                value={announcementText}
-                                onChange={(e) => setAnnouncementText(e.target.value)}
-                                placeholder="Hãy dặn dò các thành viên trong nhóm hoặc thảo luận học liệu..."
-                                className="w-full min-h-[90px] text-xs p-3 bg-gray-50 focus:bg-white border border-gray-200 focus:border-emerald-600 rounded-lg focus:outline-none transition leading-relaxed resize-none font-medium"
-                              />
+                              <div className="space-y-3">
+                                <input
+                                  type="text"
+                                  value={announcementTitle}
+                                  onChange={(e) => setAnnouncementTitle(e.target.value)}
+                                  placeholder="Tiêu đề thảo luận (ví dụ: Thắc mắc về Lab 1)..."
+                                  className="w-full text-xs font-bold p-3 bg-gray-50 focus:bg-white border border-gray-200 focus:border-emerald-600 rounded-lg focus:outline-none transition"
+                                />
+                                <textarea
+                                  value={announcementText}
+                                  onChange={(e) => setAnnouncementText(e.target.value)}
+                                  placeholder="Nội dung thảo luận chi tiết..."
+                                  className="w-full min-h-[120px] text-xs p-3 bg-gray-50 focus:bg-white border border-gray-200 focus:border-emerald-600 rounded-lg focus:outline-none transition leading-relaxed resize-none font-medium"
+                                />
+                              </div>
 
                               <div className="flex items-center justify-end gap-2">
                                 <button
                                   onClick={() => {
                                     setAnnouncementText("");
+                                    setAnnouncementTitle("");
                                     setIsExpandingPublisher(false);
                                   }}
                                   className="px-3.5 py-1.5 text-xs font-bold text-gray-500 hover:bg-gray-100 rounded-lg transition cursor-pointer"
@@ -768,162 +754,84 @@ export default function DashbroadStudent() {
                                   Hủy
                                 </button>
                                 <button
-                                  onClick={() => {
-                                    if (!announcementText.trim()) return;
-                                    const courseId = selectedCourse.id;
-                                    const newAnn = {
-                                      id: `ann-custom-${Date.now()}`,
-                                      author: studentName,
-                                      role: "Học viên",
-                                      avatar: studentName.trim().split(" ").pop()?.charAt(0).toUpperCase() || "S",
-                                      date: "Vừa xong",
-                                      content: announcementText,
-                                      comments: []
-                                    };
-                                    setAnnouncements(prev => ({
-                                      ...prev,
-                                      [courseId]: [newAnn, ...(prev[courseId] || [])]
-                                    }));
-                                    setAnnouncementText("");
-                                    setIsExpandingPublisher(false);
-                                    triggerNotification("📣 Đã đăng thông tin lên bảng tin lớp học thành công!", "success");
-                                  }}
-                                  className="px-4 py-1.5 text-xs font-bold bg-emerald-700 hover:bg-emerald-800 text-white rounded-lg transition cursor-pointer shadow-3xs"
+                                  onClick={handlePostBlog}
+                                  disabled={loadingBlogs}
+                                  className={`px-4 py-1.5 text-xs font-bold bg-emerald-700 hover:bg-emerald-800 text-white rounded-lg transition cursor-pointer shadow-3xs flex items-center gap-2 ${loadingBlogs ? 'opacity-70' : ''}`}
                                 >
+                                  {loadingBlogs && <Loader2 size={12} className="animate-spin" />}
                                   Đăng tin
                                 </button>
                               </div>
                             </div>
                           )}
                         </div>
-
-                        {/* Thread Announcement Posts */}
-                        {(announcements[selectedCourse.id] || []).map((ann) => (
-                          <div key={ann.id} className="bg-white border border-gray-200 rounded-xl p-4 shadow-3xs text-left space-y-4">
-
-                            <div className="flex items-start justify-between">
-                              <div className="flex items-center gap-3">
-                                <div className="w-9 h-9 rounded-full bg-[#0a4823] text-white font-extrabold flex items-center justify-center text-sm shadow-2xs shrink-0 select-none">
-                                  {ann.avatar}
-                                </div>
-                                <div className="leading-none">
-                                  <span className="text-xs font-bold text-gray-800 flex items-center gap-1.5">
-                                    {ann.author}
-                                    {ann.role === "Giảng viên lớp học" && (
-                                      <span className="bg-emerald-50 text-emerald-800 font-extrabold text-[8.5px] px-1.5 py-0.5 rounded border border-emerald-100 uppercase">Teacher</span>
-                                    )}
-                                  </span>
-                                  <span className="text-[9.5px] text-gray-400 font-semibold block mt-1 uppercase">
-                                    {ann.date} • {ann.role}
-                                  </span>
-                                </div>
-                              </div>
-                              <button className="p-1 text-gray-400 hover:text-gray-700 rounded-full transition">
-                                <MoreVertical size={16} />
-                              </button>
+  
+                          {/* Thread Blog Posts (Real data) */}
+                          {loadingBlogs && classBlogs.length === 0 ? (
+                            <div className="flex justify-center py-12">
+                              <Loader2 size={24} className="animate-spin text-emerald-700" />
                             </div>
-
-                            <div className="text-xs text-gray-700 leading-relaxed font-medium whitespace-pre-line bg-gray-50/40 p-3 rounded-lg border border-gray-100">
-                              {ann.content}
-                            </div>
-
-                            {/* Class Comments list */}
-                            <div className="border-t border-gray-100 pt-3 space-y-3">
-                              <div className="flex items-center gap-1.5 text-[10px] font-bold text-gray-400 uppercase pl-1 select-none">
-                                <MessageSquare size={13} />
-                                <span>{ann.comments.length} Nhận xét lớp học</span>
-                              </div>
-
-                              {ann.comments.length > 0 && (
-                                <div className="space-y-3 pl-2 sm:pl-4 max-h-[320px] overflow-y-auto pr-1">
-                                  {ann.comments.map((comm) => (
-                                    <div key={comm.id} className="flex items-start gap-2.5 text-xs">
-                                      <div className="w-7 h-7 rounded-full bg-gray-100 text-gray-750 font-extrabold flex items-center justify-center text-[10px] shrink-0 border border-gray-200 select-none">
-                                        {comm.avatar}
-                                      </div>
-                                      <div className="bg-gray-50/70 py-2 px-3 rounded-xl flex-1 leading-normal border border-gray-100/50">
-                                        <div className="flex items-baseline justify-between gap-2">
-                                          <span className="font-extrabold text-gray-800 text-[11px]">{comm.author}</span>
-                                          <span className="text-[9px] text-gray-400 font-semibold">{comm.date}</span>
-                                        </div>
-                                        <p className="text-gray-600 text-xs mt-1.5 leading-normal font-medium">
-                                          {comm.content}
-                                        </p>
-                                      </div>
+                          ) : classBlogs.length > 0 ? (
+                            classBlogs.map((blog) => (
+                              <div key={blog.id} className="bg-white border border-gray-200 rounded-xl p-4 shadow-3xs text-left space-y-4">
+  
+                                <div className="flex items-start justify-between">
+                                  <div className="flex items-center gap-3">
+                                    <div className="w-9 h-9 rounded-full bg-[#0a4823] text-white font-extrabold flex items-center justify-center text-sm shadow-2xs shrink-0 select-none">
+                                      {blog.authorFullName?.[0]?.toUpperCase() || "S"}
                                     </div>
-                                  ))}
+                                    <div className="leading-none">
+                                      <span className="text-xs font-bold text-gray-800 flex items-center gap-1.5">
+                                        {blog.authorFullName}
+                                        {(() => {
+                                          const r = String(blog.role || blog.authorRole || blog.AuthorRole || "").toLowerCase();
+                                          if (r === "admin") return <span className="bg-rose-50 text-rose-800 font-extrabold text-[8.5px] px-1.5 py-0.5 rounded border border-rose-100 uppercase">Admin</span>;
+                                          if (r === "lecturer" || r === "teacher" || r.includes("giảng viên")) return <span className="bg-emerald-50 text-emerald-800 font-extrabold text-[8.5px] px-1.5 py-0.5 rounded border border-emerald-100 uppercase">Giảng viên</span>;
+                                          return <span className="bg-gray-50 text-gray-600 font-extrabold text-[8.5px] px-1.5 py-0.5 rounded border border-gray-100 uppercase">Học viên</span>;
+                                        })()}
+                                      </span>
+                                      <span className="text-[9.5px] text-gray-400 font-semibold block mt-1 uppercase">
+                                        {formatDate(blog.createdAt)} • {(() => {
+                                          const r = String(blog.role || blog.authorRole || blog.AuthorRole || "").toLowerCase();
+                                          if (r === "admin") return "Admin";
+                                          if (r === "lecturer" || r === "teacher" || r.includes("giảng viên")) return "Giảng viên";
+                                          return "Học viên";
+                                        })()}
+                                      </span>
+                                    </div>
+                                  </div>
+                                  <button className="p-1 text-gray-400 hover:text-gray-700 rounded-full transition">
+                                    <MoreVertical size={16} />
+                                  </button>
                                 </div>
-                              )}
-
-                              {/* Comment typing form */}
-                              <div className="flex items-center gap-2.5 pt-2 pl-1">
-                                <div className="w-7 h-7 rounded-full bg-[#0a4823] text-white font-extrabold flex items-center justify-center text-[10px] shrink-0 select-none">
-                                  {studentName.trim().split(" ").pop()?.charAt(0).toUpperCase() || "S"}
+  
+                                <div className="space-y-2 overflow-hidden">
+                                  <h4 className="text-sm font-bold text-gray-900 break-words">{blog.title}</h4>
+                                  <div className="text-xs text-gray-700 leading-relaxed font-medium whitespace-pre-line bg-gray-50/40 p-3 rounded-lg border border-gray-100 break-words">
+                                    {blog.content}
+                                  </div>
                                 </div>
-                                <div className="relative flex-1">
-                                  <input
-                                    type="text"
-                                    placeholder="Thêm nhận xét lớp học..."
-                                    value={commentInputs[ann.id] || ""}
-                                    onChange={(e) => setCommentInputs(prev => ({ ...prev, [ann.id]: e.target.value }))}
-                                    onKeyDown={(e) => {
-                                      if (e.key === "Enter") {
-                                        const val = commentInputs[ann.id] || "";
-                                        if (!val.trim()) return;
-                                        const newComment = {
-                                          id: `comm-custom-${Date.now()}`,
-                                          author: studentName,
-                                          avatar: studentName.trim().split(" ").pop()?.charAt(0).toUpperCase() || "S",
-                                          date: "Vừa xong",
-                                          content: val
-                                        };
-                                        setAnnouncements(prev => {
-                                          const updated = (prev[selectedCourse.id] || []).map(a => {
-                                            if (a.id === ann.id) {
-                                              return { ...a, comments: [...a.comments, newComment] };
-                                            }
-                                            return a;
-                                          });
-                                          return { ...prev, [selectedCourse.id]: updated };
-                                        });
-                                        setCommentInputs(prev => ({ ...prev, [ann.id]: "" }));
-                                        triggerNotification("💬 Đã gửi nhận xét lớp học thành công.", "success");
-                                      }
-                                    }}
-                                    className="w-full pl-3.5 pr-10 py-1.5 text-xs bg-gray-50 border border-gray-200 hover:bg-gray-100 focus:bg-white rounded-full focus:outline-none focus:border-emerald-600 transition font-medium text-left"
-                                  />
-                                  <button
+  
+                                {/* Blog Interactions - Link to detail or comments */}
+                                <div className="border-t border-gray-100 pt-3 flex items-center gap-4">
+                                  <button 
                                     onClick={() => {
-                                      const val = commentInputs[ann.id] || "";
-                                      if (!val.trim()) return;
-                                      const newComment = {
-                                        id: `comm-custom-${Date.now()}`,
-                                        author: studentName,
-                                        avatar: studentName.trim().split(" ").pop()?.charAt(0).toUpperCase() || "S",
-                                        date: "Vừa xong",
-                                        content: val
-                                      };
-                                      setAnnouncements(prev => {
-                                        const updated = (prev[selectedCourse.id] || []).map(a => {
-                                          if (a.id === ann.id) {
-                                            return { ...a, comments: [...a.comments, newComment] };
-                                          }
-                                          return a;
-                                        });
-                                        return { ...prev, [selectedCourse.id]: updated };
-                                      });
-                                      setCommentInputs(prev => ({ ...prev, [ann.id]: "" }));
-                                      triggerNotification("💬 Đã gửi nhận xét lớp học thành công.", "success");
+                                      setBlogForDetail(blog);
+                                      navigate('/dashboard/student/blog');
                                     }}
-                                    className="absolute right-1 top-0.5 text-gray-400 hover:text-emerald-700 p-1.5 rounded-full transition cursor-pointer"
+                                    className="flex items-center gap-1.5 text-[10px] font-bold text-emerald-700 uppercase hover:underline cursor-pointer"
                                   >
-                                    <Send size={12} />
+                                    <MessageSquare size={13} />
+                                    <span>Xem thảo luận & bình luận</span>
                                   </button>
                                 </div>
                               </div>
+                            ))
+                          ) : (
+                            <div className="text-center py-12 bg-gray-50/50 rounded-xl border border-dashed border-gray-200">
+                              <p className="text-xs text-gray-400 font-medium">Chưa có thông báo hay bài thảo luận nào trong lớp này.</p>
                             </div>
-                          </div>
-                        ))}
+                          )}
                       </div>
                     </div>
                   </div>

@@ -23,12 +23,12 @@ export default function CourseDirectory({
   
   // Custom helper to get a nice gradient or color for cards
   const getBannerColor = (code) => {
-    if (!code) return "linear-gradient(135deg, #0D3E26 0%, #1c5e3d 100%)";
+    if (!code) return "linear-gradient(135deg, #064e3b 0%, #065f46 100%)";
     const c = code.toLowerCase();
-    if (c.includes("prj")) return "linear-gradient(135deg, #1e3a8a 0%, #3b82f6 100%)"; // Blue
-    if (c.includes("se") || c.includes("oop")) return "linear-gradient(135deg, #78350f 0%, #f59e0b 100%)"; // Orange/Brown
-    if (c.includes("mad") || c.includes("csd")) return "linear-gradient(135deg, #1e1b4b 0%, #4338ca 100%)"; // Indigo
-    return "linear-gradient(135deg, #0D3E26 0%, #1c5e3d 100%)"; // Green theme (default)
+    if (c.includes("prj")) return "linear-gradient(135deg, #1e3a8a 0%, #1e40af 100%)"; // Deep Blue
+    if (c.includes("se") || c.includes("oop")) return "linear-gradient(135deg, #78350f 0%, #92400e 100%)"; // Rich Amber
+    if (c.includes("mad") || c.includes("csd")) return "linear-gradient(135deg, #312e81 0%, #3730a3 100%)"; // Deep Indigo
+    return "linear-gradient(135deg, #064e3b 0%, #065f46 100%)"; // Emerald theme (default)
   };
 
   return (
@@ -113,66 +113,62 @@ export default function CourseDirectory({
                 {/* Card Banner Header */}
                 <div
                   style={{ background: bannerColor }}
-                  className="p-4 text-white h-[98px] relative flex flex-col justify-between shrink-0 overflow-hidden"
+                  className="p-5 text-white h-[115px] relative flex flex-col justify-between shrink-0"
                 >
-                  {/* Notebook overlay */}
-                  <div className="absolute right-[-8px] top-[-8px] opacity-10 pointer-events-none group-hover:scale-105 transition duration-300">
+                  {/* Notebook overlay background pattern */}
+                  <div className="absolute right-[-10px] top-[-10px] opacity-[0.08] pointer-events-none group-hover:scale-110 group-hover:rotate-3 transition duration-500">
                     <LayoutBookSimulated />
                   </div>
 
-                  {/* Course Code Link */}
-                  <div className="space-y-0.5 z-10 min-w-0 pr-6">
-                    <h3 className="font-extrabold text-sm sm:text-[15px] hover:underline tracking-tight block truncate" title={cls.courseCode || cls.id}>
-                      {cls.courseCode || cls.id}
-                    </h3>
-                    <p className="text-[10px] text-zinc-100 font-normal truncate opacity-90">
-                      Lớp {cls.id}
-                    </p>
-                  </div>
-
-                  {/* Subtitle with Lecturer details */}
-                  <div className="z-10 mt-auto flex items-center justify-between min-w-0">
-                    <span className="text-[10px] text-zinc-100 font-medium truncate max-w-[75%]">
-                      GV: {cls.lecturerName || "Chưa phân công"}
-                    </span>
-                    <span className="text-[8px] uppercase tracking-wider font-mono font-bold bg-white/20 px-1.5 py-0.5 rounded-sm">
+                  {/* Course Code Link & Semester Badge */}
+                  <div className="z-10 flex justify-between items-start min-w-0">
+                    <div className="space-y-0 min-w-0 pr-2">
+                      <h3 className="font-black text-base sm:text-lg hover:underline tracking-tight block truncate drop-shadow-sm" title={cls.courseCode || cls.id}>
+                        {cls.courseCode || cls.id}
+                      </h3>
+                      <p className="text-[11px] text-white/80 font-bold tracking-wide truncate mt-0.5">
+                        Lớp {cls.id}
+                      </p>
+                    </div>
+                    <span className="text-[9px] uppercase tracking-widest font-black bg-black/20 backdrop-blur-xs px-2 py-0.5 rounded border border-white/10 shrink-0">
                       {selectedSemester}
                     </span>
                   </div>
 
-                  {/* Floating teacher avatar */}
-                  <div 
-                    className="absolute right-4 -bottom-5 w-11 h-11 rounded-full text-white font-bold flex items-center justify-center border-2 border-white shadow-xs text-sm z-20 hover:scale-105 transition"
-                    style={{ backgroundColor: getAvatarColor(initial) }}
-                  >
-                    {initial}
+                  {/* Subtitle with Lecturer details */}
+                  <div className="z-10 mt-auto flex items-center justify-between min-w-0">
+                    <span className="text-[10.5px] text-white font-bold truncate max-w-[90%] drop-shadow-sm">
+                      GV: {cls.lecturerName || "Chưa phân công"}
+                    </span>
                   </div>
+
                 </div>
 
                 {/* Card Body */}
-                <div className="p-4 flex-1 flex flex-col justify-between space-y-4 pt-6 min-h-[100px] bg-white">
-                  <div className="min-h-[44px]">
-                    <h4 className="text-xs font-bold text-gray-800 leading-snug group-hover:text-emerald-700 transition truncate-2-lines">
+                <div className="p-5 flex-1 flex flex-col justify-between space-y-4 min-h-[110px] bg-white">
+                  <div className="min-h-[48px] text-left">
+                    <h4 className="text-[13px] font-bold text-slate-800 leading-snug group-hover:text-emerald-700 transition-colors duration-200">
                       {cls.courseName}
                     </h4>
-                    <p className="text-[9px] text-gray-400 mt-1">
+                    <div className="flex items-center gap-1.5 mt-2 text-[10px] text-slate-400 font-semibold uppercase tracking-wider">
+                      <Calendar size={12} className="text-slate-300" />
                       {cls.startDate || "N/A"} - {cls.endDate || "N/A"}
-                    </p>
+                    </div>
                   </div>
 
-                  {/* Bottom action section */}
-                  <div className="flex items-center justify-between border-t border-gray-100 pt-2 shrink-0">
-                    <div className="flex items-center gap-1 text-gray-500">
-                      <div className="p-1 rounded-full hover:bg-gray-100 hover:text-gray-800 transition text-gray-600" title="Bài tập được giao">
-                        <ClipboardList size={14} className="stroke-[2.2]" />
+                  {/* Bottom action section - Clean and aligned */}
+                  <div className="flex items-center justify-between border-t border-slate-50 pt-3 shrink-0">
+                    <div className="flex items-center gap-1">
+                      <div className="p-1.5 rounded-lg hover:bg-slate-50 text-slate-400 hover:text-emerald-600 transition-all duration-200" title="Bài tập được giao">
+                        <ClipboardList size={16} className="stroke-[2.2]" />
                       </div>
-                      <div className="p-1 rounded-full hover:bg-gray-100 hover:text-gray-800 transition text-gray-600" title="Thư mục khóa học">
-                        <Folder size={14} className="stroke-[2.2]" />
+                      <div className="p-1.5 rounded-lg hover:bg-slate-50 text-slate-400 hover:text-emerald-600 transition-all duration-200" title="Thư mục khóa học">
+                        <Folder size={16} className="stroke-[2.2]" />
                       </div>
                     </div>
 
-                    <div className="text-gray-400 hover:text-gray-700 p-1 rounded-full transition" title="Tùy chọn khác">
-                      <MoreVertical size={14} />
+                    <div className="p-1.5 rounded-lg hover:bg-slate-50 text-slate-300 hover:text-slate-600 transition-all duration-200" title="Tùy chọn khác">
+                      <MoreVertical size={16} />
                     </div>
                   </div>
                 </div>
