@@ -1,4 +1,5 @@
 import api from './api';
+import { normalizeData } from '../utils/dataNormalization';
 
 /**
  * Service cho API quản lý Khóa học (Courses)
@@ -11,7 +12,15 @@ import api from './api';
  */
 export async function fetchCourses() {
   const res = await api.get('/api/Courses');
-  return res.data;
+  return normalizeData(res.data);
+}
+
+export async function getUserCourses(userId, role) {
+  // Backend expects lowercase role: 'student' or 'lecturer'
+  const normalizedRole = role ? role.toLowerCase() : role;
+  const params = { role: normalizedRole };
+  const res = await api.get(`/api/Courses/user/${userId}`, { params });
+  return normalizeData(res.data);
 }
 
 /**
