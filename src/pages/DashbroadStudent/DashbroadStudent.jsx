@@ -27,6 +27,8 @@ import CourseDirectory from './lms/CourseDirectory';
 import LessonPlayer from './lms/LessonPlayer';
 import SidebarSyllabus from './lms/SidebarSyllabus';
 import StudentRoadmap from './StudentRoadmap';
+import StudentAssignments from './StudentAssignments';
+import StudentGrades from './StudentGrades';
 import SharedBlogForum from '../../components/SharedBlogForum/SharedBlogForum';
 
 const INITIAL_PROGRESS = {
@@ -633,7 +635,27 @@ export default function DashbroadStudent() {
                           : "border-transparent text-gray-500 hover:text-gray-800 hover:bg-gray-50 cursor-pointer"
                           }`}
                       >
-                        Lộ trình học (Classwork)
+                        Học liệu
+                      </button>
+
+                      <button
+                        onClick={() => setActiveCourseTab("assignments")}
+                        className={`px-4 h-full text-xs font-bold flex items-center justify-center border-b-[3px] transition-all relative ${activeCourseTab === "assignments"
+                          ? "border-emerald-600 text-emerald-800 font-extrabold"
+                          : "border-transparent text-gray-500 hover:text-gray-800 hover:bg-gray-50 cursor-pointer"
+                          }`}
+                      >
+                        Bài tập
+                      </button>
+
+                      <button
+                        onClick={() => setActiveCourseTab("grades")}
+                        className={`px-4 h-full text-xs font-bold flex items-center justify-center border-b-[3px] transition-all relative ${activeCourseTab === "grades"
+                          ? "border-emerald-600 text-emerald-800 font-extrabold"
+                          : "border-transparent text-gray-500 hover:text-gray-800 hover:bg-gray-50 cursor-pointer"
+                          }`}
+                      >
+                        Điểm &amp; Nhận xét
                       </button>
 
                       <button
@@ -841,6 +863,20 @@ export default function DashbroadStudent() {
                 {activeCourseTab === "classwork" && (
                   <div className="bg-white border border-gray-200 rounded-2xl p-6 shadow-2xs">
                     <StudentRoadmap cls={selectedCourse} onBack={() => setActiveCourseTab("stream")} />
+                  </div>
+                )}
+
+                {/* Assignments tab content */}
+                {activeCourseTab === "assignments" && (
+                  <div className="bg-white border border-gray-200 rounded-2xl p-6 shadow-2xs">
+                    <StudentAssignments cls={selectedCourse} />
+                  </div>
+                )}
+
+                {/* Grades & Feedback tab content */}
+                {activeCourseTab === "grades" && (
+                  <div className="bg-white border border-gray-200 rounded-2xl p-6 shadow-2xs">
+                    <StudentGrades cls={selectedCourse} />
                   </div>
                 )}
 

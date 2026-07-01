@@ -629,21 +629,39 @@ function RoadmapScreen({ cls, onBack }) {
                                                         {/* Actions */}
                                                         <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexShrink: 0 }}>
                                                             {material.fileUrl && material.fileUrl !== '#' && (
-                                                                <a
-                                                                    href={material.fileUrl}
-                                                                    target="_blank"
-                                                                    rel="noopener noreferrer"
-                                                                    style={{
-                                                                        display: 'inline-flex', alignItems: 'center', gap: 5, fontSize: '0.75rem',
-                                                                        fontWeight: 600, color: '#1d4ed8', background: '#eff6ff',
-                                                                        border: '1px solid #bfdbfe', padding: '6px 12px', borderRadius: 8,
-                                                                        textDecoration: 'none', transition: 'all 0.15s'
-                                                                    }}
-                                                                    onMouseEnter={e => e.currentTarget.style.background = '#dbeafe'}
-                                                                    onMouseLeave={e => e.currentTarget.style.background = '#eff6ff'}
-                                                                >
-                                                                    <ExternalLink size={12} /> Xem bài học
-                                                                </a>
+                                                                <>
+                                                                    <a
+                                                                        href={material.fileUrl}
+                                                                        target="_blank"
+                                                                        rel="noopener noreferrer"
+                                                                        style={{
+                                                                            display: 'inline-flex', alignItems: 'center', gap: 5, fontSize: '0.75rem',
+                                                                            fontWeight: 600, color: '#1d4ed8', background: '#eff6ff',
+                                                                            border: '1px solid #bfdbfe', padding: '6px 12px', borderRadius: 8,
+                                                                            textDecoration: 'none', transition: 'all 0.15s'
+                                                                        }}
+                                                                        onMouseEnter={e => e.currentTarget.style.background = '#dbeafe'}
+                                                                        onMouseLeave={e => e.currentTarget.style.background = '#eff6ff'}
+                                                                    >
+                                                                        <ExternalLink size={12} /> Xem trước
+                                                                    </a>
+                                                                    <a
+                                                                        href={material.fileUrl}
+                                                                        download
+                                                                        target="_blank"
+                                                                        rel="noopener noreferrer"
+                                                                        style={{
+                                                                            display: 'inline-flex', alignItems: 'center', gap: 5, fontSize: '0.75rem',
+                                                                            fontWeight: 600, color: '#0d3e26', background: '#e6f4ea',
+                                                                            border: '1px solid #a3cfbb', padding: '6px 12px', borderRadius: 8,
+                                                                            textDecoration: 'none', transition: 'all 0.15s'
+                                                                        }}
+                                                                        onMouseEnter={e => e.currentTarget.style.background = '#d1e7dd'}
+                                                                        onMouseLeave={e => e.currentTarget.style.background = '#e6f4ea'}
+                                                                    >
+                                                                        <Play size={12} /> Tải xuống
+                                                                    </a>
+                                                                </>
                                                             )}
                                                         </div>
                                                     </div>

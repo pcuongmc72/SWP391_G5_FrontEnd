@@ -57,3 +57,27 @@ export const uncompleteMaterial = async (materialId) => {
     return response.data;
 };
 
+/**
+ * Lấy danh sách bài tập của lớp kèm trạng thái nộp bài của sinh viên hiện tại
+ * GET /api/student-classes/{classId}/assignments
+ * @param {string} classId - Mã lớp học
+ */
+export const getStudentAssignments = async (classId) => {
+    const response = await api.get(`/api/student-classes/${classId}/assignments`);
+    return response.data; // Trả về { success: true, data: [...] }
+};
+
+/**
+ * Nộp bài tập (hoặc cập nhật bài nộp nếu chưa chấm điểm)
+ * POST /api/student-classes/{classId}/assignments/{assignmentId}/submit
+ * @param {string} classId
+ * @param {string} assignmentId
+ * @param {{ fileName?: string, studentNotes?: string }} payload
+ */
+export const submitAssignment = async (classId, assignmentId, payload) => {
+    const response = await api.post(
+        `/api/student-classes/${classId}/assignments/${assignmentId}/submit`,
+        payload
+    );
+    return response.data;
+};
