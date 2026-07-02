@@ -1,24 +1,28 @@
 import { useMemo, useState } from 'react';
-import { Pencil, Trash2, Plus, Search, Clock, CheckSquare, X, Check } from 'lucide-react';
+import { Pencil, Trash2, Plus, Search, Clock, CheckSquare, X, Check, BookOpen, ChevronDown, ChevronRight, ClipboardList } from 'lucide-react';
 import { useLecturerWorkspace } from '../../context/LecturerWorkspaceContext';
 import styles from './LecturerDashboard.module.css';
 
 export default function AssignmentsDashboard() {
   const {
     users, selectedClassId, classesLoading, classesError, workspaceLoading,
-    assignments, submissions, sessions, api
+    assignments, submissions, materials, api
   } = useLecturerWorkspace();
 
   const [toast, setToast] = useState(null);
   const [isAssignmentModalOpen, setIsAssignmentModalOpen] = useState(false);
   const [editingAssignmentId, setEditingAssignmentId] = useState(null);
   
+  const [activeChapterState, setActiveChapterState] = useState(null);
+  const [viewingSubmissionsForAsgId, setViewingSubmissionsForAsgId] = useState(null);
+  const [subTab, setSubTab] = useState('submitted');
+  
   const [newAsgForm, setNewAsgForm] = useState({
     title: '',
     description: '',
     dueDate: '',
     maxPoints: 10,
-    sessionId: '',
+    linkedItem: '',
     type: 'individual',
     instructions: '',
   });
@@ -26,9 +30,33 @@ export default function AssignmentsDashboard() {
   const [assignmentFilter, setAssignmentFilter] = useState('all'); // all, active, overdue
   const [assignmentSearch, setAssignmentSearch] = useState('');
 
+  const groupedByChapter = useMemo(() => {
+    const groups = {};
+    (materials || []).forEach((m) => {
+      let chapter = 'Học liệu chung';
+      if (m.chapter && m.chapter.includes(' ÷ ')) {
+        const parts = m.chapter.split(' ÷ ');
+        chapter = parts[1].trim();
+      } else if (m.chapter) {
+        chapter = m.chapter.trim();
+      }
+      if (!groups[chapter]) groups[chapter] = [];
+      groups[chapter].push(m);
+    });
+    return groups;
+  }, [materials]);
+
+  const sortedChapters = useMemo(() => {
+    return Object.keys(groupedByChapter).sort((a, b) => {
+      if (a === 'Học liệu chung') return 1;
+      if (b === 'Học liệu chung') return -1;
+      return a.localeCompare(b, undefined, { numeric: true, sensitivity: 'base' });
+    });
+  }, [groupedByChapter]);
+
   const parseAssignmentDesc = (rawDesc) => {
     if (!rawDesc) {
-      return { desc: '', sessionId: '', sessionTitle: '', type: 'individual', instructions: '' };
+      return { desc: '', linkedItem: '', linkedTitle: '', type: 'individual', instructions: '' };
     }
     const clean = rawDesc.trim();
     if (clean.startsWith('{') && clean.endsWith('}')) {
@@ -36,8 +64,8 @@ export default function AssignmentsDashboard() {
         const data = JSON.parse(clean);
         return {
           desc: data.desc || '',
-          sessionId: data.sessionId || '',
-          sessionTitle: data.sessionTitle || '',
+          linkedItem: data.linkedItem || data.sessionId || '',
+          linkedTitle: data.linkedTitle || data.sessionTitle || '',
           type: data.type || 'individual',
           instructions: data.instructions || '',
         };
@@ -45,14 +73,14 @@ export default function AssignmentsDashboard() {
         // fallback
       }
     }
-    return { desc: rawDesc, sessionId: '', sessionTitle: '', type: 'individual', instructions: '' };
+    return { desc: rawDesc, linkedItem: '', linkedTitle: '', type: 'individual', instructions: '' };
   };
 
   const serializeAssignmentDesc = (data) => {
     return JSON.stringify({
       desc: data.desc || '',
-      sessionId: data.sessionId || '',
-      sessionTitle: data.sessionTitle || '',
+      linkedItem: data.linkedItem || '',
+      linkedTitle: data.linkedTitle || '',
       type: data.type || 'individual',
       instructions: data.instructions || '',
     });
@@ -91,7 +119,7 @@ export default function AssignmentsDashboard() {
         const meta = parseAssignmentDesc(asg.description);
         return asg.title.toLowerCase().includes(q) ||
           meta.desc.toLowerCase().includes(q) ||
-          meta.sessionTitle.toLowerCase().includes(q);
+          meta.linkedTitle.toLowerCase().includes(q);
       });
     }
     if (assignmentFilter !== 'all') {
@@ -105,24 +133,68 @@ export default function AssignmentsDashboard() {
     return list;
   }, [assignments, assignmentSearch, assignmentFilter]);
 
+  const assignmentsByChapter = useMemo(() => {
+    const groups = {};
+    filteredAssignments.forEach(asg => {
+      const meta = parseAssignmentDesc(asg.description);
+      let ch = 'Bài tập chung (Không liên kết)';
+      if (meta.linkedItem) {
+        if (meta.linkedItem.startsWith('chapter_')) {
+          ch = meta.linkedItem.replace('chapter_', '');
+        } else {
+          const mat = (materials || []).find(m => m.id === meta.linkedItem);
+          if (mat && mat.chapter) {
+            ch = mat.chapter.includes(' ÷ ') ? mat.chapter.split(' ÷ ')[1].trim() : mat.chapter.trim();
+          }
+        }
+      }
+      if (!groups[ch]) groups[ch] = [];
+      groups[ch].push(asg);
+    });
+    return groups;
+  }, [filteredAssignments, materials]);
+
+  const sortedAsgChapters = useMemo(() => {
+    return Object.keys(assignmentsByChapter).sort((a, b) => {
+      if (a === 'Bài tập chung (Không liên kết)') return 1;
+      if (b === 'Bài tập chung (Không liên kết)') return -1;
+      return a.localeCompare(b, undefined, { numeric: true, sensitivity: 'base' });
+    });
+  }, [assignmentsByChapter]);
+
   const handleSaveAssignment = async (e) => {
     e.preventDefault();
     if (!newAsgForm.title || !newAsgForm.dueDate) {
       showToast('Vui lòng hoàn thành tiêu đề và hạn nộp', 'info');
       return;
     }
+
+    let resolvedLinkedTitle = '';
+    if (newAsgForm.linkedItem) {
+      if (newAsgForm.linkedItem.startsWith('chapter_')) {
+        resolvedLinkedTitle = newAsgForm.linkedItem.replace('chapter_', 'Chương: ');
+      } else {
+        const mat = (materials || []).find(m => m.id === newAsgForm.linkedItem);
+        if (mat) resolvedLinkedTitle = `Bài học: ${mat.title}`;
+      }
+    }
+
     const payload = {
       title: newAsgForm.title,
       description: serializeAssignmentDesc({
         desc: newAsgForm.description,
-        sessionId: newAsgForm.sessionId,
-        sessionTitle: sessions.find((s) => s.id === newAsgForm.sessionId)?.title || '',
+        linkedItem: newAsgForm.linkedItem,
+        linkedTitle: resolvedLinkedTitle,
         type: newAsgForm.type,
         instructions: newAsgForm.instructions,
       }),
       dueDate: newAsgForm.dueDate,
-      maxPoints: Number(newAsgForm.maxPoints),
+      maxPoints: Number(String(newAsgForm.maxPoints).replace(',', '.')),
     };
+    if (payload.maxPoints > 10 || payload.maxPoints <= 0) {
+      showToast('Điểm tối đa phải lớn hơn 0 và không vượt quá 10', 'info');
+      return;
+    }
     try {
       if (editingAssignmentId) {
         await api.updateAssignment(editingAssignmentId, payload);
@@ -138,7 +210,7 @@ export default function AssignmentsDashboard() {
         description: '',
         dueDate: '',
         maxPoints: 10,
-        sessionId: '',
+        linkedItem: '',
         type: 'individual',
         instructions: '',
       });
@@ -155,7 +227,7 @@ export default function AssignmentsDashboard() {
       description: meta.desc,
       dueDate: asg.dueDate?.substring(0, 10) || '',
       maxPoints: asg.maxPoints,
-      sessionId: meta.sessionId,
+      linkedItem: meta.linkedItem,
       type: meta.type,
       instructions: meta.instructions,
     });
@@ -237,7 +309,7 @@ export default function AssignmentsDashboard() {
                 description: '',
                 dueDate: '',
                 maxPoints: 10,
-                sessionId: '',
+                linkedItem: '',
                 type: 'individual',
                 instructions: '',
               });
@@ -248,84 +320,111 @@ export default function AssignmentsDashboard() {
           </button>
         </div>
 
-        <div className={styles.assignmentGrid}>
-          {filteredAssignments.map((asg) => {
-            const meta = parseAssignmentDesc(asg.description);
-            const timeInfo = calculateTimeRemaining(asg.dueDate);
-            const asgSubs = submissions.filter((s) => s.assignmentId === asg.id);
-            const asgSubsCount = asgSubs.length;
-            const totalStudents = users.length || 1;
-            const pct = Math.min(100, Math.round((asgSubsCount / totalStudents) * 100));
+        <div className={styles.splitLayout}>
+          <div className={styles.sidebar}>
+            <h3 className={styles.sidebarTitle}>Nội dung lộ trình</h3>
+            {sortedAsgChapters.map(chName => (
+              <button
+                key={chName}
+                type="button"
+                className={`${styles.sidebarItem} ${activeChapterState === chName || (!activeChapterState && chName === sortedAsgChapters[0]) ? styles.sidebarItemActive : ''}`}
+                onClick={() => setActiveChapterState(chName)}
+              >
+                <span>{chName}</span>
+                <span style={{ fontSize: 11, background: 'rgba(0,0,0,0.05)', padding: '2px 6px', borderRadius: 10 }}>
+                  {assignmentsByChapter[chName].length}
+                </span>
+              </button>
+            ))}
+          </div>
 
-            return (
-              <div key={asg.id} className={styles.assignmentCard}>
-                <div className={styles.asgCardHeader}>
-                  <span className={styles.scoreBadge}>Thang điểm: {asg.maxPoints}đ</span>
-                  <div className={styles.asgActionGroup}>
-                    <button
-                      type="button"
-                      className={styles.miniIconBtn}
-                      onClick={() => handleEditAssignmentStart(asg)}
-                      title="Sửa bài tập"
-                    >
-                      <Pencil size={13} />
-                    </button>
-                    <button
-                      type="button"
-                      className={styles.miniIconBtn}
-                      style={{ color: '#ef4444' }}
-                      onClick={() => handleDeleteAssignment(asg.id)}
-                      title="Xóa bài tập"
-                    >
-                      <Trash2 size={13} />
-                    </button>
-                  </div>
-                </div>
+          <div className={styles.mainContent}>
+            {sortedAsgChapters.length > 0 && (
+              <div className={styles.assignmentGrid}>
+                {(assignmentsByChapter[activeChapterState] || assignmentsByChapter[sortedAsgChapters[0]] || []).map((asg) => {
+                  const meta = parseAssignmentDesc(asg.description);
+                  const timeInfo = calculateTimeRemaining(asg.dueDate);
+                  const asgSubs = submissions.filter((s) => s.assignmentId === asg.id);
+                  const asgSubsCount = asgSubs.length;
+                  const totalStudents = users.length || 1;
+                  const pct = Math.min(100, Math.round((asgSubsCount / totalStudents) * 100));
 
-                <h4 className={styles.asgCardTitle}>{asg.title}</h4>
-                {meta.sessionTitle && (
-                  <div className={styles.linkedSessionBadge}>
-                    <Clock size={11} /> Học phần: {meta.sessionTitle}
-                  </div>
-                )}
+                  return (
+                    <div key={asg.id} className={styles.assignmentCard}>
+                      <div className={styles.asgCardHeader}>
+                        <span className={styles.scoreBadge}>Thang điểm: {asg.maxPoints}đ</span>
+                        <div className={styles.asgActionGroup}>
+                          <button
+                            type="button"
+                            className={styles.miniIconBtn}
+                            onClick={() => handleEditAssignmentStart(asg)}
+                            title="Sửa bài tập"
+                          >
+                            <Pencil size={13} />
+                          </button>
+                          <button
+                            type="button"
+                            className={styles.miniIconBtn}
+                            style={{ color: '#ef4444' }}
+                            onClick={() => handleDeleteAssignment(asg.id)}
+                            title="Xóa bài tập"
+                          >
+                            <Trash2 size={13} />
+                          </button>
+                        </div>
+                      </div>
 
-                <div style={{ display: 'flex', gap: 6, margin: '8px 0' }}>
-                  <span className={styles.asgTypeTag}>
-                    {meta.type === 'group' ? 'Làm nhóm' : 'Làm cá nhân'}
-                  </span>
-                  <span
-                    className={styles.countdownPill}
-                    style={{ color: timeInfo.color, background: timeInfo.bg }}
-                  >
-                    {timeInfo.text}
-                  </span>
-                </div>
+                      <h4 className={styles.asgCardTitle}>{asg.title}</h4>
+                      {meta.linkedTitle && (
+                        <div className={styles.linkedSessionBadge} style={{ background: '#f0fdf4', color: '#166534', border: '1px solid #bbf7d0' }}>
+                          <BookOpen size={11} /> Thuộc {meta.linkedTitle}
+                        </div>
+                      )}
 
-                <p className={styles.asgCardDesc}>{meta.desc || 'Không có mô tả.'}</p>
+                      <div style={{ display: 'flex', gap: 6, margin: '8px 0' }}>
+                        <span className={styles.asgTypeTag}>
+                          {meta.type === 'group' ? 'Làm nhóm' : 'Làm cá nhân'}
+                        </span>
+                        <span
+                          className={styles.countdownPill}
+                          style={{ color: timeInfo.color, background: timeInfo.bg }}
+                        >
+                          {timeInfo.text}
+                        </span>
+                      </div>
 
-                {meta.instructions && (
-                  <div className={styles.asgInstructionsBlock}>
-                    <strong>Hướng dẫn:</strong> {meta.instructions}
-                  </div>
-                )}
+                      <p className={styles.asgCardDesc}>{meta.desc || 'Không có mô tả.'}</p>
 
-                <div className={styles.asgProgressSection}>
-                  <div className={styles.asgProgressHeader}>
-                    <span>Bài nộp: <strong>{asgSubsCount}/{users.length}</strong></span>
-                    <span>{pct}%</span>
-                  </div>
-                  <div className={styles.progressBarTrack}>
-                    <div className={styles.progressBarFill} style={{ width: `${pct}%` }} />
-                  </div>
-                </div>
+                      {meta.instructions && (
+                        <div className={styles.asgInstructionsBlock}>
+                          <strong>Hướng dẫn:</strong> {meta.instructions}
+                        </div>
+                      )}
+
+                      <div 
+                        className={styles.asgProgressSection}
+                        onClick={() => setViewingSubmissionsForAsgId(asg.id)}
+                        title="Xem danh sách nộp bài"
+                      >
+                        <div className={styles.asgProgressHeader}>
+                          <span>Bài nộp: <strong>{asgSubsCount}/{users.length}</strong></span>
+                          <span>{pct}%</span>
+                        </div>
+                        <div className={styles.progressBarTrack}>
+                          <div className={styles.progressBarFill} style={{ width: `${pct}%` }} />
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
               </div>
-            );
-          })}
-        </div>
+            )}
 
-        {filteredAssignments.length === 0 && (
-          <div className={styles.emptyBox}>Không tìm thấy bài tập nào. Hãy bấm Soạn bài tập mới.</div>
-        )}
+            {filteredAssignments.length === 0 && (
+              <div className={styles.emptyBox}>Không tìm thấy bài tập nào. Hãy bấm Soạn bài tập mới.</div>
+            )}
+          </div>
+        </div>
       </div>
 
       {isAssignmentModalOpen && (
@@ -359,17 +458,22 @@ export default function AssignmentsDashboard() {
 
               <div className={styles.row2}>
                 <div className={styles.field}>
-                  <label>Liên kết học phần / Buổi học</label>
+                  <label>Liên kết Lộ trình / Bài học</label>
                   <select
                     className={styles.select}
-                    value={newAsgForm.sessionId}
-                    onChange={(e) => setNewAsgForm({ ...newAsgForm, sessionId: e.target.value })}
+                    value={newAsgForm.linkedItem}
+                    onChange={(e) => setNewAsgForm({ ...newAsgForm, linkedItem: e.target.value })}
                   >
                     <option value="">-- Không liên kết --</option>
-                    {sessions.map((s) => (
-                      <option key={s.id} value={s.id}>
-                        {s.title} ({s.sessionDate})
-                      </option>
+                    {sortedChapters.map((chName) => (
+                      <optgroup key={chName} label={chName}>
+                        <option value={`chapter_${chName}`}>[Giao toàn bộ chương] {chName}</option>
+                        {(groupedByChapter[chName] || []).map(m => (
+                          <option key={m.id} value={m.id}>
+                            Bài học: {m.title}
+                          </option>
+                        ))}
+                      </optgroup>
                     ))}
                   </select>
                 </div>
@@ -425,11 +529,17 @@ export default function AssignmentsDashboard() {
                   <label>Điểm tối đa</label>
                   <input
                     type="number"
-                    min="1"
-                    max="100"
+                    min="0.1"
+                    max="10"
+                    step="0.1"
                     className={styles.input}
                     value={newAsgForm.maxPoints}
-                    onChange={(e) => setNewAsgForm({ ...newAsgForm, maxPoints: Number(e.target.value) })}
+                    onKeyDown={(e) => {
+                      if (['e', 'E', '+', '-'].includes(e.key)) {
+                        e.preventDefault();
+                      }
+                    }}
+                    onChange={(e) => setNewAsgForm({ ...newAsgForm, maxPoints: e.target.value })}
                   />
                 </div>
               </div>
@@ -453,6 +563,92 @@ export default function AssignmentsDashboard() {
             </form>
           </div>
         </div>
+      )}
+
+      {viewingSubmissionsForAsgId && (
+        (() => {
+          const asg = assignments.find(a => a.id === viewingSubmissionsForAsgId);
+          if (!asg) return null;
+          
+          const asgSubs = submissions.filter(s => s.assignmentId === asg.id);
+          const submittedUserIds = asgSubs.map(s => s.studentId);
+          
+          const submittedUsers = users.filter(u => submittedUserIds.includes(u.id));
+          const pendingUsers = users.filter(u => !submittedUserIds.includes(u.id));
+
+          return (
+            <div className={styles.modalOverlay} onClick={() => setViewingSubmissionsForAsgId(null)}>
+              <div className={styles.modal} onClick={(e) => e.stopPropagation()} style={{ maxWidth: 500, padding: 0, overflow: 'hidden' }}>
+                <div className={styles.modalHeader} style={{ padding: '20px 24px', borderBottom: '1px solid #e2e8f0', background: '#f8fafc', marginBottom: 0 }}>
+                  <div>
+                    <h3 className={styles.modalTitle} style={{ fontSize: 16 }}>Tình trạng nộp bài: {asg.title}</h3>
+                    <p style={{ fontSize: 13, color: '#64748b', margin: '4px 0 0 0' }}>{submittedUsers.length} / {users.length} học viên đã nộp</p>
+                  </div>
+                  <button type="button" className={styles.iconBtn} onClick={() => setViewingSubmissionsForAsgId(null)}>
+                    <X size={16} />
+                  </button>
+                </div>
+                
+                <div style={{ padding: '0 24px' }}>
+                  <div className={styles.subModalTabs} style={{ marginTop: 16 }}>
+                    <button 
+                      className={`${styles.subTab} ${subTab === 'submitted' ? styles.subTabActive : ''}`}
+                      onClick={() => setSubTab('submitted')}
+                    >
+                      Đã nộp ({submittedUsers.length})
+                    </button>
+                    <button 
+                      className={`${styles.subTab} ${subTab === 'pending' ? styles.subTabActive : ''}`}
+                      onClick={() => setSubTab('pending')}
+                    >
+                      Chưa nộp ({pendingUsers.length})
+                    </button>
+                  </div>
+
+                  <div className={styles.subList} style={{ marginBottom: 24 }}>
+                    {subTab === 'submitted' && (
+                      submittedUsers.length === 0 ? (
+                        <p style={{ fontSize: 13, color: '#64748b', textAlign: 'center', padding: '20px 0' }}>Chưa có học viên nào nộp bài.</p>
+                      ) : (
+                        submittedUsers.map(u => {
+                          return (
+                            <div key={u.id} className={styles.subItem}>
+                              <div className={styles.subItemInfo}>
+                                <span className={styles.subItemName}>{u.name}</span>
+                                <span className={styles.subItemEmail}>{u.email}</span>
+                              </div>
+                              <div className={styles.subItemTime}>
+                                <Check size={14} /> Đã nộp
+                              </div>
+                            </div>
+                          );
+                        })
+                      )
+                    )}
+                    
+                    {subTab === 'pending' && (
+                      pendingUsers.length === 0 ? (
+                        <p style={{ fontSize: 13, color: '#64748b', textAlign: 'center', padding: '20px 0' }}>Tuyệt vời! Tất cả học viên đã nộp bài.</p>
+                      ) : (
+                        pendingUsers.map(u => (
+                          <div key={u.id} className={styles.subItem}>
+                            <div className={styles.subItemInfo}>
+                              <span className={styles.subItemName}>{u.name}</span>
+                              <span className={styles.subItemEmail}>{u.email}</span>
+                            </div>
+                            <div style={{ fontSize: 12, color: '#ef4444', fontWeight: 500 }}>
+                              Chưa nộp
+                            </div>
+                          </div>
+                        ))
+                      )
+                    )}
+                  </div>
+                </div>
+              </div>
+            </div>
+          );
+        })()
       )}
     </div>
   );

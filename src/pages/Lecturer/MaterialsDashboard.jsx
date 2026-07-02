@@ -1,18 +1,18 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import {
   Upload, Plus, CheckSquare, Film, FileText, FileSpreadsheet, Paperclip, Pencil,
-  Search, ChevronDown, ChevronRight, BookOpen, X, MessageSquare, Check, Trash2, Clock, Award, Users, CheckCircle
+  Search, ChevronDown, ChevronRight, BookOpen, X, MessageSquare, Check, Trash2, Clock, Award, Users, CheckCircle, ExternalLink
 } from 'lucide-react';
 import { useLecturerWorkspace } from '../../context/LecturerWorkspaceContext';
 import styles from './LecturerDashboard.module.css';
 
 // ─── ChapterDropdown Component ───────────────────────────────────────────────
-function ChapterDropdown({ value, onChange, existingChapters, hasError = false, placeholder = 'Chọn hoặc tạo chương...' }) {
+function GenericDropdown({ value, onChange, existingItems, hasError = false, placeholder, icon: Icon, color, emptyText }) {
   const [open, setOpen] = useState(false);
   const [touched, setTouched] = useState(false);
-  const [newChapterInput, setNewChapterInput] = useState('');
+  const [newInput, setNewInput] = useState('');
   const [showInput, setShowInput] = useState(false);
-  const [localCustomChapters, setLocalCustomChapters] = useState([]);
+  const [localCustom, setLocalCustom] = useState([]);
   const ref = useRef(null);
 
   useEffect(() => {
@@ -21,25 +21,15 @@ function ChapterDropdown({ value, onChange, existingChapters, hasError = false, 
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-  const combinedChapters = useMemo(() => {
-    return Array.from(new Set([...existingChapters, ...localCustomChapters]));
-  }, [existingChapters, localCustomChapters]);
+  const combinedItems = useMemo(() => Array.from(new Set([...existingItems, ...localCustom])), [existingItems, localCustom]);
 
-  const handleSelect = (ch) => {
-    onChange(ch);
-    setOpen(false);
-    setShowInput(false);
-    setNewChapterInput('');
-  };
+  const handleSelect = (val) => { onChange(val); setOpen(false); setShowInput(false); setNewInput(''); };
 
   const handleAddNew = () => {
-    if (newChapterInput.trim()) {
-      const val = newChapterInput.trim();
-      setLocalCustomChapters(prev => [...prev, val]);
-      onChange(val);
-      setOpen(false);
-      setShowInput(false);
-      setNewChapterInput('');
+    if (newInput.trim()) {
+      const val = newInput.trim();
+      setLocalCustom(prev => [...prev, val]);
+      handleSelect(val);
     }
   };
 
@@ -51,107 +41,65 @@ function ChapterDropdown({ value, onChange, existingChapters, hasError = false, 
         onClick={() => { setOpen(o => !o); setTouched(true); }}
         style={{
           display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-          border: `1.5px solid ${showError ? '#ef4444' : open ? '#059669' : '#64748b'}`,
+          border: `1.5px solid ${showError ? '#ef4444' : open ? color : '#64748b'}`,
           borderRadius: 8, padding: '8px 12px', cursor: 'pointer',
           background: showError ? '#fff5f5' : '#fff',
           fontSize: 13, color: value ? '#0f172a' : '#475569',
           transition: 'border-color 0.2s, background 0.2s', userSelect: 'none', minHeight: 38,
-          boxShadow: showError
-            ? '0 0 0 3px rgba(239,68,68,0.12)'
-            : open ? '0 0 0 3px rgba(5,150,105,0.12)' : 'none',
+          boxShadow: showError ? '0 0 0 3px rgba(239,68,68,0.12)' : open ? `0 0 0 3px ${color}1A` : 'none',
         }}
       >
         <span style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-          <BookOpen size={13} color={showError ? '#ef4444' : value ? '#059669' : '#475569'} />
+          <Icon size={13} color={showError ? '#ef4444' : value ? color : '#475569'} />
           {value || placeholder}
         </span>
         <ChevronDown size={14} color="#1e293b" style={{ transform: open ? 'rotate(180deg)' : 'rotate(0deg)', transition: 'transform 0.2s' }} />
       </div>
-      {showError && (
-        <span style={{ fontSize: 11, color: '#ef4444', marginTop: 3, display: 'flex', alignItems: 'center', gap: 3 }}>
-          ⚠️ Vui lòng chọn hoặc tạo chương học!
-        </span>
-      )}
-
+      {showError && <span style={{ fontSize: 11, color: '#ef4444', marginTop: 3, display: 'flex', alignItems: 'center', gap: 3 }}>⚠️ Vui lòng chọn hoặc tạo!</span>}
       {open && (
         <div style={{
           position: 'absolute', top: 'calc(100% + 4px)', left: 0, right: 0, zIndex: 999,
           background: '#fff', border: '1.5px solid #e2e8f0', borderRadius: 10,
           boxShadow: '0 8px 30px rgba(0,0,0,0.12)', overflow: 'hidden',
         }}>
-          {combinedChapters.length > 0 && (
+          {combinedItems.length > 0 && (
             <div style={{ maxHeight: 180, overflowY: 'auto' }}>
-              {combinedChapters.map((ch, idx) => (
-                <div
-                  key={idx}
-                  onClick={() => handleSelect(ch)}
+              {combinedItems.map((item, idx) => (
+                <div key={idx} onClick={() => handleSelect(item)}
                   style={{
                     padding: '9px 14px', fontSize: 13, cursor: 'pointer',
-                    background: value === ch ? '#ecfdf5' : 'transparent',
-                    color: value === ch ? '#059669' : '#0f172a',
-                    fontWeight: value === ch ? 700 : 400,
+                    background: value === item ? `${color}1A` : 'transparent',
+                    color: value === item ? color : '#0f172a',
+                    fontWeight: value === item ? 700 : 400,
                     borderBottom: '1px solid #f1f5f9',
                     display: 'flex', alignItems: 'center', gap: 8,
-                    transition: 'background 0.15s',
                   }}
-                  onMouseEnter={e => e.currentTarget.style.background = value === ch ? '#ecfdf5' : '#f8fafc'}
-                  onMouseLeave={e => e.currentTarget.style.background = value === ch ? '#ecfdf5' : 'transparent'}
+                  onMouseEnter={e => e.currentTarget.style.background = value === item ? `${color}1A` : '#f8fafc'}
+                  onMouseLeave={e => e.currentTarget.style.background = value === item ? `${color}1A` : 'transparent'}
                 >
-                  {value === ch && <Check size={13} color="#059669" />}
-                  {ch}
+                  {value === item && <Check size={13} color={color} />}
+                  {item}
                 </div>
               ))}
             </div>
           )}
-
-          {combinedChapters.length === 0 && !showInput && (
-            <div style={{ padding: '10px 14px', fontSize: 12, color: '#94a3b8', fontStyle: 'italic', borderBottom: '1px solid #f1f5f9' }}>
-              Chưa có chương nào trong lớp này.
-            </div>
-          )}
-
+          {combinedItems.length === 0 && !showInput && <div style={{ padding: '10px 14px', fontSize: 12, color: '#94a3b8', fontStyle: 'italic', borderBottom: '1px solid #f1f5f9' }}>{emptyText}</div>}
           {showInput ? (
-            <div style={{ padding: '8px 10px', borderTop: combinedChapters.length > 0 ? '1px solid #e2e8f0' : 'none', display: 'flex', gap: 6, alignItems: 'center' }}>
-              <input
-                autoFocus
-                value={newChapterInput}
-                onChange={e => setNewChapterInput(e.target.value)}
-                onKeyDown={e => {
-                  if (e.key === 'Enter') {
-                    e.preventDefault();
-                    handleAddNew();
-                  }
-                }}
-                placeholder="Tên chương mới..."
-                style={{
-                  flex: 1, border: '1.5px solid #059669', borderRadius: 6, padding: '5px 8px',
-                  fontSize: 12, outline: 'none', color: '#0f172a',
-                }}
-              />
-              <button type="button" onClick={handleAddNew}
-                style={{ background: '#059669', color: '#fff', border: 'none', borderRadius: 6, padding: '5px 10px', fontSize: 11, fontWeight: 700, cursor: 'pointer' }}>
-                Thêm
-              </button>
-              <button type="button" onClick={() => { setShowInput(false); setNewChapterInput(''); }}
-                style={{ background: '#f1f5f9', color: '#64748b', border: 'none', borderRadius: 6, padding: '5px 8px', fontSize: 11, cursor: 'pointer' }}>
-                Hủy
-              </button>
+            <div style={{ padding: '8px 10px', borderTop: combinedItems.length > 0 ? '1px solid #e2e8f0' : 'none', display: 'flex', gap: 6, alignItems: 'center' }}>
+              <input autoFocus value={newInput} onChange={e => setNewInput(e.target.value)}
+                onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); handleAddNew(); } }}
+                placeholder="Nhập tên mới..."
+                style={{ flex: 1, border: `1.5px solid ${color}`, borderRadius: 6, padding: '5px 8px', fontSize: 12, outline: 'none', color: '#0f172a' }} />
+              <button type="button" onClick={handleAddNew} style={{ background: color, color: '#fff', border: 'none', borderRadius: 6, padding: '5px 10px', fontSize: 11, fontWeight: 700, cursor: 'pointer' }}>Thêm</button>
+              <button type="button" onClick={() => { setShowInput(false); setNewInput(''); }} style={{ background: '#f1f5f9', color: '#64748b', border: 'none', borderRadius: 6, padding: '5px 8px', fontSize: 11, cursor: 'pointer' }}>Hủy</button>
             </div>
           ) : (
-            <div
-              onClick={() => setShowInput(true)}
-              style={{
-                padding: '9px 14px', fontSize: 13, cursor: 'pointer',
-                color: '#059669', fontWeight: 600,
-                display: 'flex', alignItems: 'center', gap: 6,
-                borderTop: combinedChapters.length > 0 ? '1px solid #e2e8f0' : 'none',
-                background: '#f0fdf4',
-              }}
-              onMouseEnter={e => e.currentTarget.style.background = '#dcfce7'}
-              onMouseLeave={e => e.currentTarget.style.background = '#f0fdf4'}
+            <div onClick={() => setShowInput(true)}
+              style={{ padding: '9px 14px', fontSize: 13, cursor: 'pointer', color: color, fontWeight: 600, display: 'flex', alignItems: 'center', gap: 6, borderTop: combinedItems.length > 0 ? '1px solid #e2e8f0' : 'none', background: `${color}0D` }}
+              onMouseEnter={e => e.currentTarget.style.background = `${color}1A`}
+              onMouseLeave={e => e.currentTarget.style.background = `${color}0D`}
             >
-              <Plus size={13} />
-              Tạo chương mới
+              <Plus size={13} /> Tạo mới
             </div>
           )}
         </div>
@@ -160,135 +108,49 @@ function ChapterDropdown({ value, onChange, existingChapters, hasError = false, 
   );
 }
 
-// ─── SubjectDropdown Component ────────────────────────────────────────────
-function SubjectDropdown({ value, onChange, existingSubjects, hasError = false, placeholder = 'Chọn hoặc tạo môn học...' }) {
-  const [open, setOpen] = useState(false);
-  const [touched, setTouched] = useState(false);
-  const [newInput, setNewInput] = useState('');
-  const [showInput, setShowInput] = useState(false);
-  const [localCustomSubjects, setLocalCustomSubjects] = useState([]);
-  const ref = useRef(null);
-
-  useEffect(() => {
-    const handleClickOutside = (e) => { if (ref.current && !ref.current.contains(e.target)) setOpen(false); };
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, []);
-
-  const combinedSubjects = useMemo(() => {
-    return Array.from(new Set([...existingSubjects, ...localCustomSubjects]));
-  }, [existingSubjects, localCustomSubjects]);
-
-  const handleSelect = (s) => { onChange(s); setOpen(false); setShowInput(false); setNewInput(''); };
-
-  const handleAddNew = () => {
-    if (newInput.trim()) {
-      const val = newInput.trim();
-      setLocalCustomSubjects(prev => [...prev, val]);
-      onChange(val);
-      setOpen(false);
-      setShowInput(false);
-      setNewInput('');
-    }
-  };
-
-  const showError = (hasError || touched) && !value;
-
+function GroupDistributionConfig({ formState, setFormState, users, showToast }) {
+  if (formState.distributeMode === 'all') return null;
   return (
-    <div ref={ref} style={{ position: 'relative' }}>
-      <div
-        onClick={() => { setOpen(o => !o); setTouched(true); }}
-        style={{
-          display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-          border: `1.5px solid ${showError ? '#ef4444' : open ? '#7c3aed' : '#64748b'}`,
-          borderRadius: 8, padding: '8px 12px', cursor: 'pointer',
-          background: showError ? '#fff5f5' : '#fff',
-          fontSize: 13, color: value ? '#0f172a' : '#475569',
-          transition: 'border-color 0.2s, background 0.2s', userSelect: 'none', minHeight: 38,
-          boxShadow: showError ? '0 0 0 3px rgba(239,68,68,0.12)' : open ? '0 0 0 3px rgba(124,58,237,0.12)' : 'none',
-        }}
-      >
-        <span style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-          <Award size={13} color={showError ? '#ef4444' : value ? '#7c3aed' : '#475569'} />
-          {value || placeholder}
-        </span>
-        <ChevronDown size={14} color="#1e293b" style={{ transform: open ? 'rotate(180deg)' : 'rotate(0deg)', transition: 'transform 0.2s' }} />
+    <div style={{ padding: 12, background: '#f8fafc', borderRadius: 8, border: '1px solid #cbd5e1', marginBottom: 12 }}>
+      <div style={{ display: 'flex', gap: 8, alignItems: 'center', marginBottom: 8 }}>
+        <div style={{ flex: 1 }}>
+          <label style={{ fontSize: 9, fontWeight: 800, textTransform: 'uppercase', color: '#64748b', display: 'block', marginBottom: 2 }}>Số nhóm</label>
+          <input type="number" className={styles.input} style={{ padding: '4px 8px' }} min={2} max={10} value={formState.numGroups}
+            onChange={(e) => {
+              const num = parseInt(e.target.value) || 2;
+              setFormState({ ...formState, numGroups: num, groups: generateRandomGroups(num, users) });
+            }} />
+        </div>
+        <button type="button" className={styles.btnSecondary} style={{ alignSelf: 'flex-end', fontSize: 10, padding: '6px 10px' }}
+          onClick={() => {
+            setFormState({ ...formState, groups: generateRandomGroups(formState.numGroups, users) });
+            if (showToast) showToast('Đã phân chia lại nhóm ngẫu nhiên', 'info');
+          }}>Xáo trộn nhóm</button>
       </div>
-      {showError && (
-        <span style={{ fontSize: 11, color: '#ef4444', marginTop: 3, display: 'flex', alignItems: 'center', gap: 3 }}>
-          ⚠️ Vui lòng chọn hoặc tạo môn học!
-        </span>
-      )}
-      {open && (
-        <div style={{
-          position: 'absolute', top: 'calc(100% + 4px)', left: 0, right: 0, zIndex: 999,
-          background: '#fff', border: '1.5px solid #e2e8f0', borderRadius: 10,
-          boxShadow: '0 8px 30px rgba(0,0,0,0.12)', overflow: 'hidden',
-        }}>
-          {combinedSubjects.length > 0 && (
-            <div style={{ maxHeight: 180, overflowY: 'auto' }}>
-              {combinedSubjects.map((s, idx) => (
-                <div key={idx} onClick={() => handleSelect(s)}
-                  style={{
-                    padding: '9px 14px', fontSize: 13, cursor: 'pointer',
-                    background: value === s ? '#f5f3ff' : 'transparent',
-                    color: value === s ? '#7c3aed' : '#0f172a',
-                    fontWeight: value === s ? 700 : 400,
-                    borderBottom: '1px solid #f1f5f9',
-                    display: 'flex', alignItems: 'center', gap: 8,
-                  }}
-                  onMouseEnter={e => e.currentTarget.style.background = value === s ? '#f5f3ff' : '#f8fafc'}
-                  onMouseLeave={e => e.currentTarget.style.background = value === s ? '#f5f3ff' : 'transparent'}
-                >
-                  {value === s && <Check size={13} color="#7c3aed" />}
-                  {s}
-                </div>
-              ))}
-            </div>
-          )}
-          {combinedSubjects.length === 0 && !showInput && (
-            <div style={{ padding: '10px 14px', fontSize: 12, color: '#94a3b8', fontStyle: 'italic', borderBottom: '1px solid #f1f5f9' }}>
-              Chưa có môn nào. Hãy tạo môn đầu tiên!
-            </div>
-          )}
-          {showInput ? (
-            <div style={{ padding: '8px 10px', borderTop: combinedSubjects.length > 0 ? '1px solid #e2e8f0' : 'none', display: 'flex', gap: 6, alignItems: 'center' }}>
-              <input autoFocus value={newInput} onChange={e => setNewInput(e.target.value)}
-                onKeyDown={e => {
-                  if (e.key === 'Enter') {
-                    e.preventDefault();
-                    handleAddNew();
-                  }
-                }}
-                placeholder="Tên môn học mới..."
-                style={{ flex: 1, border: '1.5px solid #7c3aed', borderRadius: 6, padding: '5px 8px', fontSize: 12, outline: 'none', color: '#0f172a' }} />
-              <button type="button" onClick={handleAddNew}
-                style={{ background: '#7c3aed', color: '#fff', border: 'none', borderRadius: 6, padding: '5px 10px', fontSize: 11, fontWeight: 700, cursor: 'pointer' }}>Thêm</button>
-              <button type="button" onClick={() => { setShowInput(false); setNewInput(''); }}
-                style={{ background: '#f1f5f9', color: '#64748b', border: 'none', borderRadius: 6, padding: '5px 8px', fontSize: 11, cursor: 'pointer' }}>Hủy</button>
-            </div>
-          ) : (
-            <div onClick={() => setShowInput(true)}
-              style={{
-                padding: '9px 14px', fontSize: 13, cursor: 'pointer', color: '#7c3aed', fontWeight: 600,
-                display: 'flex', alignItems: 'center', gap: 6,
-                borderTop: combinedSubjects.length > 0 ? '1px solid #e2e8f0' : 'none', background: '#faf5ff',
-              }}
-              onMouseEnter={e => e.currentTarget.style.background = '#ede9fe'}
-              onMouseLeave={e => e.currentTarget.style.background = '#faf5ff'}
-            >
-              <Plus size={13} /> Tạo môn học mới
-            </div>
-          )}
+      {formState.distributeMode === 'group_random' && (
+        <div style={{ fontSize: 11, color: '#059669', background: '#ecfdf5', border: '1px solid #a7f3d0', borderRadius: 6, padding: '6px 10px', marginBottom: 8 }}>
+          ✅ <strong>Chia nhóm ngẫu nhiên:</strong> Tất cả nhóm đều được xem tài liệu này.
         </div>
       )}
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 6 }}>
+        {formState.groups.map((group, idx) => (
+          <div key={idx} style={{ background: '#fff', padding: '8px 10px', borderRadius: 8, border: '1.5px solid #e2e8f0', transition: 'all 0.15s' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 }}>
+              <strong style={{ fontSize: 11, color: '#0f172a' }}>{group.name}</strong>
+            </div>
+            <div style={{ fontSize: 10, color: '#64748b', maxHeight: 40, overflowY: 'auto' }}>
+              {group.members.length === 0 ? <em>Chưa có học viên</em> : group.members.map((m) => m.name).join(', ')}
+            </div>
+          </div>
+        ))}
+      </div>
     </div>
   );
 }
 
 export default function MaterialsDashboard() {
   const {
-    currentUser, users, selectedClassId,
+    currentUser, users, classrooms, selectedClassId,
     classesLoading, classesError, workspaceLoading,
     materials, searchQuery, setSearchQuery, api,
   } = useLecturerWorkspace();
@@ -299,11 +161,10 @@ export default function MaterialsDashboard() {
   const [isAddMaterialModalOpen, setIsAddMaterialModalOpen] = useState(false);
   const [expandedChapters, setExpandedChapters] = useState({});
   const [filterType, setFilterType] = useState('all'); // all | video | pdf | document | quiz
-  const [filterSubject, setFilterSubject] = useState('all'); // all | <subject code>
   const [hasSubmitAttempted, setHasSubmitAttempted] = useState(false);
 
   const [newMaterialForm, setNewMaterialForm] = useState({
-    title: '', description: '', type: 'video', fileName: '', fileSize: '', fileObj: null,
+    title: '', description: '', type: 'video', fileName: '', fileSize: '', fileObj: null, files: [],
     publishDate: new Date().toISOString().split('T')[0],
     deadline: '',
     distributeMode: 'all',
@@ -312,11 +173,13 @@ export default function MaterialsDashboard() {
     comments: [],
     subject: '',
     chapter: '',
+    inputType: 'file',
+    linkUrl: '',
   });
 
   const [editingMaterialId, setEditingMaterialId] = useState(null);
   const [editMaterialForm, setEditMaterialForm] = useState({
-    title: '', description: '', type: 'video', fileName: '', fileSize: '', fileObj: null,
+    title: '', description: '', type: 'video', fileName: '', fileSize: '', fileObj: null, files: [],
     publishDate: '',
     deadline: '',
     distributeMode: 'all',
@@ -325,12 +188,36 @@ export default function MaterialsDashboard() {
     comments: [],
     subject: '',
     chapter: '',
+    inputType: 'file',
+    linkUrl: '',
   });
 
   const fileInputRef = useRef(null);
   const editFileInputRef = useRef(null);
   const commentInputRef = useRef(null);
   const [isEditDragging, setIsEditDragging] = useState(false);
+  const [iframeError, setIframeError] = useState(false);
+
+  // Helper: Get YouTube Video ID from URL
+  const getYouTubeVideoId = (url) => {
+    if (!url) return null;
+    const regExp = /^.*(youtu\.be\/|v\/|u\/\w\/|embed\/|watch\?v=|\&v=)([^#\&\?]*).*/;
+    const match = url.match(regExp);
+    return (match && match[2].length === 11) ? match[2] : null;
+  };
+
+  // Helper: Fetch YouTube Info
+  const fetchYouTubeInfo = async (url) => {
+    try {
+      const oembedUrl = `https://noembed.com/embed?url=${encodeURIComponent(url)}`;
+      const response = await fetch(oembedUrl);
+      const data = await response.json();
+      return data;
+    } catch (error) {
+      console.error("Error fetching YouTube info", error);
+      return null;
+    }
+  };
 
   const parseMaterialDesc = (rawDesc) => {
     if (!rawDesc) {
@@ -377,73 +264,63 @@ export default function MaterialsDashboard() {
     if (searchQuery.trim()) {
       const q = searchQuery.toLowerCase();
       list = list.filter(
-        (m) => m.title.toLowerCase().includes(q) || m.description?.toLowerCase().includes(q)
+        (m) => (m.title || '').toLowerCase().includes(q) || (m.description || '').toLowerCase().includes(q)
       );
     }
     // Filter by type
     if (filterType !== 'all') {
       list = list.filter((m) => m.type === filterType);
     }
-    // Filter by subject
-    if (filterSubject !== 'all') {
-      list = list.filter((m) => {
-        if (!m.chapter) return filterSubject === 'Học liệu chung';
-        const subj = m.chapter.includes(' ÷ ') ? m.chapter.split(' ÷ ')[0].trim() : 'Học liệu chung';
-        return subj === filterSubject;
-      });
-    }
     return list;
-  }, [materials, searchQuery, filterType, filterSubject]);
+  }, [materials, searchQuery, filterType]);
 
-  const groupedBySubjectAndChapter = useMemo(() => {
+  // ─── Chapter normalization helpers ───────────────────────────────────
+  // Extract pure chapter name: "Subject ÷ Chapter" → "Chapter", or raw string
+  const extractChapterName = (raw) => {
+    if (!raw) return '';
+    return raw.includes(' ÷ ') ? raw.split(' ÷ ')[1].trim() : raw.trim();
+  };
+  // Extract subject name: "Subject ÷ Chapter" → "Subject", or fallback
+  const extractSubjectName = (raw, fallback = '') => {
+    if (!raw) return fallback;
+    return raw.includes(' ÷ ') ? raw.split(' ÷ ')[0].trim() : fallback;
+  };
+
+  const groupedByChapter = useMemo(() => {
     const groups = {};
     classroomMaterials.forEach((m) => {
-      let subject = 'Học liệu chung';
-      let chapter = 'Học liệu chung';
-      if (m.chapter && m.chapter.includes(' ÷ ')) {
-        const parts = m.chapter.split(' ÷ ');
-        subject = parts[0].trim();
-        chapter = parts[1].trim();
-      } else if (m.chapter) {
-        chapter = m.chapter.trim();
-      }
-      if (!groups[subject]) groups[subject] = {};
-      if (!groups[subject][chapter]) groups[subject][chapter] = [];
-      groups[subject][chapter].push(m);
+      const chapter = extractChapterName(m.chapter) || 'Học liệu chung';
+      if (!groups[chapter]) groups[chapter] = [];
+      groups[chapter].push(m);
     });
     return groups;
   }, [classroomMaterials]);
 
-  const sortedSubjects = useMemo(() => {
-    return Object.keys(groupedBySubjectAndChapter).sort((a, b) => {
+  const sortedChapters = useMemo(() => {
+    return Object.keys(groupedByChapter).sort((a, b) => {
       if (a === 'Học liệu chung') return 1;
       if (b === 'Học liệu chung') return -1;
       return a.localeCompare(b, undefined, { numeric: true, sensitivity: 'base' });
     });
-  }, [groupedBySubjectAndChapter]);
+  }, [groupedByChapter]);
 
   const existingSubjects = useMemo(() => {
-    return Array.from(new Set(materials.map(m => m.chapter).filter(Boolean).map(ch => {
-      const parts = ch.split(' ÷ ');
-      return parts.length > 1 ? parts[0].trim() : null;
-    }).filter(Boolean)));
+    return Array.from(new Set(materials.map(m => extractSubjectName(m.chapter)).filter(Boolean)));
   }, [materials]);
 
+  // All unique chapter names (clean, deduped, sorted)
   const existingChapters = useMemo(() => {
-    return Array.from(new Set(materials.map(m => m.chapter).filter(Boolean)));
+    const seen = new Set();
+    materials.forEach(m => {
+      const ch = extractChapterName(m.chapter);
+      if (ch) seen.add(ch);
+    });
+    return Array.from(seen).sort((a, b) => a.localeCompare(b, undefined, { numeric: true, sensitivity: 'base' }));
   }, [materials]);
 
-  const existingChaptersForSubject = useMemo(() => {
-    if (!newMaterialForm.subject) return existingChapters;
-    const prefix = newMaterialForm.subject + ' ÷ ';
-    return existingChapters.filter(ch => ch.startsWith(prefix)).map(ch => ch.replace(prefix, ''));
-  }, [existingChapters, newMaterialForm.subject]);
-
-  const existingChaptersForEditSubject = useMemo(() => {
-    if (!editMaterialForm.subject) return existingChapters;
-    const prefix = editMaterialForm.subject + ' ÷ ';
-    return existingChapters.filter(ch => ch.startsWith(prefix)).map(ch => ch.replace(prefix, ''));
-  }, [existingChapters, editMaterialForm.subject]);
+  // Both Add and Edit modals use the same chapter list (class-scoped, all chapters)
+  const existingChaptersForSubject = useMemo(() => existingChapters, [existingChapters]);
+  const existingChaptersForEditSubject = useMemo(() => existingChapters, [existingChapters]);
 
   const generateRandomGroups = (num, studentsList) => {
     const list = [...studentsList];
@@ -507,23 +384,32 @@ export default function MaterialsDashboard() {
     return 'document';
   };
 
-  const applyFile = (file) => {
-    if (!file) return;
-    const detectedType = detectFileType(file);
-    const sizeMB = (file.size / (1024 * 1024)).toFixed(1);
-    setNewMaterialForm((prev) => ({
-      ...prev,
+  const applyFile = (fileList) => {
+    if (!fileList || fileList.length === 0) return;
+    const newFilesArray = Array.from(fileList).map(file => ({
       fileObj: file,
       fileName: file.name,
-      fileSize: `${sizeMB} MB`,
-      type: detectedType,
-      title: prev.title || file.name.replace(/\.[^/.]+$/, '').replace(/[_-]/g, ' '),
+      fileSize: `${(file.size / (1024 * 1024)).toFixed(1)} MB`,
+      type: detectFileType(file),
+      previewUrl: URL.createObjectURL(file)
     }));
-    showToast(`Đã chọn: ${file.name} (${sizeMB} MB)`, 'info');
+
+    setNewMaterialForm((prev) => {
+      const mergedFiles = [...(prev.files || []), ...newFilesArray];
+      return {
+        ...prev,
+        files: mergedFiles,
+        title: prev.title || newFilesArray[0].fileName.replace(/\.[^/.]+$/, '').replace(/[_-]/g, ' '),
+        fileObj: mergedFiles[0].fileObj,
+        fileName: mergedFiles[0].fileName,
+        type: mergedFiles[0].type
+      };
+    });
+    showToast(`Đã thêm ${newFilesArray.length} tệp`, 'info');
   };
 
   const handleFileInputChange = (e) => {
-    applyFile(e.target.files?.[0]);
+    applyFile(e.target.files);
     e.target.value = '';
   };
 
@@ -533,7 +419,7 @@ export default function MaterialsDashboard() {
   const handleDrop = (e) => {
     e.preventDefault();
     setIsDragging(false);
-    applyFile(e.dataTransfer.files?.[0]);
+    applyFile(e.dataTransfer.files);
   };
 
   const renderFileIcon = (type) => {
@@ -548,14 +434,18 @@ export default function MaterialsDashboard() {
 
   const handleEditMaterialStart = (material) => {
     const meta = parseMaterialDesc(material.description);
-    let subjectVal = '';
-    let chapterVal = material.chapter || '';
-    if (material.chapter && material.chapter.includes(' ÷ ')) {
-      const parts = material.chapter.split(' ÷ ');
-      subjectVal = parts[0].trim();
-      chapterVal = parts[1].trim();
+    // Resolve subject & chapter from raw DB value (unified handling)
+    let subjectVal = extractSubjectName(material.chapter, '');
+    let chapterVal = extractChapterName(material.chapter);
+
+    // Legacy data: no subject in chapter → fall back to current class name
+    if (!subjectVal) {
+      const activeClass = classrooms?.find(c => c.id === selectedClassId);
+      subjectVal = activeClass ? activeClass.name : '';
     }
+
     setEditingMaterialId(material.id);
+    setIframeError(false);
     setEditMaterialForm({
       title: material.title || '',
       description: meta.desc || '',
@@ -563,6 +453,7 @@ export default function MaterialsDashboard() {
       fileName: material.url && material.url.startsWith('#file:') ? material.url.substring(6) : (material.url !== '#' ? material.url : ''),
       fileSize: material.fileSize || '',
       fileObj: null,
+      files: [],
       publishDate: meta.publishDate || material.uploadedAt?.substring(0, 10) || '',
       deadline: meta.deadline || '',
       distributeMode: meta.distributeMode || 'all',
@@ -572,30 +463,38 @@ export default function MaterialsDashboard() {
       subject: subjectVal,
       chapter: chapterVal,
       lesson: material.lesson || '',
+      inputType: material.fileSize === 'Liên kết' ? 'link' : 'file',
+      linkUrl: material.fileSize === 'Liên kết' ? material.url : '',
     });
   };
+
 
   const handleCancelEdit = () => {
     setEditingMaterialId(null);
   };
 
-  const applyEditFile = (file) => {
-    if (!file) return;
-    const detectedType = detectFileType(file);
-    const sizeMB = (file.size / (1024 * 1024)).toFixed(1);
-    setEditMaterialForm((prev) => ({
-      ...prev,
+  const applyEditFiles = (fileList) => {
+    if (!fileList || fileList.length === 0) return;
+    const newFilesArray = Array.from(fileList).map(file => ({
       fileObj: file,
       fileName: file.name,
-      fileSize: `${sizeMB} MB`,
-      type: detectedType,
-      title: prev.title || file.name.replace(/\.[^/.]+$/, '').replace(/[_-]/g, ' '),
+      fileSize: `${(file.size / (1024 * 1024)).toFixed(1)} MB`,
+      type: detectFileType(file),
+      previewUrl: URL.createObjectURL(file)
     }));
-    showToast(`Đã chọn tệp sửa: ${file.name} (${sizeMB} MB)`, 'info');
+    setEditMaterialForm((prev) => {
+      const mergedFiles = [...(prev.files || []), ...newFilesArray];
+      return {
+        ...prev,
+        files: mergedFiles,
+        title: prev.title || newFilesArray[0].fileName.replace(/\.[^/.]+$/, '').replace(/[_-]/g, ' '),
+      };
+    });
+    showToast(`Đã thêm ${newFilesArray.length} tệp mới`, 'info');
   };
 
   const handleEditFileInputChange = (e) => {
-    applyEditFile(e.target.files?.[0]);
+    applyEditFiles(e.target.files);
     e.target.value = '';
   };
 
@@ -605,7 +504,7 @@ export default function MaterialsDashboard() {
   const handleEditDrop = (e) => {
     e.preventDefault();
     setIsEditDragging(false);
-    applyEditFile(e.dataTransfer.files?.[0]);
+    applyEditFiles(e.dataTransfer.files);
   };
 
   const handleAddMaterial = async (e) => {
@@ -617,32 +516,90 @@ export default function MaterialsDashboard() {
     setIsUploading(true);
     const compoundChapter = `${newMaterialForm.subject} ÷ ${newMaterialForm.chapter}`;
     try {
-      const payload = {
-        title: newMaterialForm.title,
-        description: serializeMaterialDesc({
-          desc: newMaterialForm.description,
-          publishDate: newMaterialForm.publishDate,
-          deadline: newMaterialForm.deadline,
-          distributeMode: newMaterialForm.distributeMode,
-          groups: newMaterialForm.groups,
-          comments: newMaterialForm.comments,
-        }),
-        type: newMaterialForm.type,
-        fileSize: newMaterialForm.fileName ? newMaterialForm.fileSize : '',
-        url: newMaterialForm.fileName ? `#file:${newMaterialForm.fileName}` : '#',
-        chapter: compoundChapter,
-        lesson: null,
-      };
-      await api.addMaterial(payload);
-      showToast('Đăng tải học liệu thành công!');
+      if (newMaterialForm.inputType === 'link') {
+        if (!newMaterialForm.linkUrl) {
+          showToast('Vui lòng nhập đường dẫn liên kết', 'info');
+          setIsUploading(false);
+          return;
+        }
+
+        const ytId = getYouTubeVideoId(newMaterialForm.linkUrl);
+        const autoType = ytId ? 'video' : newMaterialForm.type;
+
+        const payload = {
+          title: newMaterialForm.title || 'Liên kết học liệu',
+          description: serializeMaterialDesc({
+            desc: newMaterialForm.description,
+            publishDate: newMaterialForm.publishDate,
+            deadline: newMaterialForm.deadline,
+            distributeMode: newMaterialForm.distributeMode,
+            groups: newMaterialForm.groups,
+            comments: newMaterialForm.comments,
+          }),
+          type: autoType,
+          fileSize: 'Liên kết',
+          url: newMaterialForm.linkUrl,
+          chapter: compoundChapter,
+          lesson: null,
+        };
+        await api.addMaterial(payload);
+        showToast('Đã thêm liên kết học liệu thành công!');
+      } else {
+        const filesToUpload = (newMaterialForm.files && newMaterialForm.files.length > 0)
+          ? newMaterialForm.files
+          : [{ fileObj: newMaterialForm.fileObj, fileName: newMaterialForm.fileName, fileSize: newMaterialForm.fileSize, type: newMaterialForm.type }];
+
+        if (!filesToUpload[0].fileObj && !filesToUpload[0].fileName) {
+           showToast('Vui lòng chọn ít nhất 1 tệp', 'info');
+           setIsUploading(false);
+           return;
+        }
+
+        for (let i = 0; i < filesToUpload.length; i++) {
+          const fileData = filesToUpload[i];
+          let finalUrl = '#';
+          let finalFileSize = fileData.fileSize;
+          if (fileData.fileObj) {
+            const uploadResult = await api.uploadFile(fileData.fileObj);
+            finalUrl = uploadResult.url;
+            finalFileSize = `${(uploadResult.size / (1024 * 1024)).toFixed(1)} MB`;
+          }
+
+          const itemTitle = filesToUpload.length > 1
+            ? (newMaterialForm.title ? `${newMaterialForm.title} - ${fileData.fileName}` : fileData.fileName.replace(/\.[^/.]+$/, '').replace(/[_-]/g, ' '))
+            : newMaterialForm.title;
+
+          const payload = {
+            title: itemTitle,
+            description: serializeMaterialDesc({
+              desc: newMaterialForm.description,
+              publishDate: newMaterialForm.publishDate,
+              deadline: newMaterialForm.deadline,
+              distributeMode: newMaterialForm.distributeMode,
+              groups: newMaterialForm.groups,
+              comments: newMaterialForm.comments,
+            }),
+            type: fileData.type || newMaterialForm.type,
+            fileSize: finalFileSize,
+            url: finalUrl !== '#' ? finalUrl : (fileData.fileName ? `#file:${fileData.fileName}` : '#'),
+            chapter: compoundChapter,
+            lesson: null,
+          };
+          await api.addMaterial(payload);
+        }
+        showToast(`Đã tải lên thành công ${filesToUpload.length} học liệu!`);
+      }
+
       setIsAddMaterialModalOpen(false);
       setHasSubmitAttempted(false);
       setNewMaterialForm({
-        title: '', description: '', type: 'video', fileName: '', fileSize: '', fileObj: null,
+        title: '', description: '', type: 'video', fileName: '', fileSize: '', fileObj: null, files: [],
         publishDate: new Date().toISOString().split('T')[0],
         deadline: '', distributeMode: 'all', numGroups: 2, groups: [], comments: [],
         subject: newMaterialForm.subject,
         chapter: '',
+        inputType: 'file',
+        linkUrl: '',
       });
     } catch (err) {
       showToast(err.message || 'Lưu học liệu thất bại.', 'info');
@@ -659,24 +616,117 @@ export default function MaterialsDashboard() {
     setIsUploading(true);
     const compoundChapter = `${editMaterialForm.subject} ÷ ${editMaterialForm.chapter}`;
     try {
-      const payload = {
-        title: editMaterialForm.title,
-        description: serializeMaterialDesc({
-          desc: editMaterialForm.description,
-          publishDate: editMaterialForm.publishDate,
-          deadline: editMaterialForm.deadline,
-          distributeMode: editMaterialForm.distributeMode,
-          groups: editMaterialForm.groups,
-          comments: editMaterialForm.comments,
-        }),
-        type: editMaterialForm.type,
-        fileSize: editMaterialForm.fileName ? editMaterialForm.fileSize : '',
-        url: editMaterialForm.fileName ? `#file:${editMaterialForm.fileName}` : '#',
-        chapter: compoundChapter,
-        lesson: null,
-      };
-      await api.updateMaterial(editingMaterialId, payload);
-      showToast('Cập nhật học liệu thành công!');
+      if (editMaterialForm.inputType === 'link') {
+        if (!editMaterialForm.linkUrl) {
+          showToast('Vui lòng nhập đường dẫn liên kết', 'info');
+          setIsUploading(false);
+          return;
+        }
+
+        const ytId = getYouTubeVideoId(editMaterialForm.linkUrl);
+        const autoType = ytId ? 'video' : editMaterialForm.type;
+
+        const payload = {
+          title: editMaterialForm.title,
+          description: serializeMaterialDesc({
+            desc: editMaterialForm.description,
+            publishDate: editMaterialForm.publishDate,
+            deadline: editMaterialForm.deadline,
+            distributeMode: editMaterialForm.distributeMode,
+            groups: editMaterialForm.groups,
+            comments: editMaterialForm.comments,
+          }),
+          type: autoType,
+          fileSize: 'Liên kết',
+          url: editMaterialForm.linkUrl,
+          chapter: compoundChapter,
+          lesson: null,
+        };
+        await api.updateMaterial(editingMaterialId, payload);
+        showToast('Cập nhật học liệu thành công!');
+      } else {
+        const newFiles = editMaterialForm.files || [];
+
+        if (newFiles.length > 0) {
+          // Upload first new file as replacement for current material
+          const firstFile = newFiles[0];
+          let finalUrl = '#';
+          let finalFileSize = firstFile.fileSize;
+          const uploadResult = await api.uploadFile(firstFile.fileObj);
+          finalUrl = uploadResult.url;
+          finalFileSize = `${(uploadResult.size / (1024 * 1024)).toFixed(1)} MB`;
+
+          const payload = {
+            title: editMaterialForm.title,
+            description: serializeMaterialDesc({
+              desc: editMaterialForm.description,
+              publishDate: editMaterialForm.publishDate,
+              deadline: editMaterialForm.deadline,
+              distributeMode: editMaterialForm.distributeMode,
+              groups: editMaterialForm.groups,
+              comments: editMaterialForm.comments,
+            }),
+            type: firstFile.type || editMaterialForm.type,
+            fileSize: finalFileSize,
+            url: finalUrl,
+            chapter: compoundChapter,
+            lesson: null,
+          };
+          await api.updateMaterial(editingMaterialId, payload);
+
+          // Upload remaining new files as NEW separate materials
+          for (let i = 1; i < newFiles.length; i++) {
+            const fileData = newFiles[i];
+            const uploadRes = await api.uploadFile(fileData.fileObj);
+            const extraPayload = {
+              title: `${editMaterialForm.title} - ${fileData.fileName}`,
+              description: serializeMaterialDesc({
+                desc: editMaterialForm.description,
+                publishDate: editMaterialForm.publishDate,
+                deadline: editMaterialForm.deadline,
+                distributeMode: editMaterialForm.distributeMode,
+                groups: editMaterialForm.groups,
+                comments: [],
+              }),
+              type: fileData.type || editMaterialForm.type,
+              fileSize: `${(uploadRes.size / (1024 * 1024)).toFixed(1)} MB`,
+              url: uploadRes.url,
+              chapter: compoundChapter,
+              lesson: null,
+            };
+            await api.addMaterial(extraPayload);
+          }
+
+          showToast(`Cập nhật thành công! ${newFiles.length > 1 ? `Đã thêm ${newFiles.length - 1} học liệu phụ.` : ''}`);
+        } else {
+          // No new files — just update metadata
+          let finalUrl = editMaterialForm.fileName ? `#file:${editMaterialForm.fileName}` : '#';
+          let finalFileSize = editMaterialForm.fileName ? editMaterialForm.fileSize : '';
+          if (editMaterialForm.fileName && !editMaterialForm.fileName.startsWith('#file:') && editMaterialForm.fileName.startsWith('http')) {
+            finalUrl = editMaterialForm.fileName;
+          }
+
+          const payload = {
+            title: editMaterialForm.title,
+            description: serializeMaterialDesc({
+              desc: editMaterialForm.description,
+              publishDate: editMaterialForm.publishDate,
+              deadline: editMaterialForm.deadline,
+              distributeMode: editMaterialForm.distributeMode,
+              groups: editMaterialForm.groups,
+              comments: editMaterialForm.comments,
+            }),
+            type: editMaterialForm.type,
+            fileSize: finalFileSize,
+            url: finalUrl,
+            chapter: compoundChapter,
+            lesson: null,
+          };
+          await api.updateMaterial(editingMaterialId, payload);
+          showToast('Cập nhật học liệu thành công!');
+        }
+      }
+
       setEditingMaterialId(null);
     } catch (err) {
       showToast(err.message || 'Lưu học liệu thất bại.', 'info');
@@ -786,37 +836,11 @@ export default function MaterialsDashboard() {
             {/* Divider */}
             <span style={{ width: 1, height: 20, background: '#e2e8f0', margin: '0 4px' }} />
 
-            {/* Subject filters */}
-            {[
-              { key: 'all', label: 'Tất cả môn' },
-              ...existingSubjects.map(s => ({ key: s, label: s })),
-              ...(existingSubjects.length === 0 ? [] : []),
-            ].map(({ key, label }) => (
-              <button
-                key={key}
-                type="button"
-                onClick={() => setFilterSubject(key)}
-                style={{
-                  padding: '4px 12px',
-                  borderRadius: 999,
-                  fontSize: 12,
-                  fontWeight: 600,
-                  cursor: 'pointer',
-                  border: `1.5px solid ${filterSubject === key ? '#7c3aed' : '#cbd5e1'}`,
-                  background: filterSubject === key ? '#f5f3ff' : '#fff',
-                  color: filterSubject === key ? '#6d28d9' : '#475569',
-                  transition: 'all 0.15s',
-                }}
-              >
-                {label}
-              </button>
-            ))}
-
             {/* Clear all filters */}
-            {(filterType !== 'all' || filterSubject !== 'all' || searchQuery) && (
+            {(filterType !== 'all' || searchQuery) && (
               <button
                 type="button"
-                onClick={() => { setFilterType('all'); setFilterSubject('all'); setSearchQuery(''); }}
+                onClick={() => { setFilterType('all'); setSearchQuery(''); }}
                 style={{
                   padding: '4px 12px', borderRadius: 999, fontSize: 12, fontWeight: 700,
                   cursor: 'pointer', border: '1.5px solid #fca5a5',
@@ -838,143 +862,150 @@ export default function MaterialsDashboard() {
               type="button"
               className={styles.btnEmerald}
               style={{ width: 'auto', padding: '8px 16px', display: 'flex', alignItems: 'center', gap: 6, margin: 0 }}
-              onClick={() => setIsAddMaterialModalOpen(true)}
+              onClick={() => {
+                const activeClass = classrooms?.find(c => c.id === selectedClassId);
+                const activeClassName = activeClass ? activeClass.name : '';
+                setNewMaterialForm(prev => ({ ...prev, subject: activeClassName }));
+                setIsAddMaterialModalOpen(true);
+              }}
             >
               <Plus size={16} /> Đăng tải học liệu mới
             </button>
           </div>
 
           <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
-            {sortedSubjects.map((subjectCode) => {
-              const chapters = groupedBySubjectAndChapter[subjectCode] || {};
-              const sortedChapters = Object.keys(chapters).sort((a, b) => {
-                if (a === 'Học liệu chung') return 1;
-                if (b === 'Học liệu chung') return -1;
-                return a.localeCompare(b, undefined, { numeric: true, sensitivity: 'base' });
-              });
+            <div className={styles.chaptersList}>
+              {sortedChapters.map((chName, chIdx) => {
+                const list = groupedByChapter[chName] || [];
+                const chKey = chName;
+                const isExpanded = !!expandedChapters[chKey];
 
-              return (
-                <div key={subjectCode} className={styles.subjectBlock}>
-                  <div className={styles.subjectHeader}>
-                    <Award size={18} color="#7c3aed" />
-                    <h4 className={styles.subjectTitle}>{subjectCode}</h4>
-                  </div>
+                return (
+                  <div key={chName} className={styles.chapterCard}>
+                    <div className={styles.chapterInner}>
+                      <div
+                        className={`${styles.chapterHeader} ${isExpanded ? styles.chapterHeaderExpanded : ''}`}
+                        onClick={() => toggleChapter(chKey)}
+                        style={{ cursor: 'pointer' }}
+                      >
+                        <div className={styles.chapterHeaderLeft}>
+                          <span className={styles.chapterIndex}>{chIdx + 1}</span>
+                          <BookOpen size={14} color="#059669" />
+                          <span className={styles.chapterTitle}>{chName}</span>
+                          <span className={styles.materialsCount}>{list.length} bài học</span>
+                        </div>
+                        <ChevronRight
+                          size={16}
+                          color="#059669"
+                          style={{
+                            transform: isExpanded ? 'rotate(90deg)' : 'rotate(0deg)',
+                            transition: 'transform 0.2s',
+                            flexShrink: 0,
+                          }}
+                        />
+                      </div>
 
-                  <div className={styles.chaptersList}>
-                    {sortedChapters.map((chName) => {
-                      const chKey = `${subjectCode} / ${chName}`;
-                      const list = chapters[chName] || [];
-                      const isExpanded = !!expandedChapters[chKey];
+                      {isExpanded && (
+                        <div className={styles.chapterBody}>
+                          <div className={styles.materialsGrid}>
+                            {list.map((m) => {
+                              const meta = parseMaterialDesc(m.description);
+                              const commentsCount = meta.comments?.length || 0;
+                              const typeBadge = {
+                                video:    { label: '🎬 Video',     color: '#3b82f6', bg: '#eff6ff', border: '#bfdbfe' },
+                                pdf:      { label: '📄 PDF',       color: '#ef4444', bg: '#fef2f2', border: '#fecaca' },
+                                document: { label: '📝 Tài liệu', color: '#10b981', bg: '#f0fdf4', border: '#bbf7d0' },
+                                quiz:     { label: '✅ Quiz',      color: '#f59e0b', bg: '#fffbeb', border: '#fde68a' },
+                              }[m.type] || { label: '📎 File', color: '#64748b', bg: '#f8fafc', border: '#e2e8f0' };
 
-                      return (
-                        <div key={chName} className={styles.chapterCard}>
-                          <div
-                            className={styles.chapterHeader}
-                            onClick={() => toggleChapter(chKey)}
-                            style={{ cursor: 'pointer' }}
-                          >
-                            <div className={styles.chapterHeaderLeft}>
-                              <BookOpen size={16} color="#059669" />
-                              <span className={styles.chapterTitle}>{chName}</span>
-                              <span className={styles.materialsCount}>({list.length} bài học)</span>
-                            </div>
-                            <ChevronRight
-                              size={16}
-                              style={{
-                                transform: isExpanded ? 'rotate(90deg)' : 'rotate(0deg)',
-                                transition: 'transform 0.2s',
-                              }}
-                            />
-                          </div>
-
-                          {isExpanded && (
-                            <div className={styles.chapterBody}>
-                              <div className={styles.materialsGrid}>
-                                {list.map((m) => {
-                                  const meta = parseMaterialDesc(m.description);
-                                  const commentsCount = meta.comments?.length || 0;
-                                  return (
-                                    <div
-                                      key={m.id}
-                                      className={`${styles.materialCard} ${m.isDisabled ? styles.disabledCard : ''}`}
-                                    >
-                                      <div className={styles.materialIconArea}>
-                                        {renderFileIcon(m.type)}
-                                      </div>
-                                      <div className={styles.materialContent}>
-                                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                                          <h5 className={styles.materialTitle}>
-                                            {m.title} {m.isDisabled && <span className={styles.disabledTag}>Đã VH</span>}
+                              return (
+                                <div
+                                  key={m.id}
+                                  className={`${styles.materialCard} ${m.isDisabled ? styles.disabledCard : ''}`}
+                                  data-type={m.type}
+                                >
+                                  <div className={styles.materialIconArea}>
+                                    {renderFileIcon(m.type)}
+                                  </div>
+                                  <div className={styles.materialContent}>
+                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 8 }}>
+                                      <div style={{ flex: 1, minWidth: 0 }}>
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap', marginBottom: 2 }}>
+                                          <h5 className={styles.materialTitle} style={{ flex: 'none', maxWidth: '100%' }}>
+                                            {m.title}
                                           </h5>
-                                          <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                                            <button
-                                              type="button"
-                                              className={styles.editBtn}
-                                              style={{ 
-                                                color: m.completedByUsers?.length > 0 && users.length > 0 ? '#10b981' : '#cbd5e1',
-                                                borderColor: m.completedByUsers?.length > 0 && users.length > 0 ? '#10b981' : '#e2e8f0',
-                                                background: m.completedByUsers?.length > 0 && users.length > 0 ? '#ecfdf5' : '#fff',
-                                                cursor: m.completedByUsers?.length > 0 && users.length > 0 ? 'default' : 'pointer'
-                                              }}
-                                              title={m.completedByUsers?.length > 0 && users.length > 0 ? 'Đã hoàn thành' : 'Đánh dấu hoàn thành'}
-                                              onClick={async (e) => {
-                                                e.stopPropagation();
-                                                if (m.completedByUsers?.length > 0 && users.length > 0) return;
-                                                if (window.confirm(`Đánh dấu hoàn thành bài học "${m.title}" cho toàn bộ học sinh?`)) {
-                                                  try {
-                                                    await api.completeMaterialAll(m.id);
-                                                    showToast('Đã đánh dấu hoàn thành!');
-                                                  } catch (err) {
-                                                    showToast(err.message || 'Lỗi khi đánh dấu', 'info');
-                                                  }
-                                                }
-                                              }}
-                                            >
-                                              <CheckCircle size={14} strokeWidth={2.5} />
-                                            </button>
-                                            <button
-                                              type="button"
-                                              className={styles.editBtn}
-                                              onClick={() => handleEditMaterialStart(m)}
-                                              title="Chỉnh sửa"
-                                            >
-                                              <Pencil size={13} />
-                                            </button>
-                                          </div>
+                                          <span style={{
+                                            fontSize: 10, fontWeight: 700, padding: '1px 7px', borderRadius: 6,
+                                            color: typeBadge.color, background: typeBadge.bg, border: `1px solid ${typeBadge.border}`,
+                                            flexShrink: 0,
+                                          }}>
+                                            {typeBadge.label}
+                                          </span>
+                                          {m.isDisabled && <span className={styles.disabledTag}>Đã VH</span>}
                                         </div>
                                         <p className={styles.materialDesc}>
-                                          {meta.desc || 'Không có mô tả chi tiết.'}
+                                          {meta.desc || 'Chưa có mô tả.'}
                                         </p>
-                                        <div className={styles.materialMetaGrid}>
-                                          {meta.publishDate && (
-                                            <span>Ngày mở: {meta.publishDate}</span>
-                                          )}
-                                          {meta.deadline && (
-                                            <span>Hạn nộp: {meta.deadline}</span>
-                                          )}
-                                          {m.fileSize && <span>Dung lượng: {m.fileSize}</span>}
-                                        </div>
-                                        {commentsCount > 0 && (
-                                          <div style={{ marginTop: 8, fontSize: 10, color: '#059669', fontWeight: 600, display: 'flex', alignItems: 'center', gap: 4 }}>
-                                            <MessageSquare size={10} /> {commentsCount} thảo luận/ghi chú
+                                        {(meta.publishDate || meta.deadline || m.fileSize || commentsCount > 0) && (
+                                          <div className={styles.materialMetaGrid}>
+                                            {meta.publishDate && <span>📅 Mở: {meta.publishDate}</span>}
+                                            {meta.deadline && <span>⏰ Hạn: {meta.deadline}</span>}
+                                            {m.fileSize && <span>💾 {m.fileSize}</span>}
+                                            {commentsCount > 0 && <span>💬 {commentsCount} ghi chú</span>}
                                           </div>
                                         )}
                                       </div>
+                                      <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexShrink: 0 }}>
+                                        <button
+                                          type="button"
+                                          className={styles.editBtn}
+                                          style={{
+                                            color: m.completedByUsers?.length > 0 && users.length > 0 ? '#10b981' : '#cbd5e1',
+                                            borderColor: m.completedByUsers?.length > 0 && users.length > 0 ? '#a7f3d0' : '#e2e8f0',
+                                            background: m.completedByUsers?.length > 0 && users.length > 0 ? '#ecfdf5' : '#fff',
+                                            cursor: m.completedByUsers?.length > 0 && users.length > 0 ? 'default' : 'pointer'
+                                          }}
+                                          title={m.completedByUsers?.length > 0 && users.length > 0 ? 'Đã hoàn thành' : 'Đánh dấu hoàn thành'}
+                                          onClick={async (e) => {
+                                            e.stopPropagation();
+                                            if (m.completedByUsers?.length > 0 && users.length > 0) return;
+                                            if (window.confirm(`Đánh dấu hoàn thành bài học "${m.title}" cho toàn bộ học sinh?`)) {
+                                              try {
+                                                await api.completeMaterialAll(m.id);
+                                                showToast('Đã đánh dấu hoàn thành!');
+                                              } catch (err) {
+                                                showToast(err.message || 'Lỗi khi đánh dấu', 'info');
+                                              }
+                                            }
+                                          }}
+                                        >
+                                          <CheckCircle size={13} strokeWidth={2.5} />
+                                        </button>
+                                        <button
+                                          type="button"
+                                          className={styles.editBtn}
+                                          onClick={() => handleEditMaterialStart(m)}
+                                          title="Chỉnh sửa"
+                                        >
+                                          <Pencil size={12} />
+                                        </button>
+                                      </div>
                                     </div>
-                                  );
-                                })}
-                              </div>
-                            </div>
-                          )}
+                                  </div>
+                                </div>
+                              );
+                            })}
+                          </div>
                         </div>
-                      );
-                    })}
+                      )}
+                    </div>
                   </div>
-                </div>
-              );
-            })}
+                );
+              })}
+            </div>
 
-            {sortedSubjects.length === 0 && (
+
+            {sortedChapters.length === 0 && (
               <div className={styles.emptyBox}>Chưa có tài liệu học tập nào trong lớp học này.</div>
             )}
           </div>
@@ -994,23 +1025,29 @@ export default function MaterialsDashboard() {
             </div>
             <form onSubmit={handleAddMaterial}>
               <div className={styles.field}>
-                <label>Môn học &nbsp;<span style={{ color: '#ef4444' }}>*</span></label>
-                <SubjectDropdown
-                  value={newMaterialForm.subject}
-                  onChange={(s) => setNewMaterialForm({ ...newMaterialForm, subject: s, chapter: '' })}
-                  existingSubjects={existingSubjects}
-                  hasError={hasSubmitAttempted && !newMaterialForm.subject}
-                />
+                <label>Môn học</label>
+                <div style={{ position: 'relative' }}>
+                  <Award size={14} color="#64748b" style={{ position: 'absolute', left: 12, top: 12 }} />
+                  <input
+                    className={styles.input}
+                    value={newMaterialForm.subject || 'Không xác định'}
+                    disabled
+                    style={{ paddingLeft: 34, background: '#f1f5f9', color: '#334155', fontWeight: 600, cursor: 'not-allowed', border: '1.5px solid #e2e8f0' }}
+                  />
+                </div>
               </div>
 
               <div className={styles.field}>
                 <label>Chương (Chapter) &nbsp;<span style={{ color: '#ef4444' }}>*</span></label>
-                <ChapterDropdown
+                <GenericDropdown
                   value={newMaterialForm.chapter}
                   onChange={(ch) => setNewMaterialForm({ ...newMaterialForm, chapter: ch })}
-                  existingChapters={existingChaptersForSubject}
+                  existingItems={existingChaptersForSubject}
                   hasError={hasSubmitAttempted && !newMaterialForm.chapter}
                   placeholder={newMaterialForm.subject ? 'Chọn hoặc tạo chương...' : 'Chọn môn học trước...'}
+                  icon={BookOpen}
+                  color="#059669"
+                  emptyText="Chưa có chương nào trong lớp này."
                 />
               </div>
 
@@ -1021,7 +1058,6 @@ export default function MaterialsDashboard() {
                   value={newMaterialForm.title}
                   onChange={(e) => setNewMaterialForm({ ...newMaterialForm, title: e.target.value })}
                   placeholder="VD: Bài 1 - Giới thiệu Agile Scrum..."
-                  disabled={!newMaterialForm.chapter}
                   required
                 />
               </div>
@@ -1072,101 +1108,121 @@ export default function MaterialsDashboard() {
                 </div>
               </div>
 
-              {newMaterialForm.distributeMode !== 'all' && (
-                <div style={{ padding: 12, background: '#f8fafc', borderRadius: 8, border: '1px solid #cbd5e1', marginBottom: 12 }}>
-                  {/* Header: số nhóm + xáo trộn */}
-                  <div style={{ display: 'flex', gap: 8, alignItems: 'center', marginBottom: 8 }}>
-                    <div style={{ flex: 1 }}>
-                      <label style={{ fontSize: 9, fontWeight: 800, textTransform: 'uppercase', color: '#64748b', display: 'block', marginBottom: 2 }}>Số nhóm</label>
-                      <input type="number" className={styles.input} style={{ padding: '4px 8px' }} min={2} max={10} value={newMaterialForm.numGroups}
-                        onChange={(e) => {
-                          const num = parseInt(e.target.value) || 2;
-                          const newGroups = generateRandomGroups(num, users);
-                          setNewMaterialForm({ ...newMaterialForm, numGroups: num, groups: newGroups });
-                        }} />
-                    </div>
-                    <button type="button" className={styles.btnSecondary} style={{ alignSelf: 'flex-end', fontSize: 10, padding: '6px 10px' }}
-                      onClick={() => {
-                        const newGroups = generateRandomGroups(newMaterialForm.numGroups, users);
-                        setNewMaterialForm({ ...newMaterialForm, groups: newGroups });
-                        showToast('Đã phân chia lại nhóm ngẫu nhiên', 'info');
-                      }}>
-                      Xáo trộn nhóm
-                    </button>
-                  </div>
+              <GroupDistributionConfig formState={newMaterialForm} setFormState={setNewMaterialForm} users={users} showToast={showToast} />
 
-                  {/* Mô tả chế độ */}
-                  {newMaterialForm.distributeMode === 'group_random' && (
-                    <div style={{ fontSize: 11, color: '#059669', background: '#ecfdf5', border: '1px solid #a7f3d0', borderRadius: 6, padding: '6px 10px', marginBottom: 8 }}>
-                      ✅ <strong>Chia nhóm ngẫu nhiên:</strong> Tất cả nhóm đều được xem tài liệu này.
-                    </div>
-                  )}
+              <div style={{ display: 'flex', gap: 16, marginBottom: 12, borderBottom: '1px solid #e2e8f0', paddingBottom: 12 }}>
+                <label style={{ display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer', fontSize: 13, fontWeight: 600, color: newMaterialForm.inputType === 'file' ? '#059669' : '#64748b' }}>
+                  <input type="radio" name="inputType" checked={newMaterialForm.inputType === 'file'} onChange={() => setNewMaterialForm({ ...newMaterialForm, inputType: 'file' })} />
+                  Tải lên từ máy
+                </label>
+                <label style={{ display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer', fontSize: 13, fontWeight: 600, color: newMaterialForm.inputType === 'link' ? '#059669' : '#64748b' }}>
+                  <input type="radio" name="inputType" checked={newMaterialForm.inputType === 'link'} onChange={() => setNewMaterialForm({ ...newMaterialForm, inputType: 'link' })} />
+                  Đính kèm liên kết
+                </label>
+              </div>
 
-
-                  {/* Danh sách nhóm */}
-                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 6 }}>
-                    {newMaterialForm.groups.map((group, idx) => (
-                        <div
-                          key={idx}
-                          style={{
-                            background: '#fff',
-                            padding: '8px 10px',
-                            borderRadius: 8,
-                            border: '1.5px solid #e2e8f0',
-                            transition: 'all 0.15s',
-                          }}
-                        >
-                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 }}>
-                            <strong style={{ fontSize: 11, color: '#0f172a' }}>{group.name}</strong>
-                          </div>
-                          <div style={{ fontSize: 10, color: '#64748b', maxHeight: 40, overflowY: 'auto' }}>
-                            {group.members.length === 0 ? <em>Chưa có học viên</em> : group.members.map((m) => m.name).join(', ')}
-                          </div>
-                        </div>
-                    ))}
-                  </div>
-                </div>
-              )}
-
-              <input
-                ref={fileInputRef}
-                type="file"
-                style={{ display: 'none' }}
-                accept=".pdf,.doc,.docx,.xls,.xlsx,.csv,.ppt,.pptx,.mp4,.mov,.avi,.mkv,.webm,.jpg,.png,.zip,.json"
-                onChange={handleFileInputChange}
-              />
+              {newMaterialForm.inputType === 'file' ? (
+                <>
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    multiple
+                    style={{ display: 'none' }}
+                    accept=".pdf,.doc,.docx,.xls,.xlsx,.csv,.ppt,.pptx,.mp4,.mov,.avi,.mkv,.webm,.jpg,.png,.zip,.json"
+                    onChange={handleFileInputChange}
+                  />
 
               <div
                 className={`${styles.dropZone} ${isDragging ? styles.dropZoneActive : ''}`}
                 onDragOver={handleDragOver}
                 onDragLeave={handleDragLeave}
                 onDrop={handleDrop}
-                onClick={handleDropZoneClick}
+                onClick={(e) => {
+                   if (e.target.closest('button')) return; 
+                   handleDropZoneClick();
+                }}
                 role="button"
                 tabIndex={0}
                 onKeyDown={(e) => e.key === 'Enter' && handleDropZoneClick()}
               >
-                {newMaterialForm.fileName ? (
-                  <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6 }}>
-                    {renderFileIcon(newMaterialForm.type)}
-                    <p style={{ fontWeight: 600, color: '#0f172a', margin: '4px 0 0', fontSize: 13, wordBreak: 'break-all' }}>
-                      {newMaterialForm.fileName}
-                    </p>
-                    <small style={{ color: '#64748b' }}>{newMaterialForm.fileSize}</small>
-                    <small style={{ color: '#059669', marginTop: 4, display: 'flex', alignItems: 'center', gap: 4 }}>
-                      <Check size={14} /> Sẵn sàng tải lên (Click để thay đổi)
-                    </small>
+                {newMaterialForm.files && newMaterialForm.files.length > 0 ? (
+                  <div style={{ width: '100%', padding: '10px' }} onClick={(e) => { e.stopPropagation(); handleDropZoneClick(); }}>
+                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: 12, justifyContent: 'center' }}>
+                      {newMaterialForm.files.map((f, idx) => (
+                        <div key={idx} style={{ position: 'relative', width: 80, height: 80, border: '1px solid #e2e8f0', borderRadius: 8, overflow: 'hidden', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', background: '#fff' }}>
+                          {f.type === 'video' || f.fileName.match(/\.(mp4|webm|ogg)$/i) ? (
+                            <Film size={28} color="#3b82f6" />
+                          ) : f.fileName.match(/\.(jpeg|jpg|gif|png)$/i) ? (
+                            <img src={f.previewUrl} alt={f.fileName} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                          ) : (
+                            renderFileIcon(f.type)
+                          )}
+                          <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, background: 'rgba(0,0,0,0.6)', color: '#fff', fontSize: 9, padding: '2px 4px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', textAlign: 'center' }}>
+                            {f.fileName}
+                          </div>
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              const newFiles = [...newMaterialForm.files];
+                              newFiles.splice(idx, 1);
+                              setNewMaterialForm({ ...newMaterialForm, files: newFiles });
+                            }}
+                            style={{ position: 'absolute', top: -5, right: -5, background: '#ef4444', color: '#fff', border: 'none', borderRadius: '50%', width: 20, height: 20, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 0 }}
+                          >
+                            <X size={12} />
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                    <div style={{ marginTop: 12, fontSize: 12, color: '#059669', fontWeight: 600 }}>
+                      Đã chọn {newMaterialForm.files.length} tệp (Nhấn để thêm tiếp)
+                    </div>
                   </div>
                 ) : (
                   <>
-                    <Upload size={24} color="#94a3b8" />
-                    <p style={{ margin: '8px 0 4px', fontSize: 13, color: '#475569' }}>
-                      Kéo thả tệp hoặc <strong style={{ color: '#059669' }}>nhấp để chọn file</strong>
-                    </p>
-                    <small style={{ color: '#94a3b8' }}>PDF, Word, Excel, Video, PowerPoint, JSON...</small>
+                    <div className={styles.dropZoneIcon}><Upload size={32} /></div>
+                    <p className={styles.dropZoneText}>Nhấn hoặc kéo thả tệp vào đây</p>
+                    <p className={styles.dropZoneSubtext}>Hỗ trợ PDF, Word, Excel, Video (Max 50MB)</p>
                   </>
                 )}
               </div>
+              </>
+              ) : (
+                <div className={styles.field} style={{ background: '#f8fafc', padding: '16px', borderRadius: 8, border: '1px solid #e2e8f0', marginTop: 16 }}>
+                  <label>Đường dẫn liên kết (URL)</label>
+                  <div style={{ display: 'flex', gap: 8 }}>
+                    <input
+                      type="url"
+                      className={styles.input}
+                      placeholder="https://www.youtube.com/watch?v=..."
+                      value={newMaterialForm.linkUrl}
+                      onChange={(e) => setNewMaterialForm({ ...newMaterialForm, linkUrl: e.target.value })}
+                    />
+                    <button
+                      type="button"
+                      className={styles.btnSecondary}
+                      style={{ whiteSpace: 'nowrap', padding: '8px 16px' }}
+                      onClick={async () => {
+                        if (!newMaterialForm.linkUrl) {
+                          showToast('Vui lòng nhập đường dẫn trước', 'info');
+                          return;
+                        }
+                        const info = await fetchYouTubeInfo(newMaterialForm.linkUrl);
+                        if (info && info.title) {
+                          setNewMaterialForm({ ...newMaterialForm, title: info.title, type: 'video' });
+                          showToast('Đã lấy thông tin thành công!');
+                        } else {
+                          showToast('Không lấy được tiêu đề từ liên kết này', 'info');
+                        }
+                      }}
+                    >
+                      Lấy thông tin
+                    </button>
+                  </div>
+                  <p style={{ fontSize: 11, color: '#64748b', marginTop: 8 }}>* Hỗ trợ tự động lấy tiêu đề Video từ YouTube.</p>
+                </div>
+              )}
 
               <div style={{ display: 'flex', gap: 8, marginTop: 20 }}>
                 <button type="submit" className={styles.btnPrimary} disabled={isUploading} style={{ flex: 1 }}>
@@ -1187,284 +1243,474 @@ export default function MaterialsDashboard() {
       )}
 
       {editingMaterialId && (
-        <div className={styles.modalOverlay} onClick={handleCancelEdit}>
-          <div className={styles.modal} onClick={(e) => e.stopPropagation()} style={{ maxWidth: 540 }}>
-            <div className={styles.modalHeader}>
-              <h3 className={styles.modalTitle} style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                <Pencil size={18} color="#059669" /> Chi tiết & Chỉnh sửa Học liệu
+        <div className={styles.modalOverlay} onClick={handleCancelEdit} style={{ zIndex: 9999 }}>
+          <div className={styles.modal} onClick={(e) => e.stopPropagation()} style={{ maxWidth: 1200, width: '95%', padding: 0, overflow: 'hidden', display: 'flex', flexDirection: 'column', height: '90vh', borderRadius: 16 }}>
+            <div className={styles.modalHeader} style={{ padding: '16px 24px', borderBottom: '1px solid #e2e8f0', background: '#fff', zIndex: 10, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <h3 className={styles.modalTitle} style={{ display: 'flex', alignItems: 'center', gap: 8, margin: 0, color: '#0f172a' }}>
+                <BookOpen size={18} color="#059669" /> Chi tiết & Xem Học liệu
               </h3>
-              <button type="button" className={styles.iconBtn} onClick={handleCancelEdit}>
-                <X size={16} />
+              <button type="button" className={styles.iconBtn} onClick={handleCancelEdit} style={{ background: '#f1f5f9', padding: 8, borderRadius: 50 }}>
+                <X size={18} color="#64748b" />
               </button>
             </div>
 
-            <form onSubmit={handleUpdateMaterial}>
-              <div style={{ display: 'flex', gap: 12, background: '#f8fafc', padding: 12, borderRadius: 12, marginBottom: 16, border: '1px solid #e2e8f0' }}>
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: 44, height: 44, background: '#fff', borderRadius: 8, border: '1px solid #e2e8f0', flexShrink: 0 }}>
-                  {renderFileIcon(editMaterialForm.type)}
-                </div>
-                <div style={{ overflow: 'hidden' }}>
-                  <p style={{ margin: 0, fontSize: 11, color: '#64748b', fontWeight: 600, textTransform: 'uppercase' }}>Thông tin học liệu hiện tại</p>
-                  <p style={{ margin: '2px 0 0', fontSize: 13, fontWeight: 700, color: '#0f172a', whiteSpace: 'nowrap', textOverflow: 'ellipsis', overflow: 'hidden' }}>
-                    Tệp: {editMaterialForm.fileName || 'Không có tệp'}
-                  </p>
-                  <small style={{ color: '#94a3b8' }}>Dung lượng: {editMaterialForm.fileSize || 'N/A'}</small>
-                </div>
-              </div>
-
-              <div className={styles.field}>
-                <label>Môn học &nbsp;<span style={{ color: '#ef4444' }}>*</span></label>
-                <SubjectDropdown
-                  value={editMaterialForm.subject}
-                  onChange={(s) => setEditMaterialForm({ ...editMaterialForm, subject: s, chapter: '' })}
-                  existingSubjects={existingSubjects}
-                  hasError={!editMaterialForm.subject}
-                />
-              </div>
-
-              <div className={styles.field}>
-                <label>Chương (Chapter) &nbsp;<span style={{ color: '#ef4444' }}>*</span></label>
-                <ChapterDropdown
-                  value={editMaterialForm.chapter}
-                  onChange={(ch) => setEditMaterialForm({ ...editMaterialForm, chapter: ch })}
-                  existingChapters={existingChaptersForEditSubject}
-                  hasError={!editMaterialForm.chapter}
-                  placeholder={editMaterialForm.subject ? 'Chọn hoặc tạo chương...' : 'Chọn môn học trước...'}
-                />
-              </div>
-
-              <div className={styles.field}>
-                <label>Tên bài học &nbsp;<span style={{ color: '#ef4444' }}>*</span></label>
-                <input
-                  className={styles.input}
-                  required
-                  value={editMaterialForm.title}
-                  onChange={(e) => setEditMaterialForm({ ...editMaterialForm, title: e.target.value })}
-                  placeholder="VD: Bài 1 - Giới thiệu Agile Scrum..."
-                  disabled={!editMaterialForm.chapter}
-                />
-              </div>
-
-              <div className={styles.field}>
-                <label>Yêu cầu / Mô tả</label>
-                <textarea
-                  className={styles.textarea}
-                  rows={3}
-                  value={editMaterialForm.description}
-                  onChange={(e) => setEditMaterialForm({ ...editMaterialForm, description: e.target.value })}
-                  placeholder="Mô tả hoặc yêu cầu của buổi học này..."
-                />
-              </div>
-
-              <div className={styles.row2}>
-                <div className={styles.field}>
-                  <label>Loại tệp</label>
-                  <select
-                    className={styles.select}
-                    value={editMaterialForm.type}
-                    onChange={(e) => setEditMaterialForm({ ...editMaterialForm, type: e.target.value })}
-                  >
-                    <option value="video">Video bài giảng (quay trước)</option>
-                    <option value="pdf">Tài liệu PDF</option>
-                    <option value="document">Giáo trình doc</option>
-                    <option value="quiz">Trắc nghiệm</option>
-                  </select>
-                </div>
-                <div className={styles.field}>
-                  <label>Ngày phát hành</label>
-                  <input
-                    type="date"
-                    className={styles.input}
-                    value={editMaterialForm.publishDate}
-                    onChange={(e) => setEditMaterialForm({ ...editMaterialForm, publishDate: e.target.value })}
-                  />
-                </div>
-              </div>
-
-              <div className={styles.row2}>
-                <div className={styles.field}>
-                  <label>Hạn hoàn thành</label>
-                  <input
-                    type="date"
-                    className={styles.input}
-                    value={editMaterialForm.deadline}
-                    onChange={(e) => setEditMaterialForm({ ...editMaterialForm, deadline: e.target.value })}
-                  />
-                </div>
-                <div className={styles.field}>
-                  <label>Đối tượng / Nhóm học</label>
-                  <select
-                    className={styles.select}
-                    value={editMaterialForm.distributeMode}
-                    onChange={(e) => {
-                      const mode = e.target.value;
-                      let initialGroups = [];
-                      if (mode !== 'all') {
-                        initialGroups = generateRandomGroups(editMaterialForm.numGroups, users);
-                      }
-                      setEditMaterialForm({ ...editMaterialForm, distributeMode: mode, groups: initialGroups });
-                    }}
-                  >
-                    <option value="all">Toàn bộ lớp học</option>
-                    <option value="group_random">Chia nhóm ngẫu nhiên</option>
-                  </select>
-                </div>
-              </div>
-
-              {editMaterialForm.distributeMode !== 'all' && (
-                <div style={{ padding: 12, background: '#f8fafc', borderRadius: 8, border: '1px solid #cbd5e1', marginBottom: 12 }}>
-                  <div style={{ display: 'flex', gap: 8, alignItems: 'center', marginBottom: 8 }}>
-                    <div style={{ flex: 1 }}>
-                      <label style={{ fontSize: 9, fontWeight: 800, textTransform: 'uppercase', color: '#64748b', display: 'block', marginBottom: 2 }}>Số nhóm</label>
-                      <input
-                        type="number"
-                        className={styles.input}
-                        style={{ padding: '4px 8px' }}
-                        min={2}
-                        max={10}
-                        value={editMaterialForm.numGroups}
-                        onChange={(e) => {
-                          const num = parseInt(e.target.value) || 2;
-                          const newGroups = generateRandomGroups(num, users);
-                          setEditMaterialForm({ ...editMaterialForm, numGroups: num, groups: newGroups });
-                        }}
-                      />
+            <div style={{ display: 'flex', flex: 1, flexDirection: 'row', overflow: 'hidden', background: '#f8fafc' }}>
+              
+              {/* Left Column: Preview File */}
+              {editMaterialForm.fileName && editMaterialForm.fileName.startsWith('http') && (
+                <div style={{ flex: 1.5, background: '#0f172a', display: 'flex', flexDirection: 'column', alignItems: 'stretch', justifyContent: 'stretch', overflow: 'hidden', minWidth: 400, position: 'relative' }}>
+                  {/* Toolbar */}
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '8px 12px', background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(4px)', zIndex: 2 }}>
+                    <span style={{ fontSize: 11, color: '#94a3b8', fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: 260 }}>
+                      {editMaterialForm.fileName.split('/').pop()?.split('?')[0] || 'Tệp học liệu'}
+                    </span>
+                    <div style={{ display: 'flex', gap: 6 }}>
+                      {iframeError && (
+                        <button
+                          type="button"
+                          onClick={() => setIframeError(false)}
+                          style={{ fontSize: 11, color: '#fbbf24', fontWeight: 700, background: 'rgba(251,191,36,0.15)', border: '1px solid rgba(251,191,36,0.3)', borderRadius: 6, padding: '4px 10px', cursor: 'pointer', whiteSpace: 'nowrap' }}
+                        >
+                          🔄 Thử lại
+                        </button>
+                      )}
+                      <a
+                        href={editMaterialForm.fileName}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 11, color: '#34d399', fontWeight: 700, textDecoration: 'none', background: 'rgba(52,211,153,0.15)', border: '1px solid rgba(52,211,153,0.3)', borderRadius: 6, padding: '4px 10px', whiteSpace: 'nowrap', flexShrink: 0 }}
+                      >
+                        <ExternalLink size={12} /> Mở file
+                      </a>
                     </div>
-                    <button
-                      type="button"
-                      className={styles.btnSecondary}
-                      style={{ alignSelf: 'flex-end', fontSize: 10, padding: '6px 10px' }}
-                      onClick={() => {
-                        const newGroups = generateRandomGroups(editMaterialForm.numGroups, users);
-                        setEditMaterialForm({ ...editMaterialForm, groups: newGroups });
-                        showToast('Đã phân chia lại nhóm ngẫu nhiên', 'info');
-                      }}
-                    >
-                      Xáo trộn nhóm
-                    </button>
                   </div>
 
-                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 6 }}>
-                    {editMaterialForm.groups.map((group, idx) => (
-                      <div key={idx} style={{ background: '#fff', padding: 6, borderRadius: 6, border: '1px solid #e2e8f0' }}>
-                        <strong style={{ fontSize: 11, color: '#0f172a' }}>{group.name}</strong>
-                        <div style={{ fontSize: 10, color: '#64748b', marginTop: 2, maxHeight: 40, overflowY: 'auto' }}>
-                          {group.members.length === 0 ? <em>Chưa có học viên</em> : group.members.map((m) => m.name).join(', ')}
-                        </div>
+                  {/* Preview Body */}
+                  <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden' }}>
+                    {editMaterialForm.inputType === 'link' ? (() => {
+                        const ytId = getYouTubeVideoId(editMaterialForm.linkUrl);
+                        if (ytId) {
+                          return <iframe width="100%" height="100%" src={`https://www.youtube.com/embed/${ytId}`} title="YouTube video player" style={{ border: 'none' }} allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowFullScreen></iframe>;
+                        } else {
+                          return (
+                            <div style={{ textAlign: 'center', color: '#94a3b8', padding: 32 }}>
+                              <ExternalLink size={48} color="#3b82f6" style={{ marginBottom: 12 }} />
+                              <p style={{ margin: '0 0 6px', fontSize: 14, fontWeight: 700, color: '#0f172a' }}>Liên kết ngoài</p>
+                              <a href={editMaterialForm.linkUrl} target="_blank" rel="noopener noreferrer" style={{ display: 'inline-flex', alignItems: 'center', gap: 6, fontSize: 13, color: '#3b82f6', fontWeight: 700, textDecoration: 'none', background: '#eff6ff', border: '1px solid #bfdbfe', borderRadius: 8, padding: '8px 18px', marginTop: 10 }}>
+                                <ExternalLink size={14} /> Mở liên kết
+                              </a>
+                            </div>
+                          );
+                        }
+                    })() : editMaterialForm.type === 'video' || editMaterialForm.fileName.match(/\.(mp4|webm|ogg)$/i) ? (
+                      <video src={editMaterialForm.fileName} controls autoPlay style={{ maxWidth: '100%', maxHeight: '100%' }} />
+                    ) : editMaterialForm.fileName.match(/\.(jpeg|jpg|gif|png)$/i) ? (
+                      <img src={editMaterialForm.fileName} style={{ maxWidth: '100%', maxHeight: '100%', objectFit: 'contain' }} alt="Preview" />
+                    ) : iframeError ? (
+                      <div style={{ textAlign: 'center', color: '#94a3b8', padding: 32 }}>
+                        <FileText size={48} color="#ef4444" style={{ marginBottom: 12 }} />
+                        <p style={{ margin: '0 0 6px', fontSize: 14, fontWeight: 700, color: '#f1f5f9' }}>Không thể xem trực tiếp trong trình duyệt</p>
+                        <p style={{ margin: '0 0 16px', fontSize: 12, color: '#64748b' }}>
+                          File có thể bị CORS hoặc loại tệp không hỗ trợ inline preview.<br />
+                          Nhấn để tải về hoặc mở bằng ứng dụng ngoài.
+                        </p>
+                        <a
+                          href={editMaterialForm.fileName}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          style={{ display: 'inline-flex', alignItems: 'center', gap: 6, fontSize: 13, color: '#34d399', fontWeight: 700, textDecoration: 'none', background: 'rgba(52,211,153,0.15)', border: '1px solid rgba(52,211,153,0.4)', borderRadius: 8, padding: '8px 18px', marginBottom: 10 }}
+                        >
+                          <ExternalLink size={14} /> Tải / Mở file
+                        </a>
                       </div>
-                    ))}
+                    ) : (() => {
+                      const url = editMaterialForm.fileName;
+                      const isCloudinary = url.includes('cloudinary.com');
+                      const isPdfType = editMaterialForm.type === 'pdf' || url.match(/\.pdf($|\?)/i);
+                      const isDocType = url.match(/\.(pptx?|docx?|xlsx?)($|\?)/i);
+
+                      // For Cloudinary: build direct PDF-accessible URL
+                      const getCloudinaryPdfUrl = (rawUrl) => {
+                        if (rawUrl.match(/\.pdf($|\?)/i)) return rawUrl;
+                        const base = rawUrl.split('?')[0];
+                        // Insert fl_attachment:false flag and append .pdf
+                        return base.replace('/upload/', '/upload/fl_attachment:false/') + '.pdf';
+                      };
+
+                      if (isCloudinary && !isDocType) {
+                        // Cloudinary PDF/slide → direct URL with .pdf extension
+                        const pdfUrl = getCloudinaryPdfUrl(url);
+                        return (
+                          <iframe
+                            key={pdfUrl}
+                            src={pdfUrl}
+                            title="PDF Preview"
+                            style={{ width: '100%', height: '100%', border: 'none', background: '#fff' }}
+                            onError={() => setIframeError(true)}
+                          />
+                        );
+                      } else if (isPdfType) {
+                        // Non-Cloudinary PDF: native browser viewer
+                        return (
+                          <iframe
+                            key={url}
+                            src={url}
+                            title="PDF Preview"
+                            style={{ width: '100%', height: '100%', border: 'none', background: '#fff' }}
+                            onError={() => setIframeError(true)}
+                          />
+                        );
+                      } else {
+                        // Word / PowerPoint / Excel → Google Docs Viewer
+                        return (
+                          <iframe
+                            key={url}
+                            src={`https://docs.google.com/gview?url=${encodeURIComponent(url)}&embedded=true`}
+                            title="Document Preview"
+                            style={{ width: '100%', height: '100%', border: 'none', background: '#fff' }}
+                            onError={() => setIframeError(true)}
+                            onLoad={(e) => {
+                              try {
+                                const doc = e.target.contentDocument;
+                                if (doc && doc.body && doc.body.innerHTML.trim() === '') {
+                                  setIframeError(true);
+                                }
+                              } catch {}
+                            }}
+                          />
+                        );
+                      }
+                    })()}
                   </div>
                 </div>
               )}
 
-              <div className={styles.field}>
-                <label>Thay đổi tệp đính kèm</label>
-                <input
-                  ref={editFileInputRef}
-                  type="file"
-                  style={{ display: 'none' }}
-                  accept=".pdf,.doc,.docx,.xls,.xlsx,.csv,.ppt,.pptx,.mp4,.mov,.avi,.mkv,.webm,.jpg,.png,.zip,.json"
-                  onChange={handleEditFileInputChange}
-                />
 
-                <div
-                  className={`${styles.dropZone} ${isEditDragging ? styles.dropZoneActive : ''}`}
-                  onDragOver={handleEditDragOver}
-                  onDragLeave={handleEditDragLeave}
-                  onDrop={handleEditDrop}
-                  onClick={handleEditDropZoneClick}
-                  role="button"
-                  tabIndex={0}
-                  onKeyDown={(e) => e.key === 'Enter' && handleEditDropZoneClick()}
-                  style={{ padding: '16px 8px', background: '#fafafa' }}
-                >
-                  <Upload size={18} color="#94a3b8" style={{ marginBottom: 4 }} />
-                  <p style={{ margin: 0, fontSize: 12, color: '#475569' }}>
-                    Kéo thả tệp hoặc <strong style={{ color: '#059669' }}>nhấp để chọn tệp mới</strong>
-                  </p>
-                  <small style={{ fontSize: 10, color: '#94a3b8' }}>PDF, Word, Excel, Video, JSON...</small>
-                </div>
-              </div>
+              {/* Right Column: Form */}
+              <div style={{ width: (editMaterialForm.fileName && editMaterialForm.fileName.startsWith('http')) ? 500 : '100%', background: '#fff', display: 'flex', flexDirection: 'column', zIndex: 5, borderLeft: '1px solid #e2e8f0' }}>
+                <div style={{ flex: 1, overflowY: 'auto', padding: '24px' }}>
+                  <form id="editMaterialForm" onSubmit={handleUpdateMaterial}>
+                  <div style={{ display: 'flex', gap: 12, background: '#f8fafc', padding: 12, borderRadius: 12, marginBottom: 16, border: '1px solid #e2e8f0', alignItems: 'center' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: 44, height: 44, background: '#fff', borderRadius: 8, border: '1px solid #e2e8f0', flexShrink: 0 }}>
+                      {renderFileIcon(editMaterialForm.type)}
+                    </div>
+                    <div style={{ overflow: 'hidden', flex: 1 }}>
+                      <p style={{ margin: 0, fontSize: 11, color: '#64748b', fontWeight: 600, textTransform: 'uppercase' }}>Thông tin học liệu hiện tại</p>
+                      <p style={{ margin: '2px 0 0', fontSize: 13, fontWeight: 700, color: '#0f172a', whiteSpace: 'nowrap', textOverflow: 'ellipsis', overflow: 'hidden' }}>
+                        Tệp: {editMaterialForm.fileName || 'Không có tệp'}
+                      </p>
+                      <small style={{ color: '#94a3b8' }}>Dung lượng: {editMaterialForm.fileSize || 'N/A'}</small>
+                    </div>
+                  </div>
 
-              <div style={{ marginTop: 20, paddingTop: 16, borderTop: '2px dashed #cbd5e1' }}>
-                <h4 style={{ fontSize: 13, margin: '0 0 8px', display: 'flex', alignItems: 'center', gap: 6, fontWeight: 700, color: '#0f172a' }}>
-                  <MessageSquare size={14} color="#059669" /> Thảo luận & Ghi chú ({editMaterialForm.comments?.length || 0})
-                </h4>
+                  <div className={styles.field}>
+                    <label>Môn học</label>
+                    <div style={{ position: 'relative' }}>
+                      <Award size={14} color="#64748b" style={{ position: 'absolute', left: 12, top: 12 }} />
+                      <input
+                        className={styles.input}
+                        value={editMaterialForm.subject || 'Không xác định'}
+                        disabled
+                        style={{ paddingLeft: 34, background: '#f1f5f9', color: '#334155', fontWeight: 600, cursor: 'not-allowed', border: '1.5px solid #e2e8f0' }}
+                      />
+                    </div>
+                  </div>
 
-                <div style={{ maxHeight: 120, overflowY: 'auto', background: '#f8fafc', padding: 8, borderRadius: 10, marginBottom: 8, border: '1px solid #cbd5e1' }}>
-                  {(!editMaterialForm.comments || editMaterialForm.comments.length === 0) ? (
-                    <p style={{ margin: 0, fontSize: 11, color: '#94a3b8', fontStyle: 'italic', textAlign: 'center', padding: '12px 0' }}>
-                      Chưa có thảo luận nào. Hãy gửi bình luận đầu tiên!
-                    </p>
-                  ) : (
-                    editMaterialForm.comments.map((c, idx) => (
-                      <div key={idx} style={{ marginBottom: 6, borderBottom: idx < editMaterialForm.comments.length - 1 ? '1px solid #e2e8f0' : 'none', paddingBottom: 4 }}>
-                        <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 10, fontWeight: 700, color: '#0f172a' }}>
-                          <span>{c.author}</span>
-                          <span style={{ fontWeight: 400, color: '#94a3b8' }}>{c.time || 'Vừa xong'}</span>
+                  <div className={styles.field}>
+                    <label>Chương (Chapter) &nbsp;<span style={{ color: '#ef4444' }}>*</span></label>
+                    <GenericDropdown
+                      value={editMaterialForm.chapter}
+                      onChange={(ch) => setEditMaterialForm({ ...editMaterialForm, chapter: ch })}
+                      existingItems={existingChaptersForEditSubject}
+                      hasError={!editMaterialForm.chapter}
+                      placeholder={editMaterialForm.subject ? 'Chọn hoặc tạo chương...' : 'Chọn môn học trước...'}
+                      icon={BookOpen}
+                      color="#059669"
+                      emptyText="Chưa có chương nào trong lớp này."
+                    />
+                  </div>
+
+                  <div className={styles.field}>
+                    <label>Tên bài học &nbsp;<span style={{ color: '#ef4444' }}>*</span></label>
+                    <input
+                      className={styles.input}
+                      required
+                      value={editMaterialForm.title}
+                      onChange={(e) => setEditMaterialForm({ ...editMaterialForm, title: e.target.value })}
+                      placeholder="VD: Bài 1 - Giới thiệu Agile Scrum..."
+                    />
+                  </div>
+
+                  <div className={styles.field}>
+                    <label>Yêu cầu / Mô tả</label>
+                    <textarea
+                      className={styles.textarea}
+                      rows={3}
+                      value={editMaterialForm.description}
+                      onChange={(e) => setEditMaterialForm({ ...editMaterialForm, description: e.target.value })}
+                      placeholder="Mô tả hoặc yêu cầu của buổi học này..."
+                    />
+                  </div>
+
+                  <div className={styles.row2}>
+                    <div className={styles.field}>
+                      <label>Loại tệp</label>
+                      <select
+                        className={styles.select}
+                        value={editMaterialForm.type}
+                        onChange={(e) => setEditMaterialForm({ ...editMaterialForm, type: e.target.value })}
+                      >
+                        <option value="video">Video bài giảng (quay trước)</option>
+                        <option value="pdf">Tài liệu PDF</option>
+                        <option value="document">Giáo trình doc</option>
+                        <option value="quiz">Trắc nghiệm</option>
+                      </select>
+                    </div>
+                    <div className={styles.field}>
+                      <label>Ngày phát hành</label>
+                      <input
+                        type="date"
+                        className={styles.input}
+                        value={editMaterialForm.publishDate}
+                        onChange={(e) => setEditMaterialForm({ ...editMaterialForm, publishDate: e.target.value })}
+                      />
+                    </div>
+                  </div>
+
+                  <div className={styles.row2}>
+                    <div className={styles.field}>
+                      <label>Hạn hoàn thành</label>
+                      <input
+                        type="date"
+                        className={styles.input}
+                        value={editMaterialForm.deadline}
+                        onChange={(e) => setEditMaterialForm({ ...editMaterialForm, deadline: e.target.value })}
+                      />
+                    </div>
+                    <div className={styles.field}>
+                      <label>Đối tượng / Nhóm học</label>
+                      <select
+                        className={styles.select}
+                        value={editMaterialForm.distributeMode}
+                        onChange={(e) => {
+                          const mode = e.target.value;
+                          let initialGroups = [];
+                          if (mode !== 'all') {
+                            initialGroups = generateRandomGroups(editMaterialForm.numGroups, users);
+                          }
+                          setEditMaterialForm({ ...editMaterialForm, distributeMode: mode, groups: initialGroups });
+                        }}
+                      >
+                        <option value="all">Toàn bộ lớp học</option>
+                        <option value="group_random">Chia nhóm ngẫu nhiên</option>
+                      </select>
+                    </div>
+                  </div>
+
+                  <GroupDistributionConfig formState={editMaterialForm} setFormState={setEditMaterialForm} users={users} showToast={showToast} />
+
+                  <div className={styles.field}>
+                    <label>Nội dung đính kèm</label>
+                    <div style={{ display: 'flex', gap: 16, marginBottom: 12, borderBottom: '1px solid #e2e8f0', paddingBottom: 12 }}>
+                      <label style={{ display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer', fontSize: 13, fontWeight: 600, color: editMaterialForm.inputType === 'file' ? '#059669' : '#64748b' }}>
+                        <input type="radio" name="editInputType" checked={editMaterialForm.inputType === 'file'} onChange={() => setEditMaterialForm({ ...editMaterialForm, inputType: 'file' })} />
+                        Tải lên từ máy
+                      </label>
+                      <label style={{ display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer', fontSize: 13, fontWeight: 600, color: editMaterialForm.inputType === 'link' ? '#059669' : '#64748b' }}>
+                        <input type="radio" name="editInputType" checked={editMaterialForm.inputType === 'link'} onChange={() => setEditMaterialForm({ ...editMaterialForm, inputType: 'link' })} />
+                        Đính kèm liên kết
+                      </label>
+                    </div>
+
+                    {editMaterialForm.inputType === 'file' ? (
+                      <>
+                        <input
+                          ref={editFileInputRef}
+                          type="file"
+                          multiple
+                          style={{ display: 'none' }}
+                          accept=".pdf,.doc,.docx,.xls,.xlsx,.csv,.ppt,.pptx,.mp4,.mov,.avi,.mkv,.webm,.jpg,.png,.zip,.json"
+                          onChange={handleEditFileInputChange}
+                        />
+
+                        <div
+                      className={`${styles.dropZone} ${isEditDragging ? styles.dropZoneActive : ''}`}
+                      onDragOver={handleEditDragOver}
+                      onDragLeave={handleEditDragLeave}
+                      onDrop={handleEditDrop}
+                      onClick={(e) => { if (e.target.closest('button')) return; handleEditDropZoneClick(); }}
+                      role="button"
+                      tabIndex={0}
+                      onKeyDown={(e) => e.key === 'Enter' && handleEditDropZoneClick()}
+                      style={{ padding: '16px 8px', background: '#fafafa' }}
+                    >
+                      {editMaterialForm.files && editMaterialForm.files.length > 0 ? (
+                        <div style={{ width: '100%' }} onClick={(e) => e.stopPropagation()}>
+                          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, justifyContent: 'center', marginBottom: 8 }}>
+                            {editMaterialForm.files.map((f, idx) => (
+                              <div key={idx} style={{ position: 'relative', width: 72, height: 72, border: '1px solid #e2e8f0', borderRadius: 8, overflow: 'hidden', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', background: '#fff' }}>
+                                {f.type === 'video' || f.fileName.match(/\.(mp4|webm|ogg)$/i) ? (
+                                  <Film size={24} color="#3b82f6" />
+                                ) : f.fileName.match(/\.(jpeg|jpg|gif|png)$/i) ? (
+                                  <img src={f.previewUrl} alt={f.fileName} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                                ) : (
+                                  renderFileIcon(f.type)
+                                )}
+                                <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, background: 'rgba(0,0,0,0.6)', color: '#fff', fontSize: 8, padding: '2px 3px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', textAlign: 'center' }}>
+                                  {f.fileName}
+                                </div>
+                                <button
+                                  type="button"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    setEditMaterialForm(prev => ({
+                                      ...prev,
+                                      files: prev.files.filter((_, i) => i !== idx)
+                                    }));
+                                  }}
+                                  style={{ position: 'absolute', top: 2, right: 2, background: '#ef4444', color: 'white', border: 'none', borderRadius: '50%', width: 18, height: 18, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', padding: 0 }}
+                                >
+                                  <X size={12} />
+                                </button>
+                              </div>
+                            ))}
+                          </div>
+                          <div style={{ textAlign: 'center', color: '#059669', fontSize: 11, fontWeight: 600 }}>
+                            <Check size={12} style={{ verticalAlign: 'middle', marginRight: 3 }} />
+                            Đã chọn {editMaterialForm.files.length} tệp mới (nhấn để thêm tiếp)
+                          </div>
                         </div>
-                        <p style={{ margin: '2px 0 0', fontSize: 11, color: '#475569' }}>{c.text}</p>
+                      ) : (
+                        <>
+                          <Upload size={18} color="#94a3b8" style={{ marginBottom: 4 }} />
+                          <p style={{ margin: 0, fontSize: 12, color: '#475569' }}>
+                            Kéo thả tệp hoặc <strong style={{ color: '#059669' }}>nhấp để chọn nhiều tệp mới</strong>
+                          </p>
+                          <small style={{ fontSize: 10, color: '#94a3b8' }}>PDF, Word, Excel, Video, JSON...</small>
+                        </>
+                      )}
+                    </div>
+                    </>
+                    ) : (
+                      <div className={styles.field} style={{ background: '#f8fafc', padding: '16px', borderRadius: 8, border: '1px solid #e2e8f0' }}>
+                        <label>Đường dẫn liên kết (URL)</label>
+                        <div style={{ display: 'flex', gap: 8 }}>
+                          <input
+                            type="url"
+                            className={styles.input}
+                            placeholder="https://www.youtube.com/watch?v=..."
+                            value={editMaterialForm.linkUrl}
+                            onChange={(e) => setEditMaterialForm({ ...editMaterialForm, linkUrl: e.target.value })}
+                          />
+                          <button
+                            type="button"
+                            className={styles.btnSecondary}
+                            style={{ whiteSpace: 'nowrap', padding: '8px 16px' }}
+                            onClick={async () => {
+                              if (!editMaterialForm.linkUrl) {
+                                showToast('Vui lòng nhập đường dẫn trước', 'info');
+                                return;
+                              }
+                              const info = await fetchYouTubeInfo(editMaterialForm.linkUrl);
+                              if (info && info.title) {
+                                setEditMaterialForm({ ...editMaterialForm, title: info.title, type: 'video' });
+                                showToast('Đã lấy thông tin thành công!');
+                              } else {
+                                showToast('Không lấy được tiêu đề từ liên kết này', 'info');
+                              }
+                            }}
+                          >
+                            Lấy thông tin
+                          </button>
+                        </div>
+                        <p style={{ fontSize: 11, color: '#64748b', marginTop: 8 }}>* Hỗ trợ tự động lấy tiêu đề Video từ YouTube.</p>
                       </div>
-                    ))
-                  )}
+                    )}
+                  </div>
+
+                  <div style={{ marginTop: 20, paddingTop: 16, borderTop: '2px dashed #cbd5e1' }}>
+                    <h4 style={{ fontSize: 13, margin: '0 0 8px', display: 'flex', alignItems: 'center', gap: 6, fontWeight: 700, color: '#0f172a' }}>
+                      <MessageSquare size={14} color="#059669" /> Thảo luận & Ghi chú ({editMaterialForm.comments?.length || 0})
+                    </h4>
+
+                    <div style={{ maxHeight: 120, overflowY: 'auto', background: '#f8fafc', padding: 8, borderRadius: 10, marginBottom: 8, border: '1px solid #cbd5e1' }}>
+                      {(!editMaterialForm.comments || editMaterialForm.comments.length === 0) ? (
+                        <p style={{ margin: 0, fontSize: 11, color: '#94a3b8', fontStyle: 'italic', textAlign: 'center', padding: '12px 0' }}>
+                          Chưa có thảo luận nào. Hãy gửi bình luận đầu tiên!
+                        </p>
+                      ) : (
+                        editMaterialForm.comments.map((c, idx) => (
+                          <div key={idx} style={{ marginBottom: 6, borderBottom: idx < editMaterialForm.comments.length - 1 ? '1px solid #e2e8f0' : 'none', paddingBottom: 4 }}>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 10, fontWeight: 700, color: '#0f172a' }}>
+                              <span>{c.author}</span>
+                              <span style={{ fontWeight: 400, color: '#94a3b8' }}>{c.time || 'Vừa xong'}</span>
+                            </div>
+                            <p style={{ margin: '2px 0 0', fontSize: 11, color: '#475569' }}>{c.text}</p>
+                          </div>
+                        ))
+                      )}
+                    </div>
+
+                    <div style={{ display: 'flex', gap: 6 }}>
+                      <input
+                        ref={commentInputRef}
+                        className={styles.input}
+                        placeholder="Viết ghi chú / bình luận..."
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter') {
+                            e.preventDefault();
+                            handleAddComment(e.target.value);
+                            e.target.value = '';
+                          }
+                        }}
+                        style={{ padding: '4px 8px', fontSize: 11 }}
+                      />
+                      <button
+                        type="button"
+                        className={styles.btnEmerald}
+                        onClick={() => {
+                          const input = commentInputRef.current;
+                          if (input && input.value.trim()) {
+                            handleAddComment(input.value);
+                            input.value = '';
+                          }
+                        }}
+                        style={{ padding: '4px 10px', fontSize: 11, height: 'auto' }}
+                      >
+                        Gửi
+                      </button>
+                    </div>
+                  </div>
+                </form>
                 </div>
 
-                <div style={{ display: 'flex', gap: 6 }}>
-                  <input
-                    ref={commentInputRef}
-                    className={styles.input}
-                    placeholder="Viết ghi chú / bình luận..."
-                    onKeyDown={(e) => {
-                      if (e.key === 'Enter') {
-                        e.preventDefault();
-                        handleAddComment(e.target.value);
-                        e.target.value = '';
-                      }
-                    }}
-                    style={{ padding: '4px 8px', fontSize: 11 }}
-                  />
+
+                {/* Sticky Footer */}
+                <div style={{ padding: '16px 24px', borderTop: '1px solid #e2e8f0', background: '#fff', display: 'flex', gap: 12, alignItems: 'center' }}>
+                  <button type="submit" form="editMaterialForm" className={styles.btnPrimary} disabled={isUploading} style={{ flex: 2, padding: '12px 0', fontSize: 13, fontWeight: 700 }}>
+                    {isUploading ? 'Đang lưu...' : 'Lưu Thay Đổi'}
+                  </button>
+                  <button type="button" className={styles.btnSecondary} onClick={handleCancelEdit} style={{ flex: 1, padding: '12px 0', fontSize: 13 }}>
+                    Đóng
+                  </button>
                   <button
                     type="button"
-                    className={styles.btnEmerald}
-                    onClick={() => {
-                      const input = commentInputRef.current;
-                      if (input && input.value.trim()) {
-                        handleAddComment(input.value);
-                        input.value = '';
+                    onClick={async () => {
+                      if (window.confirm('Bạn có chắc chắn muốn xóa học liệu này? Thao tác này không thể hoàn tác.')) {
+                        await handleDeleteMaterial(editingMaterialId);
+                        setEditingMaterialId(null);
                       }
                     }}
-                    style={{ padding: '4px 10px', fontSize: 11, height: 'auto' }}
+                    title="Xóa Học Liệu"
+                    style={{ background: '#fef2f2', color: '#ef4444', border: '1px solid #fca5a5', padding: '10px 14px', borderRadius: 8, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: '0.2s' }}
+                    onMouseEnter={(e) => e.currentTarget.style.background = '#fee2e2'}
+                    onMouseLeave={(e) => e.currentTarget.style.background = '#fef2f2'}
                   >
-                    Gửi
+                    <Trash2 size={18} />
                   </button>
                 </div>
               </div>
-
-              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginTop: 20, paddingTop: 16, borderTop: '1px solid #f1f5f9' }}>
-                <button type="submit" className={styles.btnPrimary} disabled={isUploading} style={{ flex: '1 1 auto', minWidth: 140 }}>
-                  {isUploading ? 'Đang lưu...' : 'Lưu Thay Đổi'}
-                </button>
-
-
-                <button
-                  type="button"
-                  className={styles.btnSecondary}
-                  onClick={async () => {
-                    if (window.confirm('Bạn có chắc chắn muốn xóa học liệu này? Thao tác này không thể hoàn tác.')) {
-                      await handleDeleteMaterial(editingMaterialId);
-                      setEditingMaterialId(null);
-                    }
-                  }}
-                  style={{ background: '#fef2f2', color: '#b91c1c', borderColor: '#fca5a5' }}
-                >
-                  Xóa Học Liệu
-                </button>
-
-                <button type="button" className={styles.btnSecondary} onClick={handleCancelEdit} style={{ flexGrow: 1 }}>
-                  Đóng
-                </button>
-              </div>
-            </form>
+            </div>
           </div>
         </div>
       )}

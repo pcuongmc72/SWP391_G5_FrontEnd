@@ -14,6 +14,7 @@ import {
   createThread,
   createReply,
   promoteStudentInClass,
+  uploadFile,
 } from '../services/lecturerService';
 import { getStoredUser, getUserDisplayName } from '../utils/authStorage';
 
@@ -211,6 +212,7 @@ export function LecturerWorkspaceProvider({ children }) {
 
   const api = useMemo(
     () => ({
+      uploadFile,
       reload: () => loadWorkspace(selectedClassId),
       addMaterial: async (body) => {
         await createMaterial(selectedClassId, {

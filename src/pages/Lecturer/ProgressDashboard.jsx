@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react';
-import { Check, X, TrendingUp, FileText, Users } from 'lucide-react';
+import { Check, X, TrendingUp, FileText, Users, BookOpen } from 'lucide-react';
 import { useLecturerWorkspace } from '../../context/LecturerWorkspaceContext';
 import styles from './LecturerDashboard.module.css';
 
@@ -126,163 +126,161 @@ export default function ProgressDashboard() {
         </div>
 
         {progressViewMode === 'individual' ? (
-          <div className={styles.feedbackWorkspace}>
-            {/* Left list of students */}
-            <div className={styles.feedbackListPanel}>
-              {studentProgressData.map((record) => {
-                const isSelected = record.student.id === trackingStudent?.id;
-                return (
-                  <div
-                    key={record.student.id}
-                    className={`${styles.feedbackItemCard} ${isSelected ? styles.feedbackItemCardActive : ''}`}
-                    onClick={() => setTrackingStudent(record.student)}
-                    style={{ padding: '12px 16px' }}
-                  >
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                      <img
-                        src={record.student.avatarUrl}
-                        alt=""
-                        style={{ width: 36, height: 36, borderRadius: '50%', flexShrink: 0, border: '2px solid #e2e8f0' }}
-                      />
-                      <div style={{ flexGrow: 1, minWidth: 0 }}>
-                        <div style={{ fontSize: 13, fontWeight: 700, color: '#0f172a', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                          {record.student.name || record.student.fullName || 'Học viên'}
-                        </div>
-                        <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 11, color: '#64748b', marginTop: 3 }}>
-                          <span>Hoàn thành: <strong style={{ color: '#0f172a' }}>{record.completedCount}/{record.totalCount}</strong></span>
-                          <span style={{ fontWeight: 700, color: record.percent > 70 ? '#059669' : '#ea580c' }}>{record.percent}%</span>
-                        </div>
-                        <div style={{ marginTop: 4, height: 4, background: '#e2e8f0', borderRadius: 999, overflow: 'hidden' }}>
-                          <div style={{ height: '100%', width: `${record.percent}%`, background: record.percent > 70 ? '#059669' : '#ea580c', borderRadius: 999, transition: 'width 0.3s' }} />
+          <div>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: 20 }}>
+              {studentProgressData.map((record) => (
+                <div
+                  key={record.student.id}
+                  onClick={() => setTrackingStudent(record.student)}
+                  style={{ background: '#fff', border: '1px solid #e2e8f0', borderRadius: 12, padding: 20, cursor: 'pointer', transition: 'all 0.2s', boxShadow: '0 1px 3px rgba(0,0,0,0.05)' }}
+                  onMouseEnter={(e) => { e.currentTarget.style.transform = 'translateY(-2px)'; e.currentTarget.style.boxShadow = '0 4px 12px rgba(0,0,0,0.08)'; e.currentTarget.style.borderColor = '#cbd5e1'; }}
+                  onMouseLeave={(e) => { e.currentTarget.style.transform = 'none'; e.currentTarget.style.boxShadow = '0 1px 3px rgba(0,0,0,0.05)'; e.currentTarget.style.borderColor = '#e2e8f0'; }}
+                >
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
+                    <img
+                      src={record.student.avatarUrl}
+                      alt=""
+                      style={{ width: 56, height: 56, borderRadius: '50%', border: '2px solid #e2e8f0' }}
+                    />
+                    <div style={{ flexGrow: 1, minWidth: 0 }}>
+                      <div style={{ fontSize: 15, fontWeight: 700, color: '#0f172a', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{record.student.name || record.student.fullName || 'Học viên'}</div>
+                      <div style={{ fontSize: 12, color: '#64748b', marginTop: 2 }}>Mã: {record.student.id}</div>
+                    </div>
+                  </div>
+                  <div style={{ marginTop: 20 }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 13, marginBottom: 8 }}>
+                      <span style={{ color: '#475569' }}>Tiến độ: <strong>{record.completedCount}/{record.totalCount}</strong></span>
+                      <strong style={{ color: record.percent > 70 ? '#059669' : '#ea580c' }}>{record.percent}%</strong>
+                    </div>
+                    <div style={{ height: 6, background: '#f1f5f9', borderRadius: 999, overflow: 'hidden' }}>
+                      <div style={{ height: '100%', width: `${record.percent}%`, background: record.percent > 70 ? '#10b981' : '#f97316', borderRadius: 999 }} />
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            {/* Modal for Student Details */}
+            {activeProgressRecord && (
+              <div className={styles.modalOverlay} onClick={() => setTrackingStudent(null)}>
+                <div className={styles.modal} onClick={(e) => e.stopPropagation()} style={{ maxWidth: 600, padding: 0, overflow: 'hidden', height: 'auto', maxHeight: '90vh', display: 'flex', flexDirection: 'column' }}>
+                  <div style={{ padding: '24px 24px 20px', borderBottom: '1px solid #e2e8f0', background: '#f8fafc', flexShrink: 0 }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
+                        <img
+                          src={activeProgressRecord.student.avatarUrl}
+                          alt=""
+                          style={{ width: 64, height: 64, borderRadius: '50%', border: '3px solid #fff', boxShadow: '0 2px 8px rgba(0,0,0,0.1)' }}
+                        />
+                        <div>
+                          <h3 style={{ margin: 0, fontSize: 18, fontWeight: 700, color: '#0f172a' }}>{activeProgressRecord.student.name}</h3>
+                          <p style={{ margin: '4px 0 0', fontSize: 13, color: '#64748b' }}>Email: {activeProgressRecord.student.email}</p>
+                          <div style={{ display: 'inline-block', marginTop: 8, padding: '2px 8px', background: '#e0f2fe', color: '#0284c7', borderRadius: 4, fontSize: 11, fontWeight: 700 }}>
+                            {activeProgressRecord.percent}% HOÀN THÀNH
+                          </div>
                         </div>
                       </div>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-
-            {/* Right student completion details */}
-            <div className={styles.feedbackDetailPanel}>
-              {activeProgressRecord ? (
-                <div style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 12, borderBottom: '1px solid #e2e8f0', paddingBottom: 16, marginBottom: 16 }}>
-                    <img
-                      src={activeProgressRecord.student.avatarUrl}
-                      alt=""
-                      style={{ width: 44, height: 44, borderRadius: '50%' }}
-                    />
-                    <div>
-                      <h4 style={{ margin: 0, fontSize: 16, fontWeight: 700, color: '#0f172a' }}>{activeProgressRecord.student.name}</h4>
-                      <p style={{ margin: '2px 0 0', fontSize: 12, color: '#64748b' }}>
-                        Mã học viên: {activeProgressRecord.student.id} · Email: {activeProgressRecord.student.email}
-                      </p>
+                      <button type="button" className={styles.iconBtn} onClick={() => setTrackingStudent(null)}>
+                        <X size={20} />
+                      </button>
                     </div>
                   </div>
 
-                  <div className={styles.filterWrapper} style={{ marginBottom: 16 }}>
-                    <button
-                      type="button"
-                      className={`${styles.filterBtn} ${trackingStudentTab === 'completed' ? styles.filterBtnActive : ''}`}
-                      onClick={() => setTrackingStudentTab('completed')}
-                    >
-                      Bài học đã xong ({activeProgressRecord.completedCount})
-                    </button>
-                    <button
-                      type="button"
-                      className={`${styles.filterBtn} ${trackingStudentTab === 'pending' ? styles.filterBtnActive : ''}`}
-                      onClick={() => setTrackingStudentTab('pending')}
-                    >
-                      Bài học chưa xong ({activeProgressRecord.totalCount - activeProgressRecord.completedCount})
-                    </button>
-                  </div>
+                  <div style={{ padding: 24, overflowY: 'auto', flexGrow: 1 }}>
+                    <div className={styles.subModalTabs} style={{ marginBottom: 20 }}>
+                      <button
+                        className={`${styles.subTab} ${trackingStudentTab === 'completed' ? styles.subTabActive : ''}`}
+                        onClick={() => setTrackingStudentTab('completed')}
+                      >
+                        Đã xong ({activeProgressRecord.completedCount})
+                      </button>
+                      <button
+                        className={`${styles.subTab} ${trackingStudentTab === 'pending' ? styles.subTabActive : ''}`}
+                        onClick={() => setTrackingStudentTab('pending')}
+                      >
+                        Chưa xong ({activeProgressRecord.totalCount - activeProgressRecord.completedCount})
+                      </button>
+                    </div>
 
-                  <div style={{ flexGrow: 1, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 8 }}>
-                    {trackingStudentTab === 'completed' ? (
-                      activeProgressRecord.completedList.map((m) => (
-                        <div key={m.id} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: 12, background: '#f0fdf4', border: '1px solid #bbf7d0', borderRadius: 8 }}>
-                          <Check size={16} color="#15803d" />
-                          <div style={{ flexGrow: 1 }}>
-                            <span style={{ fontSize: 13, fontWeight: 600, color: '#14532d' }}>{m.title}</span>
-                            <small style={{ display: 'block', color: '#166534', fontSize: 11 }}>Chương: {m.chapter?.split(' ÷ ')?.[1] || m.chapter}</small>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+                      {trackingStudentTab === 'completed' ? (
+                        activeProgressRecord.completedList.map((m) => (
+                          <div key={m.id} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: 14, background: '#f0fdf4', border: '1px solid #bbf7d0', borderRadius: 10 }}>
+                            <div style={{ background: '#dcfce7', padding: 8, borderRadius: 8 }}><Check size={18} color="#15803d" /></div>
+                            <div style={{ flexGrow: 1 }}>
+                              <div style={{ fontSize: 14, fontWeight: 600, color: '#14532d' }}>{m.title}</div>
+                              <div style={{ color: '#166534', fontSize: 12, marginTop: 4 }}>Chương: {m.chapter?.split(' ÷ ')?.[1] || m.chapter}</div>
+                            </div>
                           </div>
-                        </div>
-                      ))
-                    ) : (
-                      activeProgressRecord.pendingList.map((m) => (
-                        <div key={m.id} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: 12, background: '#fef2f2', border: '1px solid #fecaca', borderRadius: 8 }}>
-                          <X size={16} color="#b91c1c" />
-                          <div style={{ flexGrow: 1 }}>
-                            <span style={{ fontSize: 13, fontWeight: 600, color: '#7f1d1d' }}>{m.title}</span>
-                            <small style={{ display: 'block', color: '#991b1b', fontSize: 11 }}>Chương: {m.chapter?.split(' ÷ ')?.[1] || m.chapter}</small>
+                        ))
+                      ) : (
+                        activeProgressRecord.pendingList.map((m) => (
+                          <div key={m.id} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: 14, background: '#fef2f2', border: '1px solid #fecaca', borderRadius: 10 }}>
+                            <div style={{ background: '#fee2e2', padding: 8, borderRadius: 8 }}><X size={18} color="#b91c1c" /></div>
+                            <div style={{ flexGrow: 1 }}>
+                              <div style={{ fontSize: 14, fontWeight: 600, color: '#7f1d1d' }}>{m.title}</div>
+                              <div style={{ color: '#991b1b', fontSize: 12, marginTop: 4 }}>Chương: {m.chapter?.split(' ÷ ')?.[1] || m.chapter}</div>
+                            </div>
                           </div>
-                        </div>
-                      ))
-                    )}
+                        ))
+                      )}
 
-                    {(trackingStudentTab === 'completed' ? activeProgressRecord.completedList.length : activeProgressRecord.pendingList.length) === 0 && (
-                      <p style={{ textAlign: 'center', color: '#94a3b8', fontStyle: 'italic', padding: 24 }}>Không có nội dung nào.</p>
-                    )}
+                      {(trackingStudentTab === 'completed' ? activeProgressRecord.completedList.length : activeProgressRecord.pendingList.length) === 0 && (
+                        <p style={{ textAlign: 'center', color: '#94a3b8', fontStyle: 'italic', padding: 40 }}>Không có nội dung nào.</p>
+                      )}
+                    </div>
                   </div>
                 </div>
-              ) : (
-                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '100%', color: '#94a3b8' }}>
-                  <TrendingUp size={48} style={{ marginBottom: 12, opacity: 0.5 }} />
-                  <p style={{ margin: 0, fontSize: 14 }}>Chọn một học viên bên trái để xem tiến trình học tập cụ thể.</p>
-                </div>
-              )}
-            </div>
+              </div>
+            )}
           </div>
         ) : (
-          <div className={styles.tableWrapper}>
-            <table className={styles.table}>
-              <thead>
-                <tr>
-                  <th>Tài liệu bài học</th>
-                  <th>Chương học</th>
-                  <th>Loại</th>
-                  <th>Học viên tham gia nộp bài</th>
-                  <th>Tỷ lệ hoàn thành</th>
-                </tr>
-              </thead>
-              <tbody>
-                {materialsProgressData.map((rec) => (
-                  <tr key={rec.material.id}>
-                    <td>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                        <FileText size={16} color="#64748b" />
-                        <span style={{ fontWeight: 600, fontSize: 13 }}>{rec.material.title}</span>
-                      </div>
-                    </td>
-                    <td>{rec.material.chapter?.split(' ÷ ')?.[1] || rec.material.chapter}</td>
-                    <td style={{ textTransform: 'uppercase', fontSize: 11, fontWeight: 700, color: '#64748b' }}>
-                      {rec.material.type}
-                    </td>
-                    <td>
-                      <strong>{rec.completedCount} / {rec.totalCount}</strong> học viên
-                    </td>
-                    <td>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                        <div className={styles.progressBarTrack} style={{ width: 80, margin: 0 }}>
-                          <div className={styles.progressBarFill} style={{ width: `${rec.percent}%`, background: rec.percent > 70 ? '#059669' : '#ea580c' }} />
-                        </div>
-                        <span style={{ fontSize: 12, fontWeight: 700, color: rec.percent > 70 ? '#059669' : '#ea580c' }}>
-                          {rec.percent}%
-                        </span>
-                      </div>
-                    </td>
-                  </tr>
-                ))}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
+            {(() => {
+              const grouped = {};
+              materialsProgressData.forEach(rec => {
+                const chapter = rec.material.chapter?.split(' ÷ ')?.[1] || rec.material.chapter || 'Không thuộc chương nào';
+                if (!grouped[chapter]) grouped[chapter] = [];
+                grouped[chapter].push(rec);
+              });
 
-                {materialsProgressData.length === 0 && (
-                  <tr>
-                    <td colSpan="5" style={{ textAlign: 'center', color: '#64748b', padding: 24 }}>
-                      Chưa có tài liệu học tập nào trong lớp học này.
-                    </td>
-                  </tr>
-                )}
-              </tbody>
-            </table>
+              if (Object.keys(grouped).length === 0) {
+                return <div className={styles.emptyBox}>Chưa có tài liệu học tập nào trong lớp.</div>;
+              }
+
+              return Object.keys(grouped).map(chapter => (
+                <div key={chapter} style={{ background: '#fff', border: '1px solid #e2e8f0', borderRadius: 12, overflow: 'hidden', boxShadow: '0 1px 3px rgba(0,0,0,0.05)' }}>
+                  <div style={{ background: '#f8fafc', padding: '16px 20px', borderBottom: '1px solid #e2e8f0', fontWeight: 700, fontSize: 15, color: '#0f172a', display: 'flex', alignItems: 'center', gap: 10 }}>
+                    <BookOpen size={20} color="#0284c7" />
+                    {chapter}
+                  </div>
+                  <div style={{ padding: '0 20px' }}>
+                    {grouped[chapter].map((rec, idx) => (
+                      <div key={rec.material.id} style={{ display: 'flex', alignItems: 'center', padding: '20px 0', borderBottom: idx < grouped[chapter].length - 1 ? '1px dashed #e2e8f0' : 'none' }}>
+                        <div style={{ width: 300, flexShrink: 0, paddingRight: 20 }}>
+                          <div style={{ display: 'flex', alignItems: 'flex-start', gap: 10 }}>
+                            <FileText size={18} color="#64748b" style={{ marginTop: 2 }} />
+                            <div>
+                              <div style={{ fontWeight: 600, fontSize: 14, color: '#1e293b', lineHeight: 1.4 }}>{rec.material.title}</div>
+                              <div style={{ fontSize: 11, color: '#64748b', fontWeight: 700, textTransform: 'uppercase', marginTop: 6, letterSpacing: 0.5 }}>{rec.material.type}</div>
+                            </div>
+                          </div>
+                        </div>
+                        <div style={{ flexGrow: 1, paddingRight: 10 }}>
+                          <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 13, marginBottom: 8 }}>
+                            <span style={{ color: '#475569' }}>Tiến độ lớp: <strong style={{ color: '#0f172a' }}>{rec.completedCount} / {rec.totalCount} học viên</strong></span>
+                            <span style={{ fontWeight: 700, color: rec.percent > 70 ? '#059669' : '#ea580c' }}>{rec.percent}%</span>
+                          </div>
+                          <div style={{ height: 8, background: '#f1f5f9', borderRadius: 999, overflow: 'hidden' }}>
+                            <div style={{ height: '100%', width: `${rec.percent}%`, background: rec.percent > 70 ? '#10b981' : '#f97316', borderRadius: 999, transition: 'width 0.5s' }} />
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              ));
+            })()}
           </div>
         )}
       </div>
