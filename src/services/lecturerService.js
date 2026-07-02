@@ -1,4 +1,5 @@
 import api from './api';
+import { uploadFileToCloudinary } from './cloudinaryService';
 
 const unwrap = (response) => response.data?.data ?? response.data;
 
@@ -167,13 +168,7 @@ export const promoteStudentInClass = async (classId, studentId, role = 'assistan
 };
 
 // File Upload
-export const uploadFile = async (file) => {
-  const formData = new FormData();
-  formData.append('file', file);
-  const response = await api.post('/api/Upload', formData, {
-    headers: {
-      'Content-Type': 'multipart/form-data',
-    },
-  });
-  return response.data?.data ?? response.data;
+export const uploadFile = async (file, onProgress) => {
+  // Thay thế API backend bằng upload thẳng lên Cloudinary
+  return await uploadFileToCloudinary(file, onProgress);
 };
