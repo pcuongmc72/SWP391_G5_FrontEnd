@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Loader2, Star, Award, BookOpen, RefreshCw, MessageSquare, FileText } from 'lucide-react';
+import { Loader2, Star, BookOpen, RefreshCw, MessageSquare, FileText } from 'lucide-react';
 import { getStudentAssignments } from '../../services/studentService';
 
 function formatDate(str) {
@@ -35,11 +35,6 @@ export default function StudentGrades({ cls }) {
     }, [cls?.id, refreshKey]);
 
     const gradedAssignments = assignments.filter(a => a.mySubmission?.status === 'GRADED');
-
-    // Stats calculations
-    const totalEarned = gradedAssignments.reduce((s, a) => s + (parseFloat(a.mySubmission?.grade) || 0), 0);
-    const totalMax = gradedAssignments.reduce((s, a) => s + parseFloat(a.maxPoints), 0);
-    const avgPercent = totalMax > 0 ? Math.round((totalEarned / totalMax) * 100) : 0;
 
     return (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
@@ -82,20 +77,6 @@ export default function StudentGrades({ cls }) {
                 </div>
             ) : (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
-                    {/* Summary Statistics bar */}
-                    <div style={{ background: 'linear-gradient(135deg, #0d3e26 0%, #166534 100%)', borderRadius: 16, padding: '20px 24px', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 16 }}>
-                        <div>
-                            <div style={{ fontSize: '0.75rem', fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase', opacity: 0.75, marginBottom: 4 }}>Tổng điểm tích lũy</div>
-                            <div style={{ fontSize: '2rem', fontWeight: 900, lineHeight: 1 }}>
-                                {totalEarned.toFixed(1)} <span style={{ fontSize: '1rem', fontWeight: 600, opacity: 0.8 }}>/ {totalMax.toFixed(1)}</span>
-                            </div>
-                        </div>
-                        <div style={{ textAlign: 'right' }}>
-                            <div style={{ fontSize: '2.5rem', fontWeight: 900 }}>{avgPercent}%</div>
-                            <div style={{ fontSize: '0.75rem', opacity: 0.75 }}>{gradedAssignments.length} bài đã chấm</div>
-                        </div>
-                    </div>
-
                     {/* Grade cards */}
                     {gradedAssignments.map(a => {
                         const grade = parseFloat(a.mySubmission?.grade) || 0;

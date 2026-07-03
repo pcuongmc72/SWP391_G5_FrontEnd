@@ -298,6 +298,227 @@ function ClassListScreen({ onSelectClass }) {
 
 // ─── Roadmap Timeline Screen ───────────────────────────────────────────────────
 
+function getYouTubeVideoId(url) {
+    if (!url) return null;
+    const regExp = /^.*(youtu\.be\/|v\/|u\/\w\/|embed\/|watch\?v=|\&v=)([^#\&\?]*).*/;
+    const match = url.match(regExp);
+    return (match && match[2].length === 11) ? match[2] : null;
+}
+
+function getCloudinaryPdfUrl(rawUrl) {
+    if (rawUrl.match(/\.pdf($|\?)/i)) return rawUrl;
+    const base = rawUrl.split('?')[0];
+    return base.replace('/upload/', '/upload/fl_attachment:false/') + '.pdf';
+}
+
+function StudentMaterialPreview({ material, onBack, onToggleComplete, togglingId }) {
+    const [iframeError, setIframeError] = useState(false);
+    const url = material.fileUrl;
+    const isCompleted = material.isCompleted;
+    const isToggling = togglingId === material.id;
+
+    let descText = material.description || '';
+    if (descText) {
+        const trimmed = descText.trim();
+        if (trimmed.startsWith('{') && trimmed.endsWith('}')) {
+            try {
+                const parsed = JSON.parse(trimmed);
+                descText = parsed.desc || parsed.description || '';
+            } catch (e) {
+                // not JSON or invalid JSON -> keep original plain text
+            }
+        }
+    }
+
+    const isUrl = url && url.startsWith('http');
+    const ytId = isUrl ? getYouTubeVideoId(url) : null;
+    const isVideo = isUrl && (material.type?.toLowerCase() === 'video' || material.materialType?.toLowerCase() === 'video' || url.match(/\.(mp4|webm|ogg)($|\?)/i));
+    const isImage = isUrl && url.match(/\.(jpeg|jpg|gif|png)($|\?)/i);
+    const isCloudinary = isUrl && url.includes('cloudinary.com');
+    const isPdf = isUrl && (material.type?.toLowerCase() === 'pdf' || material.materialType?.toLowerCase() === 'pdf' || url.match(/\.pdf($|\?)/i));
+    const isDoc = isUrl && url.match(/\.(pptx?|docx?|xlsx?)($|\?)/i);
+
+    let previewContent = null;
+    let canPreview = false;
+
+    if (isUrl) {
+        if (ytId) {
+            canPreview = true;
+            previewContent = (
+                <iframe
+                    width="100%"
+                    height="100%"
+                    src={`https://www.youtube.com/embed/${ytId}`}
+                    title="YouTube video player"
+                    style={{ border: 'none', borderRadius: 8 }}
+                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                    allowFullScreen
+                />
+            );
+        } else if (isVideo) {
+            canPreview = true;
+            previewContent = (
+                <video src={url} controls autoPlay style={{ maxWidth: '100%', maxHeight: '100%', borderRadius: 8 }} />
+            );
+        } else if (isImage) {
+            canPreview = true;
+            previewContent = (
+                <img src={url} style={{ maxWidth: '100%', maxHeight: '100%', objectFit: 'contain', borderRadius: 8 }} alt="Preview" />
+            );
+        } else if (iframeError) {
+            canPreview = false;
+        } else if (isCloudinary && !isDoc) {
+            canPreview = true;
+            const pdfUrl = getCloudinaryPdfUrl(url);
+            previewContent = (
+                <iframe
+                    key={pdfUrl}
+                    src={pdfUrl}
+                    title="Cloudinary PDF Preview"
+                    style={{ width: '100%', height: '100%', border: 'none', background: '#fff', borderRadius: 8 }}
+                    onError={() => setIframeError(true)}
+                />
+            );
+        } else if (isPdf) {
+            canPreview = true;
+            previewContent = (
+                <iframe
+                    key={url}
+                    src={url}
+                    title="PDF Preview"
+                    style={{ width: '100%', height: '100%', border: 'none', background: '#fff', borderRadius: 8 }}
+                    onError={() => setIframeError(true)}
+                />
+            );
+        } else if (isDoc) {
+            canPreview = true;
+            previewContent = (
+                <iframe
+                    key={url}
+                    src={`https://docs.google.com/gview?url=${encodeURIComponent(url)}&embedded=true`}
+                    title="Document Preview"
+                    style={{ width: '100%', height: '100%', border: 'none', background: '#fff', borderRadius: 8 }}
+                    onError={() => setIframeError(true)}
+                />
+            );
+        }
+    }
+
+    return (
+        <div style={{ padding: '4px', display: 'flex', flexDirection: 'column', gap: 20 }}>
+            {/* Header */}
+            <div style={{ backgroundColor: '#fff', padding: '20px', borderRadius: '16px', border: '1px solid #e2e8f0', boxShadow: '0 1px 3px rgba(0,0,0,0.02)' }}>
+                <button
+                    onClick={onBack}
+                    style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '6px 12px', background: '#f1f5f9', border: 'none', borderRadius: 8, fontSize: '0.8125rem', fontWeight: 600, color: '#475569', cursor: 'pointer', marginBottom: 14, transition: 'background 0.15s' }}
+                    onMouseEnter={e => e.currentTarget.style.background = '#e2e8f0'}
+                    onMouseLeave={e => e.currentTarget.style.background = '#f1f5f9'}
+                >
+                    <ArrowLeft size={14} /> Quay lại lộ trình
+                </button>
+                <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 12, flexWrap: 'wrap' }}>
+                    <h2 style={{ fontSize: '1.25rem', fontWeight: 700, color: '#1e293b', margin: 0 }}>
+                        {material.title}
+                    </h2>
+                    {isCompleted ? (
+                        <span style={{
+                            display: 'inline-flex', alignItems: 'center', gap: 5,
+                            fontSize: '0.8125rem', fontWeight: 700,
+                            color: '#065f46', background: '#d1fae5',
+                            border: '1px solid #6ee7b7', borderRadius: 999,
+                            padding: '5px 14px', flexShrink: 0
+                        }}>
+                            <CheckCircle size={14} /> Đã hoàn thành
+                        </span>
+                    ) : (
+                        <button
+                            onClick={() => onToggleComplete && onToggleComplete(material)}
+                            disabled={isToggling}
+                            style={{
+                                display: 'inline-flex', alignItems: 'center', gap: 5,
+                                fontSize: '0.8125rem', fontWeight: 700,
+                                color: '#fff', background: isToggling ? '#6ee7b7' : '#0D3E26',
+                                border: 'none', borderRadius: 999,
+                                padding: '6px 16px', cursor: isToggling ? 'wait' : 'pointer',
+                                transition: 'background 0.15s', flexShrink: 0
+                            }}
+                            onMouseEnter={e => { if (!isToggling) e.currentTarget.style.background = '#072416'; }}
+                            onMouseLeave={e => { if (!isToggling) e.currentTarget.style.background = '#0D3E26'; }}
+                        >
+                            <Circle size={14} /> Đánh dấu hoàn thành
+                        </button>
+                    )}
+                </div>
+                {descText && (
+                    <p style={{ margin: '8px 0 0', fontSize: '0.875rem', color: '#64748b', whiteSpace: 'pre-line' }}>
+                        {descText}
+                    </p>
+                )}
+            </div>
+
+            {/* Preview Area */}
+            <div style={{ 
+                backgroundColor: '#fff', 
+                border: '1px solid #e2e8f0', 
+                borderRadius: '16px', 
+                padding: '24px', 
+                minHeight: '450px',
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'stretch',
+                justifyContent: 'center',
+                boxShadow: '0 1px 3px rgba(0,0,0,0.02)',
+                position: 'relative'
+            }}>
+                {canPreview && !iframeError ? (
+                    <div style={{ width: '100%', height: '550px', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden' }}>
+                        {previewContent}
+                    </div>
+                ) : (
+                    <div style={{ textAlign: 'center', color: '#94a3b8', padding: '48px 24px', maxWidth: '480px', margin: '0 auto' }}>
+                        <FileText size={48} color="#ef4444" style={{ marginBottom: 16 }} />
+                        <h3 style={{ fontSize: '1.05rem', fontWeight: 700, color: '#1e293b', margin: '0 0 8px' }}>
+                            Không thể xem trước tệp trực tiếp
+                        </h3>
+                        <p style={{ margin: '0 0 24px', fontSize: '0.85rem', color: '#64748b', lineHeight: 1.6 }}>
+                            Loại tệp này hoặc đường dẫn liên kết không hỗ trợ xem trực tiếp trong trình duyệt. Vui lòng tải xuống tệp học liệu để học tập.
+                        </p>
+                        {url && url !== '#' ? (
+                            <a
+                                href={url}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                download
+                                style={{
+                                    display: 'inline-flex',
+                                    alignItems: 'center',
+                                    gap: 6,
+                                    fontSize: '0.875rem',
+                                    fontWeight: 700,
+                                    color: '#fff',
+                                    backgroundColor: '#0D3E26',
+                                    border: 'none',
+                                    borderRadius: 10,
+                                    padding: '10px 24px',
+                                    textDecoration: 'none',
+                                    cursor: 'pointer',
+                                    transition: 'background 0.15s'
+                                }}
+                                onMouseEnter={e => e.currentTarget.style.backgroundColor = '#072416'}
+                                onMouseLeave={e => e.currentTarget.style.backgroundColor = '#0D3E26'}
+                            >
+                                <ExternalLink size={14} /> Tải xuống tài liệu
+                            </a>
+                        ) : (
+                            <span style={{ fontSize: '0.85rem', color: '#94a3b8', fontStyle: 'italic' }}>Không có tệp đính kèm</span>
+                        )}
+                    </div>
+                )}
+            </div>
+        </div>
+    );
+}
+
 function RoadmapScreen({ cls, onBack }) {
     const [chapters, setChapters] = useState([]);
     const [loading, setLoading] = useState(true);
@@ -306,6 +527,8 @@ function RoadmapScreen({ cls, onBack }) {
     const [searchQuery, setSearchQuery] = useState('');
     const [togglingId, setTogglingId] = useState(null);
     const [openChapters, setOpenChapters] = useState({});
+    const [previewMaterial, setPreviewMaterial] = useState(null);
+    const [isChungOpen, setIsChungOpen] = useState(false);
 
     useEffect(() => {
         /** Tải lộ trình học tập của lớp được chọn. */
@@ -329,12 +552,15 @@ function RoadmapScreen({ cls, onBack }) {
         if (togglingId === material.id) return;
         setTogglingId(material.id);
         const wasCompleted = material.isCompleted;
+        const updatedMaterial = { ...material, isCompleted: !wasCompleted };
 
         // Cập nhật UI lập tức
         setChapters(prev => prev.map(ch => ({
             ...ch,
-            materials: ch.materials.map(m => m.id === material.id ? { ...m, isCompleted: !wasCompleted } : m)
+            materials: ch.materials.map(m => m.id === material.id ? updatedMaterial : m)
         })));
+        // Sync previewMaterial nếu đang mở preview
+        setPreviewMaterial(prev => prev && prev.id === material.id ? updatedMaterial : prev);
 
         try {
             if (wasCompleted) {
@@ -346,23 +572,35 @@ function RoadmapScreen({ cls, onBack }) {
             // Revert nếu lỗi
             setChapters(prev => prev.map(ch => ({
                 ...ch,
-                materials: ch.materials.map(m => m.id === material.id ? { ...m, isCompleted: wasCompleted } : m)
+                materials: ch.materials.map(m => m.id === material.id ? material : m)
             })));
+            setPreviewMaterial(prev => prev && prev.id === material.id ? material : prev);
         } finally {
             setTogglingId(null);
         }
     }, [togglingId]);
 
     // Lấy danh sách học liệu phẳng phục vụ tính toán phần trăm hoàn thành
+    // Chỉ tính các học liệu thuộc chương hiển thị (bỏ nhóm "Chung" vì sinh viên
+    // không thể thấy và đánh dấu hoàn thành chúng trong giao diện).
     const materials = React.useMemo(() => {
-        return chapters.flatMap(c => c.materials);
+        return chapters
+            .filter(c => parseChapterName(c.chapterName) !== 'Chung')
+            .flatMap(c => c.materials);
     }, [chapters]);
 
     const completedCount = materials.filter(m => m.isCompleted).length;
     const progressPercent = materials.length > 0 ? Math.round((completedCount / materials.length) * 100) : 0;
 
+    // Học liệu thuộc nhóm "Chung" (không được gán chương)
+    const chungMaterials = React.useMemo(() => {
+        return chapters
+            .filter(c => parseChapterName(c.chapterName) === 'Chung')
+            .flatMap(c => c.materials);
+    }, [chapters]);
+
     // Lọc học liệu theo từ khóa tìm kiếm và loại học liệu
-    // Đồng thời bỏ nhóm "Chung" (học liệu chưa được giảng viên gán chương)
+    // Đồng thời bỏ nhóm "Chung" khỏi accordion chính
     const filteredChapters = React.useMemo(() => {
         return chapters.map(ch => {
             const filtered = ch.materials.filter(m => {
@@ -376,7 +614,7 @@ function RoadmapScreen({ cls, onBack }) {
             };
         }).filter(ch =>
             ch.materials.length > 0 &&
-            parseChapterName(ch.chapterName) !== 'Chung'  // ẩn nhóm không có chapter
+            parseChapterName(ch.chapterName) !== 'Chung'
         );
     }, [chapters, filterType, searchQuery]);
 
@@ -402,19 +640,23 @@ function RoadmapScreen({ cls, onBack }) {
         }
     };
 
+    if (previewMaterial) {
+        return (
+            <StudentMaterialPreview
+                material={previewMaterial}
+                onBack={() => setPreviewMaterial(null)}
+                onToggleComplete={handleToggleComplete}
+                togglingId={togglingId}
+            />
+        );
+    }
+
     return (
         <div style={{ padding: '4px', display: 'flex', flexDirection: 'column', gap: 20 }}>
 
             {/* ── Header with back button ── */}
             <div style={{ backgroundColor: '#fff', padding: '20px', borderRadius: '16px', border: '1px solid #e2e8f0', boxShadow: '0 1px 3px rgba(0,0,0,0.02)' }}>
-                <button
-                    onClick={onBack}
-                    style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '6px 12px', background: '#f1f5f9', border: 'none', borderRadius: 8, fontSize: '0.8125rem', fontWeight: 600, color: '#475569', cursor: 'pointer', marginBottom: 14, transition: 'background 0.15s' }}
-                    onMouseEnter={e => e.currentTarget.style.background = '#e2e8f0'}
-                    onMouseLeave={e => e.currentTarget.style.background = '#f1f5f9'}
-                >
-                    <ArrowLeft size={14} /> Quay lại danh sách lớp
-                </button>
+
 
                 <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 20, flexWrap: 'wrap' }}>
                     <div>
@@ -436,13 +678,16 @@ function RoadmapScreen({ cls, onBack }) {
 
                     {/* Progress */}
                     <div style={{ minWidth: 220, background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '12px', padding: '14px 18px' }}>
-                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 }}>
                             <span style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: '0.8125rem', fontWeight: 700, color: '#1e293b' }}>
                                 <Award size={14} color="#10b981" /> Tiến độ
                             </span>
                             <span style={{ fontSize: '0.875rem', fontWeight: 800, color: '#0D3E26' }}>
-                                {completedCount}/{materials.length} ({progressPercent}%)
+                                {progressPercent}%
                             </span>
+                        </div>
+                        <div style={{ fontSize: '0.75rem', color: '#64748b', marginBottom: 8, fontWeight: 500 }}>
+                            Đã hoàn thành {completedCount}/{materials.length} học liệu học tập
                         </div>
                         <div style={{ width: '100%', height: 8, background: '#e2e8f0', borderRadius: 999, overflow: 'hidden' }}>
                             <div style={{ height: '100%', width: `${progressPercent}%`, background: 'linear-gradient(90deg, #0D3E26, #10b981)', borderRadius: 999, transition: 'width 0.4s ease' }} />
@@ -514,7 +759,7 @@ function RoadmapScreen({ cls, onBack }) {
                     {/* Header of Accordion section */}
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                         <span style={{ fontSize: '0.875rem', fontWeight: 600, color: '#475569' }}>
-                            {chapters.length} chương • {materials.length} học liệu
+                            {chapters.filter(c => parseChapterName(c.chapterName) !== 'Chung').length} chương • {materials.length} học liệu học tập • {chungMaterials.length} học liệu chung
                         </span>
                         <button
                             onClick={toggleAllSections}
@@ -630,21 +875,19 @@ function RoadmapScreen({ cls, onBack }) {
                                                         <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexShrink: 0 }}>
                                                             {material.fileUrl && material.fileUrl !== '#' && (
                                                                 <>
-                                                                    <a
-                                                                        href={material.fileUrl}
-                                                                        target="_blank"
-                                                                        rel="noopener noreferrer"
+                                                                    <button
+                                                                        onClick={(e) => { e.preventDefault(); setPreviewMaterial(material); }}
                                                                         style={{
                                                                             display: 'inline-flex', alignItems: 'center', gap: 5, fontSize: '0.75rem',
                                                                             fontWeight: 600, color: '#1d4ed8', background: '#eff6ff',
                                                                             border: '1px solid #bfdbfe', padding: '6px 12px', borderRadius: 8,
-                                                                            textDecoration: 'none', transition: 'all 0.15s'
+                                                                            textDecoration: 'none', transition: 'all 0.15s', cursor: 'pointer'
                                                                         }}
                                                                         onMouseEnter={e => e.currentTarget.style.background = '#dbeafe'}
                                                                         onMouseLeave={e => e.currentTarget.style.background = '#eff6ff'}
                                                                     >
                                                                         <ExternalLink size={12} /> Xem trước
-                                                                    </a>
+                                                                    </button>
                                                                     <a
                                                                         href={material.fileUrl}
                                                                         download
@@ -673,6 +916,117 @@ function RoadmapScreen({ cls, onBack }) {
                             );
                         })}
                     </div>
+                </div>
+            )}
+
+            {/* ── General Materials (Chung) Section ── */}
+            {!loading && chungMaterials.length > 0 && (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 0 }}>
+                    {/* Section Header */}
+                    <div
+                        onClick={() => setIsChungOpen(prev => !prev)}
+                        style={{
+                            display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+                            padding: '14px 20px', cursor: 'pointer', userSelect: 'none',
+                            backgroundColor: isChungOpen ? '#f8fafc' : '#fff',
+                            border: '1px solid #e2e8f0', borderRadius: isChungOpen ? '16px 16px 0 0' : '16px',
+                            transition: 'background-color 0.2s, border-radius 0.2s'
+                        }}
+                        onMouseEnter={e => e.currentTarget.style.backgroundColor = '#f1f5f9'}
+                        onMouseLeave={e => e.currentTarget.style.backgroundColor = isChungOpen ? '#f8fafc' : '#fff'}
+                    >
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                            <div style={{ transform: isChungOpen ? 'rotate(180deg)' : 'rotate(0deg)', transition: 'transform 0.2s ease', color: '#94a3b8', flexShrink: 0 }}>
+                                <ChevronDown size={18} />
+                            </div>
+                            <span style={{ fontSize: '0.9375rem', fontWeight: 700, color: '#475569' }}>
+                                    Học liệu chung
+                                </span>
+                        </div>
+                        <span style={{ fontSize: '0.8125rem', color: '#94a3b8', fontWeight: 600, flexShrink: 0 }}>
+                            {chungMaterials.length} học liệu
+                        </span>
+                    </div>
+
+                    {/* Section Body */}
+                    {isChungOpen && (
+                        <div style={{
+                            border: '1px solid #e2e8f0', borderTop: 'none',
+                            borderRadius: '0 0 16px 16px', backgroundColor: '#f8fafc',
+                            padding: '12px 20px 20px 20px',
+                            display: 'flex', flexDirection: 'column', gap: 10
+                        }}>
+                            {chungMaterials.map(material => {
+                                const cfg = getTypeConfig(material.type || material.materialType);
+                                const TypeIcon = cfg.icon;
+                                return (
+                                    <div
+                                        key={material.id}
+                                        style={{
+                                            display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+                                            padding: '12px 16px', borderRadius: '12px',
+                                            backgroundColor: '#fff', border: '1.5px solid #e2e8f0',
+                                            boxShadow: '0 1px 2px rgba(0,0,0,0.02)', transition: 'all 0.15s ease'
+                                        }}
+                                    >
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: 12, minWidth: 0 }}>
+                                            {/* Type Icon only — no completion checkbox */}
+                                            <div style={{ width: 32, height: 32, borderRadius: 8, background: cfg.bg, border: `1px solid ${cfg.border}`, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                                                <TypeIcon size={14} color={cfg.color} />
+                                            </div>
+                                            <div style={{ minWidth: 0 }}>
+                                                <span style={{ fontSize: '0.875rem', fontWeight: 600, color: '#334155', display: 'block', lineHeight: '1.4', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                                                    {material.title}
+                                                </span>
+                                                <span style={{ fontSize: '0.75rem', color: '#94a3b8', display: 'flex', gap: 6, alignItems: 'center', flexWrap: 'wrap' }}>
+                                                    <span>{cfg.label}</span>
+                                                    {material.fileSize && <span>• {material.fileSize}</span>}
+                                                    <span>• {formatDate(material.uploadedAt)}</span>
+                                                </span>
+                                            </div>
+                                        </div>
+
+                                        {/* Actions: Preview + Download only */}
+                                        <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexShrink: 0 }}>
+                                            {material.fileUrl && material.fileUrl !== '#' && (
+                                                <>
+                                                    <button
+                                                        onClick={(e) => { e.preventDefault(); setPreviewMaterial(material); }}
+                                                        style={{
+                                                            display: 'inline-flex', alignItems: 'center', gap: 5, fontSize: '0.75rem',
+                                                            fontWeight: 600, color: '#1d4ed8', background: '#eff6ff',
+                                                            border: '1px solid #bfdbfe', padding: '6px 12px', borderRadius: 8,
+                                                            textDecoration: 'none', transition: 'all 0.15s', cursor: 'pointer'
+                                                        }}
+                                                        onMouseEnter={e => e.currentTarget.style.background = '#dbeafe'}
+                                                        onMouseLeave={e => e.currentTarget.style.background = '#eff6ff'}
+                                                    >
+                                                        <ExternalLink size={12} /> Xem trước
+                                                    </button>
+                                                    <a
+                                                        href={material.fileUrl}
+                                                        download
+                                                        target="_blank"
+                                                        rel="noopener noreferrer"
+                                                        style={{
+                                                            display: 'inline-flex', alignItems: 'center', gap: 5, fontSize: '0.75rem',
+                                                            fontWeight: 600, color: '#0d3e26', background: '#e6f4ea',
+                                                            border: '1px solid #a3cfbb', padding: '6px 12px', borderRadius: 8,
+                                                            textDecoration: 'none', transition: 'all 0.15s'
+                                                        }}
+                                                        onMouseEnter={e => e.currentTarget.style.background = '#d1e7dd'}
+                                                        onMouseLeave={e => e.currentTarget.style.background = '#e6f4ea'}
+                                                    >
+                                                        <Play size={12} /> Tải xuống
+                                                    </a>
+                                                </>
+                                            )}
+                                        </div>
+                                    </div>
+                                );
+                            })}
+                        </div>
+                    )}
                 </div>
             )}
         </div>

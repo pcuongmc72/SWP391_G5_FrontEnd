@@ -514,7 +514,9 @@ export default function MaterialsDashboard() {
     if (!newMaterialForm.subject) { showToast('Vui lòng chọn hoặc tạo Môn học', 'info'); return; }
     if (!newMaterialForm.chapter) { showToast('Vui lòng chọn hoặc tạo Chương (Chapter)', 'info'); return; }
     setIsUploading(true);
-    const compoundChapter = `${newMaterialForm.subject} ÷ ${newMaterialForm.chapter}`;
+    const selectedCleanChapter = newMaterialForm.chapter.trim().toLowerCase();
+    const existingMat = (materials || []).find(m => m.chapter && extractChapterName(m.chapter).trim().toLowerCase() === selectedCleanChapter);
+    const compoundChapter = existingMat ? existingMat.chapter : `${newMaterialForm.subject} ÷ ${newMaterialForm.chapter}`;
     try {
       if (newMaterialForm.inputType === 'link') {
         if (!newMaterialForm.linkUrl) {
@@ -614,7 +616,9 @@ export default function MaterialsDashboard() {
     if (!editMaterialForm.subject) { showToast('Vui lòng chọn hoặc tạo Môn học', 'info'); return; }
     if (!editMaterialForm.chapter) { showToast('Vui lòng chọn hoặc tạo Chương (Chapter)', 'info'); return; }
     setIsUploading(true);
-    const compoundChapter = `${editMaterialForm.subject} ÷ ${editMaterialForm.chapter}`;
+    const selectedCleanChapter = editMaterialForm.chapter.trim().toLowerCase();
+    const existingMat = (materials || []).find(m => m.chapter && extractChapterName(m.chapter).trim().toLowerCase() === selectedCleanChapter);
+    const compoundChapter = existingMat ? existingMat.chapter : `${editMaterialForm.subject} ÷ ${editMaterialForm.chapter}`;
     try {
       if (editMaterialForm.inputType === 'link') {
         if (!editMaterialForm.linkUrl) {

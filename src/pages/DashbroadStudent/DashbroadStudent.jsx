@@ -520,15 +520,7 @@ export default function DashbroadStudent() {
               <span className="text-xs font-semibold whitespace-nowrap">Lớp học</span>
             </button>
 
-            {/* 3. Tasks checklist */}
-            <button
-              onClick={() => alert(`Trạng thái: Bạn đã đánh dấu học xong ${completedLecturesCount}/${totalLecturesCount} học liệu lý thuyết môn học hiện tại.`)}
-              className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-gray-600 hover:bg-gray-100 hover:text-gray-900 transition cursor-pointer text-left"
-              title="Danh sách cần tự học"
-            >
-              <ClipboardCheck size={20} className="stroke-[2.2] shrink-0" />
-              <span className="text-xs font-semibold whitespace-nowrap">Bài tập</span>
-            </button>
+
 
             {/* 4. Enrolled courses collection list icon */}
             <button
