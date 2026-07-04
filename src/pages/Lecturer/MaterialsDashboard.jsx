@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import {
-  Upload, Plus, CheckSquare, Film, FileText, FileSpreadsheet, Paperclip, Pencil,
+  Upload, Plus, CheckSquare, Film, FileText, FileSpreadsheet, ImageIcon, Paperclip, Pencil,
   Search, ChevronDown, ChevronRight, BookOpen, X, MessageSquare, Check, Trash2, Clock, Award, Users, CheckCircle, ExternalLink
 } from 'lucide-react';
 import { useLecturerWorkspace } from '../../context/LecturerWorkspaceContext';
@@ -518,7 +518,7 @@ export default function MaterialsDashboard() {
     const existingMat = (materials || []).find(m => m.chapter && extractChapterName(m.chapter).trim().toLowerCase() === selectedCleanChapter);
     const compoundChapter = existingMat ? existingMat.chapter : `${newMaterialForm.subject} ÷ ${newMaterialForm.chapter}`;
     try {
-      if (newMaterialForm.inputType === 'link') {
+      if (newMaterialForm.type === 'link') {
         if (!newMaterialForm.linkUrl) {
           showToast('Vui lòng nhập đường dẫn liên kết', 'info');
           setIsUploading(false);
@@ -620,7 +620,7 @@ export default function MaterialsDashboard() {
     const existingMat = (materials || []).find(m => m.chapter && extractChapterName(m.chapter).trim().toLowerCase() === selectedCleanChapter);
     const compoundChapter = existingMat ? existingMat.chapter : `${editMaterialForm.subject} ÷ ${editMaterialForm.chapter}`;
     try {
-      if (editMaterialForm.inputType === 'link') {
+      if (editMaterialForm.type === 'link') {
         if (!editMaterialForm.linkUrl) {
           showToast('Vui lòng nhập đường dẫn liên kết', 'info');
           setIsUploading(false);
@@ -812,10 +812,10 @@ export default function MaterialsDashboard() {
             {/* Type filters */}
             {[
               { key: 'all', label: 'Tất cả loại' },
-              { key: 'video', label: '🎬 Video' },
-              { key: 'pdf', label: '📄 PDF' },
-              { key: 'document', label: '📝 Tài liệu' },
-              { key: 'quiz', label: '✅ Trắc nghiệm' },
+              { key: 'video', label: '🎬 Video' },\n              { key: 'image', label: '🖼️ Ảnh' },
+              
+              
+              
             ].map(({ key, label }) => (
               <button
                 key={key}
@@ -916,7 +916,7 @@ export default function MaterialsDashboard() {
                               const meta = parseMaterialDesc(m.description);
                               const commentsCount = meta.comments?.length || 0;
                               const typeBadge = {
-                                video:    { label: '🎬 Video',     color: '#3b82f6', bg: '#eff6ff', border: '#bfdbfe' },
+                                video:    { label: '🎬 Video',     color: '#3b82f6', bg: '#eff6ff', border: '#bfdbfe' },\n                                image:    { label: '🖼️ Ảnh',       color: '#10b981', bg: '#f0fdf4', border: '#bbf7d0' },
                                 pdf:      { label: '📄 PDF',       color: '#ef4444', bg: '#fef2f2', border: '#fecaca' },
                                 document: { label: '📝 Tài liệu', color: '#10b981', bg: '#f0fdf4', border: '#bbf7d0' },
                                 quiz:     { label: '✅ Quiz',      color: '#f59e0b', bg: '#fffbeb', border: '#fde68a' },
@@ -1115,24 +1115,24 @@ export default function MaterialsDashboard() {
               <GroupDistributionConfig formState={newMaterialForm} setFormState={setNewMaterialForm} users={users} showToast={showToast} />
 
               <div style={{ display: 'flex', gap: 16, marginBottom: 12, borderBottom: '1px solid #e2e8f0', paddingBottom: 12 }}>
-                <label style={{ display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer', fontSize: 13, fontWeight: 600, color: newMaterialForm.inputType === 'file' ? '#059669' : '#64748b' }}>
-                  <input type="radio" name="inputType" checked={newMaterialForm.inputType === 'file'} onChange={() => setNewMaterialForm({ ...newMaterialForm, inputType: 'file' })} />
+                <label style={{ display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer', fontSize: 13, fontWeight: 600, color: newMaterialForm.type === 'file' ? '#059669' : '#64748b' }}>
+                  <input type="radio" name="inputType" checked={newMaterialForm.type === 'file'} onChange={() => setNewMaterialForm({ ...newMaterialForm, inputType: 'file' })} />
                   Tải lên từ máy
                 </label>
-                <label style={{ display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer', fontSize: 13, fontWeight: 600, color: newMaterialForm.inputType === 'link' ? '#059669' : '#64748b' }}>
-                  <input type="radio" name="inputType" checked={newMaterialForm.inputType === 'link'} onChange={() => setNewMaterialForm({ ...newMaterialForm, inputType: 'link' })} />
+                <label style={{ display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer', fontSize: 13, fontWeight: 600, color: newMaterialForm.type === 'link' ? '#059669' : '#64748b' }}>
+                  <input type="radio" name="inputType" checked={newMaterialForm.type === 'link'} onChange={() => setNewMaterialForm({ ...newMaterialForm, inputType: 'link' })} />
                   Đính kèm liên kết
                 </label>
               </div>
 
-              {newMaterialForm.inputType === 'file' ? (
+              {newMaterialForm.type === 'image' ? (
                 <>
                   <input
                     ref={fileInputRef}
                     type="file"
                     multiple
                     style={{ display: 'none' }}
-                    accept=".pdf,.doc,.docx,.xls,.xlsx,.csv,.ppt,.pptx,.mp4,.mov,.avi,.mkv,.webm,.jpg,.png,.zip,.json"
+                    accept=".jpg,.jpeg,.png,.gif,.webp"
                     onChange={handleFileInputChange}
                   />
 
@@ -1187,7 +1187,7 @@ export default function MaterialsDashboard() {
                   <>
                     <div className={styles.dropZoneIcon}><Upload size={32} /></div>
                     <p className={styles.dropZoneText}>Nhấn hoặc kéo thả tệp vào đây</p>
-                    <p className={styles.dropZoneSubtext}>Hỗ trợ PDF, Word, Excel, Video (Max 50MB)</p>
+                    <p className={styles.dropZoneSubtext}>Hỗ trợ Hình ảnh (Max 50MB)</p>
                   </>
                 )}
               </div>
@@ -1291,7 +1291,7 @@ export default function MaterialsDashboard() {
 
                   {/* Preview Body */}
                   <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden' }}>
-                    {editMaterialForm.inputType === 'link' ? (() => {
+                    {editMaterialForm.type === 'link' ? (() => {
                         const ytId = getYouTubeVideoId(editMaterialForm.linkUrl);
                         if (ytId) {
                           return <iframe width="100%" height="100%" src={`https://www.youtube.com/embed/${ytId}`} title="YouTube video player" style={{ border: 'none' }} allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowFullScreen></iframe>;
@@ -1516,17 +1516,17 @@ export default function MaterialsDashboard() {
                   <div className={styles.field}>
                     <label>Nội dung đính kèm</label>
                     <div style={{ display: 'flex', gap: 16, marginBottom: 12, borderBottom: '1px solid #e2e8f0', paddingBottom: 12 }}>
-                      <label style={{ display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer', fontSize: 13, fontWeight: 600, color: editMaterialForm.inputType === 'file' ? '#059669' : '#64748b' }}>
-                        <input type="radio" name="editInputType" checked={editMaterialForm.inputType === 'file'} onChange={() => setEditMaterialForm({ ...editMaterialForm, inputType: 'file' })} />
+                      <label style={{ display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer', fontSize: 13, fontWeight: 600, color: editMaterialForm.type === 'file' ? '#059669' : '#64748b' }}>
+                        <input type="radio" name="editInputType" checked={editMaterialForm.type === 'file'} onChange={() => setEditMaterialForm({ ...editMaterialForm, inputType: 'file' })} />
                         Tải lên từ máy
                       </label>
-                      <label style={{ display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer', fontSize: 13, fontWeight: 600, color: editMaterialForm.inputType === 'link' ? '#059669' : '#64748b' }}>
-                        <input type="radio" name="editInputType" checked={editMaterialForm.inputType === 'link'} onChange={() => setEditMaterialForm({ ...editMaterialForm, inputType: 'link' })} />
+                      <label style={{ display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer', fontSize: 13, fontWeight: 600, color: editMaterialForm.type === 'link' ? '#059669' : '#64748b' }}>
+                        <input type="radio" name="editInputType" checked={editMaterialForm.type === 'link'} onChange={() => setEditMaterialForm({ ...editMaterialForm, inputType: 'link' })} />
                         Đính kèm liên kết
                       </label>
                     </div>
 
-                    {editMaterialForm.inputType === 'file' ? (
+                    {editMaterialForm.type === 'image' ? (
                       <>
                         <input
                           ref={editFileInputRef}
@@ -1590,7 +1590,7 @@ export default function MaterialsDashboard() {
                           <p style={{ margin: 0, fontSize: 12, color: '#475569' }}>
                             Kéo thả tệp hoặc <strong style={{ color: '#059669' }}>nhấp để chọn nhiều tệp mới</strong>
                           </p>
-                          <small style={{ fontSize: 10, color: '#94a3b8' }}>PDF, Word, Excel, Video, JSON...</small>
+                          <small style={{ fontSize: 10, color: '#94a3b8' }}>PNG, JPG, WEBP (Max 50MB)</small>
                         </>
                       )}
                     </div>
