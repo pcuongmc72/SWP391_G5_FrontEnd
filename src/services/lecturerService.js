@@ -169,6 +169,20 @@ export const promoteStudentInClass = async (classId, studentId, role = 'assistan
 
 // File Upload
 export const uploadFile = async (file, onProgress) => {
-  // Thay thế API backend bằng upload thẳng lên Cloudinary
-  return await uploadFileToCloudinary(file, onProgress);
+  const formData = new FormData();
+  formData.append('file', file);
+  
+  const response = await api.post('/api/Upload', formData, {
+    headers: {
+      'Content-Type': 'multipart/form-data',
+    },
+    onUploadProgress: (progressEvent) => {
+      if (onProgress && progressEvent.total) {
+        const percentCompleted = Math.round((progressEvent.loaded * 100) / progressEvent.total);
+        onProgress(percentCompleted);
+      }
+    },
+  });
+  
+  return response.data.data;
 };
