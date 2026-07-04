@@ -371,7 +371,7 @@ function LecturerLayoutInner() {
                 <div className={styles.classDropdownInfo}>
                   <span className={styles.classDropdownActiveLabel}>Đang dạy:</span>
                   <span className={styles.classDropdownActiveName}>
-                    {activeClass ? activeClass.name : (classesLoading ? 'Đang tải...' : 'Chọn lớp học')}
+                    {activeClass ? activeClass.id : (classesLoading ? 'Đang tải...' : 'Chọn lớp học')}
                   </span>
                 </div>
                 <ChevronDown
@@ -396,7 +396,7 @@ function LecturerLayoutInner() {
                         role="menuitem"
                       >
                         <div className={styles.classItemContent}>
-                          <span className={styles.classItemName}>{c.name}</span>
+                          <span className={styles.classItemName}>{c.id}</span>
                           <span className={styles.classItemTerm}>{c.termName || 'Spring 2027'}</span>
                         </div>
                         {isCurrent && <Check size={14} className={styles.checkIcon} />}

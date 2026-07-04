@@ -441,7 +441,7 @@ export default function MaterialsDashboard() {
     // Legacy data: no subject in chapter → fall back to current class name
     if (!subjectVal) {
       const activeClass = classrooms?.find(c => c.id === selectedClassId);
-      subjectVal = activeClass ? activeClass.name : '';
+      subjectVal = activeClass ? activeClass.id : '';
     }
 
     setEditingMaterialId(material.id);
@@ -869,7 +869,7 @@ export default function MaterialsDashboard() {
               style={{ width: 'auto', padding: '8px 16px', display: 'flex', alignItems: 'center', gap: 6, margin: 0 }}
               onClick={() => {
                 const activeClass = classrooms?.find(c => c.id === selectedClassId);
-                const activeClassName = activeClass ? activeClass.name : '';
+                const activeClassName = activeClass ? activeClass.id : '';
                 setNewMaterialForm(prev => ({ ...prev, subject: activeClassName }));
                 setIsAddMaterialModalOpen(true);
               }}
