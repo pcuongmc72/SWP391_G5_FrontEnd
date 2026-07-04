@@ -1075,45 +1075,31 @@ export default function MaterialsDashboard() {
                   onChange={(e) => setNewMaterialForm({ ...newMaterialForm, description: e.target.value })} />
               </div>
               <div className={styles.row2}>
-                <div className={styles.field}>
-                  <label>Loại tệp</label>
-                  <select className={styles.select} value={newMaterialForm.type}
-                    onChange={(e) => setNewMaterialForm({ ...newMaterialForm, type: e.target.value })}>
-                    <option value="image">Hình ảnh (Tải lên)</option>
-                    <option value="video">Link Video</option>
-                  </select>
-                </div>
-                <div className={styles.field}>
+                <div className={styles.field} style={{ width: '100%' }}>
                   <label>Ngày phát hành</label>
                   <input type="date" className={styles.input} value={newMaterialForm.publishDate}
                     onChange={(e) => setNewMaterialForm({ ...newMaterialForm, publishDate: e.target.value })} />
                 </div>
-              </div>
-
-              <div className={styles.row2}>
-                <div className={styles.field}>
+                <div className={styles.field} style={{ width: '100%' }}>
                   <label>Hạn hoàn thành</label>
                   <input type="date" className={styles.input} value={newMaterialForm.deadline}
                     onChange={(e) => setNewMaterialForm({ ...newMaterialForm, deadline: e.target.value })} />
                 </div>
-                <div className={styles.field}>
-                  <label>Đối tượng / Nhóm học</label>
-                  <select className={styles.select} value={newMaterialForm.distributeMode}
-                    onChange={(e) => {
-                      const mode = e.target.value;
-                      let initialGroups = [];
-                      if (mode !== 'all') {
-                        initialGroups = generateRandomGroups(newMaterialForm.numGroups, users);
-                      }
-                      setNewMaterialForm({ ...newMaterialForm, distributeMode: mode, groups: initialGroups });
-                    }}>
-                    <option value="all">Toàn bộ lớp học</option>
-                    <option value="group_random">Chia nhóm ngẫu nhiên</option>
-                  </select>
-                </div>
               </div>
 
-              <GroupDistributionConfig formState={newMaterialForm} setFormState={setNewMaterialForm} users={users} showToast={showToast} />
+              <div className={styles.field}>
+                <label>Nội dung đính kèm</label>
+                <div style={{ display: 'flex', gap: 16, marginBottom: 12, borderBottom: '1px solid #e2e8f0', paddingBottom: 12 }}>
+                  <label style={{ display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer', fontSize: 13, fontWeight: 600, color: newMaterialForm.type === 'image' ? '#059669' : '#64748b' }}>
+                    <input type="radio" name="type" checked={newMaterialForm.type === 'image'} onChange={() => setNewMaterialForm({ ...newMaterialForm, type: 'image' })} />
+                    Ảnh tải lên (Local)
+                  </label>
+                  <label style={{ display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer', fontSize: 13, fontWeight: 600, color: newMaterialForm.type === 'video' ? '#059669' : '#64748b' }}>
+                    <input type="radio" name="type" checked={newMaterialForm.type === 'video'} onChange={() => setNewMaterialForm({ ...newMaterialForm, type: 'video' })} />
+                    Gắn link Video
+                  </label>
+                </div>
+              </div>
 
 
 
@@ -1449,18 +1435,7 @@ export default function MaterialsDashboard() {
                   </div>
 
                   <div className={styles.row2}>
-                    <div className={styles.field}>
-                      <label>Loại tệp</label>
-                      <select
-                        className={styles.select}
-                        value={editMaterialForm.type}
-                        onChange={(e) => setEditMaterialForm({ ...editMaterialForm, type: e.target.value })}
-                      >
-                        <option value="image">Hình ảnh (Tải lên)</option>
-                        <option value="video">Link Video</option>
-                      </select>
-                    </div>
-                    <div className={styles.field}>
+                    <div className={styles.field} style={{ width: '100%' }}>
                       <label>Ngày phát hành</label>
                       <input
                         type="date"
@@ -1469,10 +1444,7 @@ export default function MaterialsDashboard() {
                         onChange={(e) => setEditMaterialForm({ ...editMaterialForm, publishDate: e.target.value })}
                       />
                     </div>
-                  </div>
-
-                  <div className={styles.row2}>
-                    <div className={styles.field}>
+                    <div className={styles.field} style={{ width: '100%' }}>
                       <label>Hạn hoàn thành</label>
                       <input
                         type="date"
@@ -1481,30 +1453,20 @@ export default function MaterialsDashboard() {
                         onChange={(e) => setEditMaterialForm({ ...editMaterialForm, deadline: e.target.value })}
                       />
                     </div>
-                    <div className={styles.field}>
-                      <label>Đối tượng / Nhóm học</label>
-                      <select
-                        className={styles.select}
-                        value={editMaterialForm.distributeMode}
-                        onChange={(e) => {
-                          const mode = e.target.value;
-                          let initialGroups = [];
-                          if (mode !== 'all') {
-                            initialGroups = generateRandomGroups(editMaterialForm.numGroups, users);
-                          }
-                          setEditMaterialForm({ ...editMaterialForm, distributeMode: mode, groups: initialGroups });
-                        }}
-                      >
-                        <option value="all">Toàn bộ lớp học</option>
-                        <option value="group_random">Chia nhóm ngẫu nhiên</option>
-                      </select>
-                    </div>
                   </div>
-
-                  <GroupDistributionConfig formState={editMaterialForm} setFormState={setEditMaterialForm} users={users} showToast={showToast} />
 
                   <div className={styles.field}>
                     <label>Nội dung đính kèm</label>
+                    <div style={{ display: 'flex', gap: 16, marginBottom: 12, borderBottom: '1px solid #e2e8f0', paddingBottom: 12 }}>
+                      <label style={{ display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer', fontSize: 13, fontWeight: 600, color: editMaterialForm.type === 'image' ? '#059669' : '#64748b' }}>
+                        <input type="radio" name="editType" checked={editMaterialForm.type === 'image'} onChange={() => setEditMaterialForm({ ...editMaterialForm, type: 'image' })} />
+                        Ảnh tải lên (Local)
+                      </label>
+                      <label style={{ display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer', fontSize: 13, fontWeight: 600, color: editMaterialForm.type === 'video' ? '#059669' : '#64748b' }}>
+                        <input type="radio" name="editType" checked={editMaterialForm.type === 'video'} onChange={() => setEditMaterialForm({ ...editMaterialForm, type: 'video' })} />
+                        Gắn link Video
+                      </label>
+                    </div>
 
 
                     {editMaterialForm.type === 'image' ? (
