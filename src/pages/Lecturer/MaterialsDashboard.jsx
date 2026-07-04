@@ -812,7 +812,8 @@ export default function MaterialsDashboard() {
             {/* Type filters */}
             {[
               { key: 'all', label: 'Tất cả loại' },
-              { key: 'video', label: '🎬 Video' },\n              { key: 'image', label: '🖼️ Ảnh' },
+              { key: 'video', label: '🎬 Video' },
+              { key: 'image', label: '🖼️ Ảnh' },
               
               
               
@@ -916,7 +917,8 @@ export default function MaterialsDashboard() {
                               const meta = parseMaterialDesc(m.description);
                               const commentsCount = meta.comments?.length || 0;
                               const typeBadge = {
-                                video:    { label: '🎬 Video',     color: '#3b82f6', bg: '#eff6ff', border: '#bfdbfe' },\n                                image:    { label: '🖼️ Ảnh',       color: '#10b981', bg: '#f0fdf4', border: '#bbf7d0' },
+                                video:    { label: '🎬 Video',     color: '#3b82f6', bg: '#eff6ff', border: '#bfdbfe' },
+                                image:    { label: '🖼️ Ảnh',       color: '#10b981', bg: '#f0fdf4', border: '#bbf7d0' },
                                 pdf:      { label: '📄 PDF',       color: '#ef4444', bg: '#fef2f2', border: '#fecaca' },
                                 document: { label: '📝 Tài liệu', color: '#10b981', bg: '#f0fdf4', border: '#bbf7d0' },
                                 quiz:     { label: '✅ Quiz',      color: '#f59e0b', bg: '#fffbeb', border: '#fde68a' },
