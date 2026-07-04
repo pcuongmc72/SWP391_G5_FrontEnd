@@ -1078,10 +1078,8 @@ export default function MaterialsDashboard() {
                   <label>Loại tệp</label>
                   <select className={styles.select} value={newMaterialForm.type}
                     onChange={(e) => setNewMaterialForm({ ...newMaterialForm, type: e.target.value })}>
-                    <option value="video">Video bài giảng (quay trước)</option>
-                    <option value="pdf">Tài liệu PDF</option>
-                    <option value="document">Giáo trình doc</option>
-                    <option value="quiz">Trắc nghiệm</option>
+                    <option value="image">Hình ảnh (Tải lên)</option>
+                    <option value="video">Link Video</option>
                   </select>
                 </div>
                 <div className={styles.field}>
@@ -1466,10 +1464,8 @@ export default function MaterialsDashboard() {
                         value={editMaterialForm.type}
                         onChange={(e) => setEditMaterialForm({ ...editMaterialForm, type: e.target.value })}
                       >
-                        <option value="video">Video bài giảng (quay trước)</option>
-                        <option value="pdf">Tài liệu PDF</option>
-                        <option value="document">Giáo trình doc</option>
-                        <option value="quiz">Trắc nghiệm</option>
+                        <option value="image">Hình ảnh (Tải lên)</option>
+                        <option value="video">Link Video</option>
                       </select>
                     </div>
                     <div className={styles.field}>
