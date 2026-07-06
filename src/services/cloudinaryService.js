@@ -24,9 +24,6 @@ export const uploadFileToCloudinary = async (file, onProgress = null) => {
 
   try {
     const response = await axios.post(uploadUrl, formData, {
-      headers: {
-        'Content-Type': 'multipart/form-data',
-      },
       onUploadProgress: (progressEvent) => {
         if (onProgress && progressEvent.total) {
           const percentCompleted = Math.round((progressEvent.loaded * 100) / progressEvent.total);

@@ -1,7 +1,14 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
 import {
   getMyClasses,
-  getClassWorkspace,
+  getClassDetail,
+  getClassStudents,
+  getMaterials,
+  getAssignments,
+  getSubmissions,
+  getFeedbacks,
+  getThreads,
+  getClassSessions,
   createMaterial,
   updateMaterial,
   deleteMaterial,
@@ -164,20 +171,39 @@ export function LecturerWorkspaceProvider({ children }) {
     if (!classId) return;
     setWorkspaceLoading(true);
     try {
-      const ws = await getClassWorkspace(classId);
-      setClassDetail(ws.class);
-      setUsers((ws.students || []).map(mapStudent));
-      setMaterials((ws.materials || []).map(mapMaterial));
-      setAssignments((ws.assignments || []).map(mapAssignment));
-      setSubmissions((ws.submissions || []).map(mapSubmission));
-      setFeedbacks((ws.feedbacks || []).map(mapFeedback));
-      setThreads((ws.threads || []).map(mapThread));
-      setSessions(ws.sessions || []);
+      const [
+        classDetailData,
+        studentsData,
+        materialsData,
+        assignmentsData,
+        submissionsData,
+        feedbacksData,
+        threadsData,
+        sessionsData
+      ] = await Promise.all([
+        getClassDetail(classId).catch(() => null),
+        getClassStudents(classId).catch(() => []),
+        getMaterials(classId).catch(() => []),
+        getAssignments(classId).catch(() => []),
+        getSubmissions(classId).catch(() => []),
+        getFeedbacks(classId).catch(() => []),
+        getThreads(classId).catch(() => []),
+        getClassSessions(classId).catch(() => [])
+      ]);
+
+      setClassDetail(classDetailData);
+      setUsers((studentsData || []).map(mapStudent));
+      setMaterials((materialsData || []).map(mapMaterial));
+      setAssignments((assignmentsData || []).map(mapAssignment));
+      setSubmissions((submissionsData || []).map(mapSubmission));
+      setFeedbacks((feedbacksData || []).map(mapFeedback));
+      setThreads((threadsData || []).map(mapThread));
+      setSessions(sessionsData || []);
 
       setClassrooms((prev) =>
         prev.map((c) =>
           c.id === classId
-            ? { ...c, studentIds: (ws.students || []).map((s) => s.id) }
+            ? { ...c, studentIds: (studentsData || []).map((s) => s.id) }
             : c
         )
       );

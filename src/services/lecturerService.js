@@ -13,11 +13,6 @@ export const getClassDetail = async (classId) => {
   return unwrap(response);
 };
 
-export const getClassWorkspace = async (classId) => {
-  const response = await api.get(`/api/Lecturer/classes/${encodeURIComponent(classId)}/workspace`);
-  return unwrap(response);
-};
-
 export const getClassStudents = async (classId) => {
   const response = await api.get(`/api/Lecturer/classes/${encodeURIComponent(classId)}/students`);
   return unwrap(response);
@@ -169,20 +164,5 @@ export const promoteStudentInClass = async (classId, studentId, role = 'assistan
 
 // File Upload
 export const uploadFile = async (file, onProgress) => {
-  const formData = new FormData();
-  formData.append('file', file);
-  
-  const response = await api.post('/api/Upload', formData, {
-    headers: {
-      'Content-Type': 'multipart/form-data',
-    },
-    onUploadProgress: (progressEvent) => {
-      if (onProgress && progressEvent.total) {
-        const percentCompleted = Math.round((progressEvent.loaded * 100) / progressEvent.total);
-        onProgress(percentCompleted);
-      }
-    },
-  });
-  
-  return response.data.data;
+  return await uploadFileToCloudinary(file, onProgress);
 };

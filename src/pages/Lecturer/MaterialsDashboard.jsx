@@ -1,7 +1,8 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import {
   Upload, Plus, CheckSquare, Film, FileText, FileSpreadsheet, ImageIcon, Paperclip, Pencil,
-  Search, ChevronDown, ChevronRight, BookOpen, X, MessageSquare, Check, Trash2, Clock, Award, Users, CheckCircle, ExternalLink
+  Search, ChevronDown, ChevronRight, BookOpen, X, MessageSquare, Check, Trash2, Clock, Award, Users, CheckCircle, ExternalLink,
+  ZoomIn, ZoomOut
 } from 'lucide-react';
 import { useLecturerWorkspace } from '../../context/LecturerWorkspaceContext';
 import styles from './LecturerDashboard.module.css';
@@ -197,6 +198,7 @@ export default function MaterialsDashboard() {
   const commentInputRef = useRef(null);
   const [isEditDragging, setIsEditDragging] = useState(false);
   const [iframeError, setIframeError] = useState(false);
+  const [previewZoom, setPreviewZoom] = useState(1);
 
   // Helper: Get YouTube Video ID from URL
   const getYouTubeVideoId = (url) => {
@@ -519,7 +521,7 @@ export default function MaterialsDashboard() {
     const existingMat = (materials || []).find(m => m.chapter && extractChapterName(m.chapter).trim().toLowerCase() === selectedCleanChapter);
     const compoundChapter = existingMat ? existingMat.chapter : `${newMaterialForm.subject} ÷ ${newMaterialForm.chapter}`;
     try {
-      if (newMaterialForm.type === 'video') {
+      if (newMaterialForm.inputType === 'link') {
         if (!newMaterialForm.linkUrl) {
           showToast('Vui lòng nhập đường dẫn liên kết', 'info');
           setIsUploading(false);
@@ -621,7 +623,7 @@ export default function MaterialsDashboard() {
     const existingMat = (materials || []).find(m => m.chapter && extractChapterName(m.chapter).trim().toLowerCase() === selectedCleanChapter);
     const compoundChapter = existingMat ? existingMat.chapter : `${editMaterialForm.subject} ÷ ${editMaterialForm.chapter}`;
     try {
-      if (editMaterialForm.type === 'video') {
+      if (editMaterialForm.inputType === 'link') {
         if (!editMaterialForm.linkUrl) {
           showToast('Vui lòng nhập đường dẫn liên kết', 'info');
           setIsUploading(false);
@@ -706,8 +708,7 @@ export default function MaterialsDashboard() {
         } else {
           // No new files — just update metadata
           let finalUrl = editMaterialForm.fileName ? `#file:${editMaterialForm.fileName}` : '#';
-          let finalFileSize = editMaterialForm.fileName ? editMaterialForm.fileSize : '';
-          if (editMaterialForm.fileName && !editMaterialForm.fileName.startsWith('#file:') && editMaterialForm.fileName.startsWith('http')) {
+          if (editMaterialForm.fileName && !editMaterialForm.fileName.startsWith('#file:') && (editMaterialForm.fileName.startsWith('http') || editMaterialForm.fileName.startsWith('/'))) {
             finalUrl = editMaterialForm.fileName;
           }
 
@@ -1090,27 +1091,27 @@ export default function MaterialsDashboard() {
               <div className={styles.field}>
                 <label>Nội dung đính kèm</label>
                 <div style={{ display: 'flex', gap: 16, marginBottom: 12, borderBottom: '1px solid #e2e8f0', paddingBottom: 12 }}>
-                  <label style={{ display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer', fontSize: 13, fontWeight: 600, color: newMaterialForm.type === 'image' ? '#059669' : '#64748b' }}>
-                    <input type="radio" name="type" checked={newMaterialForm.type === 'image'} onChange={() => setNewMaterialForm({ ...newMaterialForm, type: 'image' })} />
-                    Ảnh tải lên (Local)
+                  <label style={{ display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer', fontSize: 13, fontWeight: 600, color: newMaterialForm.inputType === 'file' ? '#059669' : '#64748b' }}>
+                    <input type="radio" name="inputType" checked={newMaterialForm.inputType === 'file'} onChange={() => setNewMaterialForm({ ...newMaterialForm, inputType: 'file' })} />
+                    Tải tệp từ máy (Local)
                   </label>
-                  <label style={{ display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer', fontSize: 13, fontWeight: 600, color: newMaterialForm.type === 'video' ? '#059669' : '#64748b' }}>
-                    <input type="radio" name="type" checked={newMaterialForm.type === 'video'} onChange={() => setNewMaterialForm({ ...newMaterialForm, type: 'video' })} />
-                    Gắn link Video
+                  <label style={{ display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer', fontSize: 13, fontWeight: 600, color: newMaterialForm.inputType === 'link' ? '#059669' : '#64748b' }}>
+                    <input type="radio" name="inputType" checked={newMaterialForm.inputType === 'link'} onChange={() => setNewMaterialForm({ ...newMaterialForm, inputType: 'link' })} />
+                    Gắn link liên kết
                   </label>
                 </div>
               </div>
 
 
 
-              {newMaterialForm.type === 'image' ? (
+              {newMaterialForm.inputType === 'file' ? (
                 <>
                   <input
                     ref={fileInputRef}
                     type="file"
                     multiple
                     style={{ display: 'none' }}
-                    accept=".jpg,.jpeg,.png,.gif,.webp"
+                    accept=".pdf,.doc,.docx,.xls,.xlsx,.csv,.ppt,.pptx,.mp4,.mov,.avi,.mkv,.webm,.jpg,.png,.zip,.json"
                     onChange={handleFileInputChange}
                   />
 
@@ -1239,14 +1240,39 @@ export default function MaterialsDashboard() {
             <div style={{ display: 'flex', flex: 1, flexDirection: 'row', overflow: 'hidden', background: '#f8fafc' }}>
               
               {/* Left Column: Preview File */}
-              {editMaterialForm.fileName && editMaterialForm.fileName.startsWith('http') && (
+              {editMaterialForm.fileName && (
                 <div style={{ flex: 1.5, background: '#0f172a', display: 'flex', flexDirection: 'column', alignItems: 'stretch', justifyContent: 'stretch', overflow: 'hidden', minWidth: 400, position: 'relative' }}>
                   {/* Toolbar */}
                   <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '8px 12px', background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(4px)', zIndex: 2 }}>
                     <span style={{ fontSize: 11, color: '#94a3b8', fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: 260 }}>
                       {editMaterialForm.fileName.split('/').pop()?.split('?')[0] || 'Tệp học liệu'}
                     </span>
-                    <div style={{ display: 'flex', gap: 6 }}>
+                    <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
+                      {/* Zoom controls — only for image preview */}
+                      {editMaterialForm.fileName.match(/\.(jpeg|jpg|gif|png|webp)$/i) && (
+                        <>
+                          <button
+                            type="button"
+                            title="Thu nhỏ"
+                            onClick={() => setPreviewZoom(z => Math.max(0.25, +(z - 0.25).toFixed(2)))}
+                            style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: 28, height: 28, background: 'rgba(255,255,255,0.12)', border: '1px solid rgba(255,255,255,0.2)', borderRadius: 6, cursor: 'pointer', color: '#e2e8f0', flexShrink: 0 }}
+                          >
+                            <ZoomOut size={13} />
+                          </button>
+                          <span style={{ fontSize: 11, color: '#94a3b8', fontWeight: 700, minWidth: 34, textAlign: 'center' }}>
+                            {Math.round(previewZoom * 100)}%
+                          </span>
+                          <button
+                            type="button"
+                            title="Phóng to"
+                            onClick={() => setPreviewZoom(z => Math.min(4, +(z + 0.25).toFixed(2)))}
+                            style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: 28, height: 28, background: 'rgba(255,255,255,0.12)', border: '1px solid rgba(255,255,255,0.2)', borderRadius: 6, cursor: 'pointer', color: '#e2e8f0', flexShrink: 0 }}
+                          >
+                            <ZoomIn size={13} />
+                          </button>
+                          <span style={{ width: 1, height: 16, background: 'rgba(255,255,255,0.2)', margin: '0 2px' }} />
+                        </>
+                      )}
                       {iframeError && (
                         <button
                           type="button"
@@ -1269,7 +1295,7 @@ export default function MaterialsDashboard() {
 
                   {/* Preview Body */}
                   <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden' }}>
-                    {editMaterialForm.type === 'link' ? (() => {
+                    {editMaterialForm.inputType === 'link' ? (() => {
                         const ytId = getYouTubeVideoId(editMaterialForm.linkUrl);
                         if (ytId) {
                           return <iframe width="100%" height="100%" src={`https://www.youtube.com/embed/${ytId}`} title="YouTube video player" style={{ border: 'none' }} allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowFullScreen></iframe>;
@@ -1286,8 +1312,14 @@ export default function MaterialsDashboard() {
                         }
                     })() : editMaterialForm.type === 'video' || editMaterialForm.fileName.match(/\.(mp4|webm|ogg)$/i) ? (
                       <video src={editMaterialForm.fileName} controls autoPlay style={{ maxWidth: '100%', maxHeight: '100%' }} />
-                    ) : editMaterialForm.fileName.match(/\.(jpeg|jpg|gif|png)$/i) ? (
-                      <img src={editMaterialForm.fileName} style={{ maxWidth: '100%', maxHeight: '100%', objectFit: 'contain' }} alt="Preview" />
+                    ) : editMaterialForm.fileName.match(/\.(jpeg|jpg|gif|png|webp)$/i) ? (
+                      <div style={{ overflow: 'auto', width: '100%', height: '100%', display: 'flex', alignItems: previewZoom <= 1 ? 'center' : 'flex-start', justifyContent: previewZoom <= 1 ? 'center' : 'flex-start' }}>
+                        <img
+                          src={editMaterialForm.fileName}
+                          style={{ transform: `scale(${previewZoom})`, transformOrigin: 'top left', transition: 'transform 0.2s ease', objectFit: 'contain', display: 'block', margin: previewZoom <= 1 ? 'auto' : 0 }}
+                          alt="Preview"
+                        />
+                      </div>
                     ) : iframeError ? (
                       <div style={{ textAlign: 'center', color: '#94a3b8', padding: 32 }}>
                         <FileText size={48} color="#ef4444" style={{ marginBottom: 12 }} />
@@ -1369,7 +1401,7 @@ export default function MaterialsDashboard() {
 
 
               {/* Right Column: Form */}
-              <div style={{ width: (editMaterialForm.fileName && editMaterialForm.fileName.startsWith('http')) ? 500 : '100%', background: '#fff', display: 'flex', flexDirection: 'column', zIndex: 5, borderLeft: '1px solid #e2e8f0' }}>
+              <div style={{ width: editMaterialForm.fileName ? 500 : '100%', background: '#fff', display: 'flex', flexDirection: 'column', zIndex: 5, borderLeft: '1px solid #e2e8f0' }}>
                 <div style={{ flex: 1, overflowY: 'auto', padding: '24px' }}>
                   <form id="editMaterialForm" onSubmit={handleUpdateMaterial}>
                   <div style={{ display: 'flex', gap: 12, background: '#f8fafc', padding: 12, borderRadius: 12, marginBottom: 16, border: '1px solid #e2e8f0', alignItems: 'center' }}>
@@ -1458,18 +1490,18 @@ export default function MaterialsDashboard() {
                   <div className={styles.field}>
                     <label>Nội dung đính kèm</label>
                     <div style={{ display: 'flex', gap: 16, marginBottom: 12, borderBottom: '1px solid #e2e8f0', paddingBottom: 12 }}>
-                      <label style={{ display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer', fontSize: 13, fontWeight: 600, color: editMaterialForm.type === 'image' ? '#059669' : '#64748b' }}>
-                        <input type="radio" name="editType" checked={editMaterialForm.type === 'image'} onChange={() => setEditMaterialForm({ ...editMaterialForm, type: 'image' })} />
-                        Ảnh tải lên (Local)
+                      <label style={{ display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer', fontSize: 13, fontWeight: 600, color: editMaterialForm.inputType === 'file' ? '#059669' : '#64748b' }}>
+                        <input type="radio" name="editInputType" checked={editMaterialForm.inputType === 'file'} onChange={() => setEditMaterialForm({ ...editMaterialForm, inputType: 'file' })} />
+                        Tải tệp từ máy (Local)
                       </label>
-                      <label style={{ display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer', fontSize: 13, fontWeight: 600, color: editMaterialForm.type === 'video' ? '#059669' : '#64748b' }}>
-                        <input type="radio" name="editType" checked={editMaterialForm.type === 'video'} onChange={() => setEditMaterialForm({ ...editMaterialForm, type: 'video' })} />
-                        Gắn link Video
+                      <label style={{ display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer', fontSize: 13, fontWeight: 600, color: editMaterialForm.inputType === 'link' ? '#059669' : '#64748b' }}>
+                        <input type="radio" name="editInputType" checked={editMaterialForm.inputType === 'link'} onChange={() => setEditMaterialForm({ ...editMaterialForm, inputType: 'link' })} />
+                        Gắn link liên kết
                       </label>
                     </div>
 
 
-                    {editMaterialForm.type === 'image' ? (
+                    {editMaterialForm.inputType === 'file' ? (
                       <>
                         <input
                           ref={editFileInputRef}
