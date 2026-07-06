@@ -1227,27 +1227,37 @@ export default function MaterialsDashboard() {
 
       {editingMaterialId && (
         <div className={styles.modalOverlay} onClick={handleCancelEdit} style={{ zIndex: 9999 }}>
-          <div className={styles.modal} onClick={(e) => e.stopPropagation()} style={{ maxWidth: 1200, width: '95%', padding: 0, overflow: 'hidden', display: 'flex', flexDirection: 'column', height: '90vh', borderRadius: 16 }}>
+          <div className={styles.modal} onClick={(e) => e.stopPropagation()} style={{ 
+            maxWidth: editMaterialForm.fileName ? 1140 : 540, 
+            width: '95%', 
+            padding: 0, 
+            overflow: 'hidden', 
+            display: 'flex', 
+            flexDirection: 'column', 
+            height: editMaterialForm.fileName ? '88vh' : 'auto', 
+            maxHeight: '90vh', 
+            borderRadius: 16 
+          }}>
             <div className={styles.modalHeader} style={{ padding: '16px 24px', borderBottom: '1px solid #e2e8f0', background: '#fff', zIndex: 10, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
               <h3 className={styles.modalTitle} style={{ display: 'flex', alignItems: 'center', gap: 8, margin: 0, color: '#0f172a' }}>
                 <BookOpen size={18} color="#059669" /> Chi tiết & Xem Học liệu
               </h3>
-              <button type="button" className={styles.iconBtn} onClick={handleCancelEdit} style={{ background: '#f1f5f9', padding: 8, borderRadius: 50 }}>
+              <button type="button" className={styles.iconBtn} onClick={handleCancelEdit} style={{ background: '#f1f5f9', padding: 8, borderRadius: 50, border: 'none', cursor: 'pointer' }}>
                 <X size={18} color="#64748b" />
               </button>
             </div>
 
-            <div style={{ display: 'flex', flex: 1, flexDirection: 'row', overflow: 'hidden', background: '#f8fafc' }}>
+            <div style={{ display: 'flex', flex: 1, flexDirection: 'row', overflow: 'hidden', background: '#f8fafc', padding: editMaterialForm.fileName ? 24 : 0, gap: editMaterialForm.fileName ? 24 : 0 }}>
               
               {/* Left Column: Preview File */}
               {editMaterialForm.fileName && (
-                <div style={{ flex: 1.5, background: '#0f172a', display: 'flex', flexDirection: 'column', alignItems: 'stretch', justifyContent: 'stretch', overflow: 'hidden', minWidth: 400, position: 'relative' }}>
+                <div style={{ flex: 1.5, background: '#0f172a', borderRadius: 16, display: 'flex', flexDirection: 'column', overflow: 'hidden', minWidth: 400, position: 'relative', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)' }}>
                   {/* Toolbar */}
-                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '8px 12px', background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(4px)', zIndex: 2 }}>
-                    <span style={{ fontSize: 11, color: '#94a3b8', fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: 260 }}>
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px 16px', background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(8px)', zIndex: 2, borderBottom: '1px solid rgba(255,255,255,0.1)' }}>
+                    <span style={{ fontSize: 12, color: '#e2e8f0', fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: 260 }}>
                       {editMaterialForm.fileName.split('/').pop()?.split('?')[0] || 'Tệp học liệu'}
                     </span>
-                    <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
+                    <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
                       {/* Zoom controls — only for image preview */}
                       {editMaterialForm.fileName.match(/\.(jpeg|jpg|gif|png|webp)$/i) && (
                         <>
@@ -1270,7 +1280,7 @@ export default function MaterialsDashboard() {
                           >
                             <ZoomIn size={13} />
                           </button>
-                          <span style={{ width: 1, height: 16, background: 'rgba(255,255,255,0.2)', margin: '0 2px' }} />
+                          <span style={{ width: 1, height: 16, background: 'rgba(255,255,255,0.2)', margin: '0 4px' }} />
                         </>
                       )}
                       {iframeError && (
@@ -1286,7 +1296,7 @@ export default function MaterialsDashboard() {
                         href={editMaterialForm.fileName}
                         target="_blank"
                         rel="noopener noreferrer"
-                        style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 11, color: '#34d399', fontWeight: 700, textDecoration: 'none', background: 'rgba(52,211,153,0.15)', border: '1px solid rgba(52,211,153,0.3)', borderRadius: 6, padding: '4px 10px', whiteSpace: 'nowrap', flexShrink: 0 }}
+                        style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 11, color: '#34d399', fontWeight: 700, textDecoration: 'none', background: 'rgba(52,211,153,0.15)', border: '1px solid rgba(52,211,153,0.3)', borderRadius: 6, padding: '6px 12px', whiteSpace: 'nowrap', flexShrink: 0, transition: '0.2s' }}
                       >
                         <ExternalLink size={12} /> Mở file
                       </a>
@@ -1303,8 +1313,8 @@ export default function MaterialsDashboard() {
                           return (
                             <div style={{ textAlign: 'center', color: '#94a3b8', padding: 32 }}>
                               <ExternalLink size={48} color="#3b82f6" style={{ marginBottom: 12 }} />
-                              <p style={{ margin: '0 0 6px', fontSize: 14, fontWeight: 700, color: '#0f172a' }}>Liên kết ngoài</p>
-                              <a href={editMaterialForm.linkUrl} target="_blank" rel="noopener noreferrer" style={{ display: 'inline-flex', alignItems: 'center', gap: 6, fontSize: 13, color: '#3b82f6', fontWeight: 700, textDecoration: 'none', background: '#eff6ff', border: '1px solid #bfdbfe', borderRadius: 8, padding: '8px 18px', marginTop: 10 }}>
+                              <p style={{ margin: '0 0 6px', fontSize: 14, fontWeight: 700, color: '#f8fafc' }}>Liên kết ngoài</p>
+                              <a href={editMaterialForm.linkUrl} target="_blank" rel="noopener noreferrer" style={{ display: 'inline-flex', alignItems: 'center', gap: 6, fontSize: 13, color: '#3b82f6', fontWeight: 700, textDecoration: 'none', background: 'rgba(59,130,246,0.15)', border: '1px solid rgba(59,130,246,0.3)', borderRadius: 8, padding: '8px 18px', marginTop: 10 }}>
                                 <ExternalLink size={14} /> Mở liên kết
                               </a>
                             </div>
@@ -1343,39 +1353,18 @@ export default function MaterialsDashboard() {
                       const isPdfType = editMaterialForm.type === 'pdf' || url.match(/\.pdf($|\?)/i);
                       const isDocType = url.match(/\.(pptx?|docx?|xlsx?)($|\?)/i);
 
-                      // For Cloudinary: build direct PDF-accessible URL
                       const getCloudinaryPdfUrl = (rawUrl) => {
                         if (rawUrl.match(/\.pdf($|\?)/i)) return rawUrl;
                         const base = rawUrl.split('?')[0];
-                        // Insert fl_attachment:false flag and append .pdf
                         return base.replace('/upload/', '/upload/fl_attachment:false/') + '.pdf';
                       };
 
                       if (isCloudinary && !isDocType) {
-                        // Cloudinary PDF/slide → direct URL with .pdf extension
                         const pdfUrl = getCloudinaryPdfUrl(url);
-                        return (
-                          <iframe
-                            key={pdfUrl}
-                            src={pdfUrl}
-                            title="PDF Preview"
-                            style={{ width: '100%', height: '100%', border: 'none', background: '#fff' }}
-                            onError={() => setIframeError(true)}
-                          />
-                        );
+                        return <iframe key={pdfUrl} src={pdfUrl} title="PDF Preview" style={{ width: '100%', height: '100%', border: 'none', background: '#fff' }} onError={() => setIframeError(true)} />;
                       } else if (isPdfType) {
-                        // Non-Cloudinary PDF: native browser viewer
-                        return (
-                          <iframe
-                            key={url}
-                            src={url}
-                            title="PDF Preview"
-                            style={{ width: '100%', height: '100%', border: 'none', background: '#fff' }}
-                            onError={() => setIframeError(true)}
-                          />
-                        );
+                        return <iframe key={url} src={url} title="PDF Preview" style={{ width: '100%', height: '100%', border: 'none', background: '#fff' }} onError={() => setIframeError(true)} />;
                       } else {
-                        // Word / PowerPoint / Excel → Google Docs Viewer
                         return (
                           <iframe
                             key={url}
@@ -1386,9 +1375,7 @@ export default function MaterialsDashboard() {
                             onLoad={(e) => {
                               try {
                                 const doc = e.target.contentDocument;
-                                if (doc && doc.body && doc.body.innerHTML.trim() === '') {
-                                  setIframeError(true);
-                                }
+                                if (doc && doc.body && doc.body.innerHTML.trim() === '') setIframeError(true);
                               } catch {}
                             }}
                           />
@@ -1399,24 +1386,10 @@ export default function MaterialsDashboard() {
                 </div>
               )}
 
-
               {/* Right Column: Form */}
-              <div style={{ width: editMaterialForm.fileName ? 500 : '100%', background: '#fff', display: 'flex', flexDirection: 'column', zIndex: 5, borderLeft: '1px solid #e2e8f0' }}>
+              <div style={{ width: editMaterialForm.fileName ? 480 : '100%', background: '#fff', borderRadius: editMaterialForm.fileName ? 16 : 0, display: 'flex', flexDirection: 'column', zIndex: 5, border: editMaterialForm.fileName ? '1px solid #e2e8f0' : 'none', boxShadow: editMaterialForm.fileName ? '0 4px 6px -1px rgba(0, 0, 0, 0.05)' : 'none', overflow: 'hidden' }}>
                 <div style={{ flex: 1, overflowY: 'auto', padding: '24px' }}>
                   <form id="editMaterialForm" onSubmit={handleUpdateMaterial}>
-                  <div style={{ display: 'flex', gap: 12, background: '#f8fafc', padding: 12, borderRadius: 12, marginBottom: 16, border: '1px solid #e2e8f0', alignItems: 'center' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: 44, height: 44, background: '#fff', borderRadius: 8, border: '1px solid #e2e8f0', flexShrink: 0 }}>
-                      {renderFileIcon(editMaterialForm.type)}
-                    </div>
-                    <div style={{ overflow: 'hidden', flex: 1 }}>
-                      <p style={{ margin: 0, fontSize: 11, color: '#64748b', fontWeight: 600, textTransform: 'uppercase' }}>Thông tin học liệu hiện tại</p>
-                      <p style={{ margin: '2px 0 0', fontSize: 13, fontWeight: 700, color: '#0f172a', whiteSpace: 'nowrap', textOverflow: 'ellipsis', overflow: 'hidden' }}>
-                        Tệp: {editMaterialForm.fileName || 'Không có tệp'}
-                      </p>
-                      <small style={{ color: '#94a3b8' }}>Dung lượng: {editMaterialForm.fileSize || 'N/A'}</small>
-                    </div>
-                  </div>
-
                   <div className={styles.field}>
                     <label>Môn học</label>
                     <div style={{ position: 'relative' }}>
@@ -1489,15 +1462,13 @@ export default function MaterialsDashboard() {
 
                   <div className={styles.field}>
                     <label>Nội dung đính kèm</label>
-                    <div style={{ display: 'flex', gap: 16, marginBottom: 12, borderBottom: '1px solid #e2e8f0', paddingBottom: 12 }}>
-                      <label style={{ display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer', fontSize: 13, fontWeight: 600, color: editMaterialForm.inputType === 'file' ? '#059669' : '#64748b' }}>
-                        <input type="radio" name="editInputType" checked={editMaterialForm.inputType === 'file'} onChange={() => setEditMaterialForm({ ...editMaterialForm, inputType: 'file' })} />
-                        Tải tệp từ máy (Local)
-                      </label>
-                      <label style={{ display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer', fontSize: 13, fontWeight: 600, color: editMaterialForm.inputType === 'link' ? '#059669' : '#64748b' }}>
-                        <input type="radio" name="editInputType" checked={editMaterialForm.inputType === 'link'} onChange={() => setEditMaterialForm({ ...editMaterialForm, inputType: 'link' })} />
+                    <div style={{ display: 'flex', background: '#f1f5f9', padding: 4, borderRadius: 10, marginBottom: 16 }}>
+                      <button type="button" onClick={() => setEditMaterialForm({ ...editMaterialForm, inputType: 'file' })} style={{ flex: 1, padding: '8px 0', border: 'none', background: editMaterialForm.inputType === 'file' ? '#fff' : 'transparent', color: editMaterialForm.inputType === 'file' ? '#059669' : '#64748b', fontWeight: 700, fontSize: 13, borderRadius: 8, cursor: 'pointer', boxShadow: editMaterialForm.inputType === 'file' ? '0 1px 3px rgba(0,0,0,0.1)' : 'none', transition: 'all 0.2s' }}>
+                        Tải tệp từ máy
+                      </button>
+                      <button type="button" onClick={() => setEditMaterialForm({ ...editMaterialForm, inputType: 'link' })} style={{ flex: 1, padding: '8px 0', border: 'none', background: editMaterialForm.inputType === 'link' ? '#fff' : 'transparent', color: editMaterialForm.inputType === 'link' ? '#059669' : '#64748b', fontWeight: 700, fontSize: 13, borderRadius: 8, cursor: 'pointer', boxShadow: editMaterialForm.inputType === 'link' ? '0 1px 3px rgba(0,0,0,0.1)' : 'none', transition: 'all 0.2s' }}>
                         Gắn link liên kết
-                      </label>
+                      </button>
                     </div>
 
 
@@ -1521,7 +1492,7 @@ export default function MaterialsDashboard() {
                       role="button"
                       tabIndex={0}
                       onKeyDown={(e) => e.key === 'Enter' && handleEditDropZoneClick()}
-                      style={{ padding: '16px 8px', background: '#fafafa' }}
+                      style={{ padding: '24px 16px', background: isEditDragging ? '#ecfdf5' : '#f0fdf4', border: `2px dashed ${isEditDragging ? '#059669' : '#86efac'}`, transition: 'all 0.2s ease', borderRadius: 12 }}
                     >
                       {editMaterialForm.files && editMaterialForm.files.length > 0 ? (
                         <div style={{ width: '100%' }} onClick={(e) => e.stopPropagation()}>
@@ -1560,13 +1531,15 @@ export default function MaterialsDashboard() {
                           </div>
                         </div>
                       ) : (
-                        <>
-                          <Upload size={18} color="#94a3b8" style={{ marginBottom: 4 }} />
-                          <p style={{ margin: 0, fontSize: 12, color: '#475569' }}>
-                            Kéo thả tệp hoặc <strong style={{ color: '#059669' }}>nhấp để chọn nhiều tệp mới</strong>
+                        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8 }}>
+                          <div style={{ width: 44, height: 44, borderRadius: '50%', background: '#d1fae5', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                            <Upload size={22} color="#059669" />
+                          </div>
+                          <p style={{ margin: 0, fontSize: 13, color: '#475569', fontWeight: 500 }}>
+                            Kéo thả tệp vào đây hoặc <strong style={{ color: '#059669', cursor: 'pointer' }}>nhấp để tải lên</strong>
                           </p>
-                          <small style={{ fontSize: 10, color: '#94a3b8' }}>PNG, JPG, WEBP (Max 50MB)</small>
-                        </>
+                          <small style={{ fontSize: 11, color: '#94a3b8' }}>Hỗ trợ PDF, DOCX, XLSX, MP4, PNG, JPG (Tối đa 50MB)</small>
+                        </div>
                       )}
                     </div>
                     </>
@@ -1665,11 +1638,11 @@ export default function MaterialsDashboard() {
 
 
                 {/* Sticky Footer */}
-                <div style={{ padding: '16px 24px', borderTop: '1px solid #e2e8f0', background: '#fff', display: 'flex', gap: 12, alignItems: 'center' }}>
-                  <button type="submit" form="editMaterialForm" className={styles.btnPrimary} disabled={isUploading} style={{ flex: 2, padding: '12px 0', fontSize: 13, fontWeight: 700 }}>
+                <div style={{ padding: '16px 24px', borderTop: '1px solid #e2e8f0', background: '#fff', display: 'flex', gap: 12, alignItems: 'center', zIndex: 10 }}>
+                  <button type="submit" form="editMaterialForm" className={styles.btnPrimary} disabled={isUploading} style={{ flex: 2, padding: '12px 0', fontSize: 13, fontWeight: 700, borderRadius: 10, boxShadow: '0 4px 12px rgba(6, 78, 59, 0.2)', transition: 'all 0.2s' }}>
                     {isUploading ? 'Đang lưu...' : 'Lưu Thay Đổi'}
                   </button>
-                  <button type="button" className={styles.btnSecondary} onClick={handleCancelEdit} style={{ flex: 1, padding: '12px 0', fontSize: 13 }}>
+                  <button type="button" className={styles.btnSecondary} onClick={handleCancelEdit} style={{ flex: 1, padding: '12px 0', fontSize: 13, borderRadius: 10, fontWeight: 600 }}>
                     Đóng
                   </button>
                   <button
@@ -1681,9 +1654,9 @@ export default function MaterialsDashboard() {
                       }
                     }}
                     title="Xóa Học Liệu"
-                    style={{ background: '#fef2f2', color: '#ef4444', border: '1px solid #fca5a5', padding: '10px 14px', borderRadius: 8, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: '0.2s' }}
-                    onMouseEnter={(e) => e.currentTarget.style.background = '#fee2e2'}
-                    onMouseLeave={(e) => e.currentTarget.style.background = '#fef2f2'}
+                    style={{ background: '#fff', color: '#ef4444', border: '1px solid #fca5a5', padding: '10px 14px', borderRadius: 10, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: '0.2s', boxShadow: '0 1px 2px rgba(0,0,0,0.05)' }}
+                    onMouseEnter={(e) => { e.currentTarget.style.background = '#fef2f2'; e.currentTarget.style.borderColor = '#ef4444'; }}
+                    onMouseLeave={(e) => { e.currentTarget.style.background = '#fff'; e.currentTarget.style.borderColor = '#fca5a5'; }}
                   >
                     <Trash2 size={18} />
                   </button>
