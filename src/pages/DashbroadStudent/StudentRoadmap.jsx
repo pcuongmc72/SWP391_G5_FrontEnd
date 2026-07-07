@@ -244,15 +244,17 @@ function ClassListScreen({ onSelectClass }) {
                                 backgroundColor: '#fff', borderRadius: '16px', border: '1px solid #e2e8f0',
                                 padding: '20px', boxShadow: '0 1px 3px rgba(0,0,0,0.05)',
                                 display: 'flex', flexDirection: 'column', justifyContent: 'space-between',
-                                transition: 'transform 0.2s, box-shadow 0.2s', cursor: 'pointer'
+                                transition: 'transform 0.2s, box-shadow 0.2s, border-color 0.2s', cursor: 'pointer'
                             }}
                             onMouseEnter={e => {
                                 e.currentTarget.style.transform = 'translateY(-2px)';
                                 e.currentTarget.style.boxShadow = '0 10px 15px -3px rgba(0,0,0,0.1)';
+                                e.currentTarget.style.borderColor = '#0f766e';
                             }}
                             onMouseLeave={e => {
                                 e.currentTarget.style.transform = 'none';
                                 e.currentTarget.style.boxShadow = '0 1px 3px rgba(0,0,0,0.05)';
+                                e.currentTarget.style.borderColor = '#e2e8f0';
                             }}
                         >
                             <div>
@@ -407,12 +409,23 @@ function StudentMaterialPreview({ material, onBack, onToggleComplete, togglingId
     return (
         <div style={{ padding: '4px', display: 'flex', flexDirection: 'column', gap: 20 }}>
             {/* Header */}
-            <div style={{ backgroundColor: '#fff', padding: '20px', borderRadius: '16px', border: '1px solid #e2e8f0', boxShadow: '0 1px 3px rgba(0,0,0,0.02)' }}>
+            <div style={{ backgroundColor: '#f0fdf4', padding: '20px', borderRadius: '16px', border: '1px solid #bfe5dc', boxShadow: '0 1px 3px rgba(0,0,0,0.02)' }}>
                 <button
                     onClick={onBack}
-                    style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '6px 12px', background: '#f1f5f9', border: 'none', borderRadius: 8, fontSize: '0.8125rem', fontWeight: 600, color: '#475569', cursor: 'pointer', marginBottom: 14, transition: 'background 0.15s' }}
-                    onMouseEnter={e => e.currentTarget.style.background = '#e2e8f0'}
-                    onMouseLeave={e => e.currentTarget.style.background = '#f1f5f9'}
+                    style={{
+                        display: 'inline-flex', alignItems: 'center', gap: 6,
+                        padding: '6px 12px', background: '#e6f4ea', border: '1px solid #a3cfbb',
+                        borderRadius: 8, fontSize: '0.8125rem', fontWeight: 600, color: '#0d3e26',
+                        cursor: 'pointer', marginBottom: 14, transition: 'all 0.15s'
+                    }}
+                    onMouseEnter={e => {
+                        e.currentTarget.style.background = '#d1e7dd';
+                        e.currentTarget.style.borderColor = '#0D3E26';
+                    }}
+                    onMouseLeave={e => {
+                        e.currentTarget.style.background = '#e6f4ea';
+                        e.currentTarget.style.borderColor = '#a3cfbb';
+                    }}
                 >
                     <ArrowLeft size={14} /> Quay lại lộ trình
                 </button>
@@ -437,13 +450,13 @@ function StudentMaterialPreview({ material, onBack, onToggleComplete, togglingId
                             style={{
                                 display: 'inline-flex', alignItems: 'center', gap: 5,
                                 fontSize: '0.8125rem', fontWeight: 700,
-                                color: '#fff', background: isToggling ? '#6ee7b7' : '#0D3E26',
+                                color: '#fff', background: isToggling ? '#6ee7b7' : '#0f766e',
                                 border: 'none', borderRadius: 999,
                                 padding: '6px 16px', cursor: isToggling ? 'wait' : 'pointer',
                                 transition: 'background 0.15s', flexShrink: 0
                             }}
-                            onMouseEnter={e => { if (!isToggling) e.currentTarget.style.background = '#072416'; }}
-                            onMouseLeave={e => { if (!isToggling) e.currentTarget.style.background = '#0D3E26'; }}
+                            onMouseEnter={e => { if (!isToggling) e.currentTarget.style.background = '#0d9488'; }}
+                            onMouseLeave={e => { if (!isToggling) e.currentTarget.style.background = '#0f766e'; }}
                         >
                             <Circle size={14} /> Đánh dấu hoàn thành
                         </button>
@@ -655,7 +668,7 @@ function RoadmapScreen({ cls, onBack }) {
         <div style={{ padding: '4px', display: 'flex', flexDirection: 'column', gap: 20 }}>
 
             {/* ── Header with back button ── */}
-            <div style={{ backgroundColor: '#fff', padding: '20px', borderRadius: '16px', border: '1px solid #e2e8f0', boxShadow: '0 1px 3px rgba(0,0,0,0.02)' }}>
+            <div style={{ backgroundColor: '#f0fdf4', padding: '20px', borderRadius: '16px', border: '1px solid #bfe5dc', boxShadow: '0 1px 3px rgba(0,0,0,0.02)' }}>
 
 
                 <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 20, flexWrap: 'wrap' }}>
@@ -677,20 +690,20 @@ function RoadmapScreen({ cls, onBack }) {
                     </div>
 
                     {/* Progress */}
-                    <div style={{ minWidth: 220, background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '12px', padding: '14px 18px' }}>
+                    <div style={{ minWidth: 220, background: '#e6f4ea', border: '1px solid #a3cfbb', borderRadius: '12px', padding: '14px 18px' }}>
                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 }}>
                             <span style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: '0.8125rem', fontWeight: 700, color: '#1e293b' }}>
-                                <Award size={14} color="#10b981" /> Tiến độ
+                                <Award size={14} color="#0f766e" /> Tiến độ
                             </span>
-                            <span style={{ fontSize: '0.875rem', fontWeight: 800, color: '#0D3E26' }}>
+                            <span style={{ fontSize: '0.875rem', fontWeight: 800, color: '#0f766e' }}>
                                 {progressPercent}%
                             </span>
                         </div>
-                        <div style={{ fontSize: '0.75rem', color: '#64748b', marginBottom: 8, fontWeight: 500 }}>
+                        <div style={{ fontSize: '0.75rem', color: '#0d3e26', marginBottom: 8, fontWeight: 500 }}>
                             Đã hoàn thành {completedCount}/{materials.length} học liệu học tập
                         </div>
-                        <div style={{ width: '100%', height: 8, background: '#e2e8f0', borderRadius: 999, overflow: 'hidden' }}>
-                            <div style={{ height: '100%', width: `${progressPercent}%`, background: 'linear-gradient(90deg, #0D3E26, #10b981)', borderRadius: 999, transition: 'width 0.4s ease' }} />
+                        <div style={{ width: '100%', height: 8, background: '#d1e7dd', borderRadius: 999, overflow: 'hidden' }}>
+                            <div style={{ height: '100%', width: `${progressPercent}%`, background: 'linear-gradient(90deg, #0f766e, #10b981)', borderRadius: 999, transition: 'width 0.4s ease' }} />
                         </div>
                     </div>
                 </div>
@@ -792,11 +805,12 @@ function RoadmapScreen({ cls, onBack }) {
                                         style={{
                                             display: 'flex', justifyContent: 'space-between', alignItems: 'center',
                                             padding: '16px 20px', cursor: 'pointer', userSelect: 'none',
-                                            backgroundColor: isOpen ? '#f8fafc' : '#fff',
-                                            transition: 'background-color 0.2s'
+                                            backgroundColor: isOpen ? '#f0fdf4' : '#fff',
+                                            transition: 'background-color 0.2s',
+                                            borderLeft: isOpen ? '4px solid #0f766e' : '4px solid transparent'
                                         }}
-                                        onMouseEnter={e => e.currentTarget.style.backgroundColor = '#f1f5f9'}
-                                        onMouseLeave={e => e.currentTarget.style.backgroundColor = isOpen ? '#f8fafc' : '#fff'}
+                                        onMouseEnter={e => e.currentTarget.style.backgroundColor = '#e6f4ea'}
+                                        onMouseLeave={e => e.currentTarget.style.backgroundColor = isOpen ? '#f0fdf4' : '#fff'}
                                     >
                                         <div style={{ display: 'flex', alignItems: 'center', gap: 12, minWidth: 0 }}>
                                             {/* Chevron Icon */}
@@ -847,7 +861,7 @@ function RoadmapScreen({ cls, onBack }) {
                                                                 disabled={isToggling}
                                                                 style={{
                                                                     background: 'none', border: 'none', padding: 0, cursor: isToggling ? 'wait' : 'pointer',
-                                                                    color: isCompleted ? '#10b981' : '#cbd5e1', display: 'flex', alignItems: 'center',
+                                                                    color: isCompleted ? '#0f766e' : '#cbd5e1', display: 'flex', alignItems: 'center',
                                                                     transition: 'color 0.2s'
                                                                 }}
                                                             >
@@ -879,12 +893,12 @@ function RoadmapScreen({ cls, onBack }) {
                                                                         onClick={(e) => { e.preventDefault(); setPreviewMaterial(material); }}
                                                                         style={{
                                                                             display: 'inline-flex', alignItems: 'center', gap: 5, fontSize: '0.75rem',
-                                                                            fontWeight: 600, color: '#1d4ed8', background: '#eff6ff',
-                                                                            border: '1px solid #bfdbfe', padding: '6px 12px', borderRadius: 8,
+                                                                            fontWeight: 600, color: '#0f766e', background: '#f0fdf4',
+                                                                            border: '1px solid #bfe5dc', padding: '6px 12px', borderRadius: 8,
                                                                             textDecoration: 'none', transition: 'all 0.15s', cursor: 'pointer'
                                                                         }}
-                                                                        onMouseEnter={e => e.currentTarget.style.background = '#dbeafe'}
-                                                                        onMouseLeave={e => e.currentTarget.style.background = '#eff6ff'}
+                                                                        onMouseEnter={e => e.currentTarget.style.background = '#e6f4ea'}
+                                                                        onMouseLeave={e => e.currentTarget.style.background = '#f0fdf4'}
                                                                     >
                                                                         <ExternalLink size={12} /> Xem trước
                                                                     </button>
@@ -895,7 +909,7 @@ function RoadmapScreen({ cls, onBack }) {
                                                                         rel="noopener noreferrer"
                                                                         style={{
                                                                             display: 'inline-flex', alignItems: 'center', gap: 5, fontSize: '0.75rem',
-                                                                            fontWeight: 600, color: '#0d3e26', background: '#e6f4ea',
+                                                                            fontWeight: 600, color: '#0f766e', background: '#e6f4ea',
                                                                             border: '1px solid #a3cfbb', padding: '6px 12px', borderRadius: 8,
                                                                             textDecoration: 'none', transition: 'all 0.15s'
                                                                         }}
@@ -928,12 +942,13 @@ function RoadmapScreen({ cls, onBack }) {
                         style={{
                             display: 'flex', justifyContent: 'space-between', alignItems: 'center',
                             padding: '14px 20px', cursor: 'pointer', userSelect: 'none',
-                            backgroundColor: isChungOpen ? '#f8fafc' : '#fff',
+                            backgroundColor: isChungOpen ? '#f0fdf4' : '#fff',
                             border: '1px solid #e2e8f0', borderRadius: isChungOpen ? '16px 16px 0 0' : '16px',
-                            transition: 'background-color 0.2s, border-radius 0.2s'
+                            transition: 'background-color 0.2s, border-radius 0.2s',
+                            borderLeft: isChungOpen ? '4px solid #0f766e' : '4px solid transparent'
                         }}
-                        onMouseEnter={e => e.currentTarget.style.backgroundColor = '#f1f5f9'}
-                        onMouseLeave={e => e.currentTarget.style.backgroundColor = isChungOpen ? '#f8fafc' : '#fff'}
+                        onMouseEnter={e => e.currentTarget.style.backgroundColor = '#e6f4ea'}
+                        onMouseLeave={e => e.currentTarget.style.backgroundColor = isChungOpen ? '#f0fdf4' : '#fff'}
                     >
                         <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
                             <div style={{ transform: isChungOpen ? 'rotate(180deg)' : 'rotate(0deg)', transition: 'transform 0.2s ease', color: '#94a3b8', flexShrink: 0 }}>
@@ -994,12 +1009,12 @@ function RoadmapScreen({ cls, onBack }) {
                                                         onClick={(e) => { e.preventDefault(); setPreviewMaterial(material); }}
                                                         style={{
                                                             display: 'inline-flex', alignItems: 'center', gap: 5, fontSize: '0.75rem',
-                                                            fontWeight: 600, color: '#1d4ed8', background: '#eff6ff',
-                                                            border: '1px solid #bfdbfe', padding: '6px 12px', borderRadius: 8,
+                                                            fontWeight: 600, color: '#0f766e', background: '#f0fdf4',
+                                                            border: '1px solid #bfe5dc', padding: '6px 12px', borderRadius: 8,
                                                             textDecoration: 'none', transition: 'all 0.15s', cursor: 'pointer'
                                                         }}
-                                                        onMouseEnter={e => e.currentTarget.style.background = '#dbeafe'}
-                                                        onMouseLeave={e => e.currentTarget.style.background = '#eff6ff'}
+                                                        onMouseEnter={e => e.currentTarget.style.background = '#e6f4ea'}
+                                                        onMouseLeave={e => e.currentTarget.style.background = '#f0fdf4'}
                                                     >
                                                         <ExternalLink size={12} /> Xem trước
                                                     </button>
@@ -1010,7 +1025,7 @@ function RoadmapScreen({ cls, onBack }) {
                                                         rel="noopener noreferrer"
                                                         style={{
                                                             display: 'inline-flex', alignItems: 'center', gap: 5, fontSize: '0.75rem',
-                                                            fontWeight: 600, color: '#0d3e26', background: '#e6f4ea',
+                                                            fontWeight: 600, color: '#0f766e', background: '#e6f4ea',
                                                             border: '1px solid #a3cfbb', padding: '6px 12px', borderRadius: 8,
                                                             textDecoration: 'none', transition: 'all 0.15s'
                                                         }}

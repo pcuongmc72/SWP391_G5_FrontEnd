@@ -56,6 +56,272 @@ function getSyllabusForCourse(courseCode) {
   return [];
 }
 
+// ─── Google Classroom Three-State Sidebar Nav Item ────────────
+//  collapsed  → icon-only, 40px pill centered, tooltip on hover
+//  expanded   → icon + label, full-width pill, left-aligned
+function SidebarNavItem({ icon, label, isActive, onClick, title, collapsed }) {
+  const [hov, setHov] = React.useState(false);
+  const [showTooltip, setShowTooltip] = React.useState(false);
+
+  const handleMouseEnter = () => {
+    setHov(true);
+    // Only show tooltip when fully collapsed (not during hover-expansion transition)
+    if (collapsed) setShowTooltip(true);
+  };
+  const handleMouseLeave = () => {
+    setHov(false);
+    setShowTooltip(false);
+  };
+
+  return (
+    <div style={{ position: 'relative', width: '100%' }}>
+      <button
+        onClick={onClick}
+        onMouseEnter={handleMouseEnter}
+        onMouseLeave={handleMouseLeave}
+        aria-label={title}
+        style={{
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: collapsed ? 'center' : 'flex-start',
+          gap: '12px',
+          width: collapsed ? '40px' : '100%',
+          height: '48px',
+          borderRadius: '999px',
+          fontSize: '14px',
+          fontWeight: isActive ? 600 : 500,
+          color: isActive ? '#0f766e' : (hov ? '#111827' : '#4B5563'),
+          background: isActive
+            ? 'rgba(15, 118, 110, 0.12)'
+            : hov ? '#F1F3F4' : 'transparent',
+          border: 'none',
+          cursor: 'pointer',
+          fontFamily: 'inherit',
+          textAlign: 'left',
+          transition: 'background 200ms ease, color 200ms ease, width 280ms ease-in-out',
+          whiteSpace: 'nowrap',
+          overflow: 'hidden',
+          flexShrink: 0,
+          padding: collapsed ? '0' : '0 16px 0 12px',
+          margin: collapsed ? '0 auto' : '0',
+          boxSizing: 'border-box',
+        }}
+      >
+        {/* Icon — ALWAYS rendered and visible */}
+        <span style={{
+          color: isActive ? '#0f766e' : (hov ? '#374151' : '#5F6368'),
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          flexShrink: 0,
+          minWidth: '20px',
+          width: '20px',
+          height: '20px',
+          transition: 'color 200ms ease',
+        }}>
+          {icon}
+        </span>
+
+        {/* Label — fades + slides when toggling */}
+        <span style={{
+          opacity: collapsed ? 0 : 1,
+          transform: collapsed ? 'translateX(-8px)' : 'translateX(0)',
+          maxWidth: collapsed ? '0px' : '180px',
+          overflow: 'hidden',
+          whiteSpace: 'nowrap',
+          textOverflow: 'ellipsis',
+          pointerEvents: collapsed ? 'none' : 'auto',
+          transition: [
+            'opacity 200ms ease',
+            'transform 220ms ease',
+            'max-width 280ms ease-in-out',
+          ].join(', '),
+        }}>
+          {label}
+        </span>
+      </button>
+
+      {/* Tooltip — only when truly collapsed (not hover-expanding) */}
+      {collapsed && showTooltip && (
+        <div
+          role="tooltip"
+          style={{
+            position: 'absolute',
+            left: 'calc(100% + 14px)',
+            top: '50%',
+            transform: 'translateY(-50%)',
+            background: '#3C4043',
+            color: '#ffffff',
+            fontSize: '12px',
+            fontWeight: 500,
+            lineHeight: 1.4,
+            padding: '6px 12px',
+            borderRadius: '6px',
+            whiteSpace: 'nowrap',
+            zIndex: 9999,
+            pointerEvents: 'none',
+            boxShadow: '0 2px 10px rgba(0,0,0,0.2)',
+            animation: 'fadeInTooltip 150ms ease-out forwards',
+          }}
+        >
+          {label}
+          {/* Arrow pointing left */}
+          <span style={{
+            position: 'absolute',
+            right: '100%',
+            top: '50%',
+            transform: 'translateY(-50%)',
+            width: 0,
+            height: 0,
+            borderTop: '5px solid transparent',
+            borderBottom: '5px solid transparent',
+            borderRight: '6px solid #3C4043',
+          }} />
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ────────────────────────────────────────────────────────────────
+//  SidebarRail — Three-State Google Classroom Navigation Rail
+//
+//  State 1 — Collapsed (default)
+//    • width: 72px  • icons only, centered  • tooltip on hover
+//
+//  State 2 — Hover-Expanded
+//    • when mouse enters → auto-expand to 240px  • labels visible
+//    • when mouse leaves → collapse back to 72px
+//
+//  State 3 — Pinned
+//    • hamburger button clicked → always expanded at 240px
+//    • clicking again → back to hover/collapsed behavior
+//
+//  isPinned: driven by existing sidebarOpen state (no new state added)
+//  isHovered: local to this component
+//  isExpanded = isPinned || isHovered
+// ────────────────────────────────────────────────────────────────
+function SidebarRail({ isPinned, selectedCourse, location, setSelectedCourse, navigate }) {
+  const [isHovered, setIsHovered] = React.useState(false);
+
+  // The sidebar is "visually expanded" when pinned OR hovered
+  const isExpanded = isPinned || isHovered;
+  // Icons show tooltip only when sidebar is truly collapsed (not hovering or pinned)
+  const collapsed = !isExpanded;
+
+  return (
+    <aside
+      onMouseEnter={() => setIsHovered(true)}
+      onMouseLeave={() => setIsHovered(false)}
+      style={{
+        /* Width drives the three states */
+        width: isExpanded ? '240px' : '72px',
+        flexShrink: 0,
+        background: '#ffffff',
+        borderRight: '1px solid #E5E7EB',
+        display: 'flex',
+        flexDirection: 'column',
+        padding: isExpanded ? '16px 12px 16px' : '16px 0 16px',
+        position: 'sticky',
+        top: 0,
+        height: '100vh',
+        overflowY: 'auto',
+        overflowX: 'hidden',
+        /* Core animation: width + padding transition */
+        transition: [
+          'width 280ms ease-in-out',
+          'padding 280ms ease-in-out',
+        ].join(', '),
+        userSelect: 'none',
+        boxSizing: 'border-box',
+        /* Elevated enough to cover content when hover-expanding */
+        zIndex: isHovered && !isPinned ? 20 : 'auto',
+        /* Subtle shadow when hover-expanded (not pinned) to indicate overlay */
+        boxShadow: isHovered && !isPinned
+          ? '4px 0 16px rgba(0,0,0,0.08)'
+          : 'none',
+      }}
+    >
+      {/* ── Pin indicator dot (shows when pinned) ── */}
+      {isPinned && (
+        <div style={{
+          position: 'absolute',
+          top: '12px',
+          right: '10px',
+          width: '6px',
+          height: '6px',
+          borderRadius: '50%',
+          background: '#0f766e',
+          opacity: 0.7,
+          transition: 'opacity 200ms ease',
+        }} />
+      )}
+
+      {/* ── Nav items ── */}
+      <div style={{
+        display: 'flex',
+        flexDirection: 'column',
+        gap: '4px',
+        flex: 1,
+        /* Center items when collapsed; stretch when expanded */
+        alignItems: isExpanded ? 'stretch' : 'center',
+        transition: 'align-items 0ms',
+      }}>
+
+        {/* 1. Home / Lớp học */}
+        <SidebarNavItem
+          icon={<Home size={20} />}
+          label="Lớp học"
+          isActive={!selectedCourse && location.pathname === '/dashboard/student'}
+          onClick={() => { setSelectedCourse(null); navigate('/dashboard/student'); }}
+          title="Lớp học của tôi"
+          collapsed={collapsed}
+        />
+
+        {/* 2. Học kỳ hiện tại */}
+        <SidebarNavItem
+          icon={<GraduationCap size={20} />}
+          label="Học kỳ hiện tại"
+          isActive={false}
+          onClick={() => { setSelectedCourse(null); navigate('/dashboard/student'); }}
+          title="Khóa đào tạo"
+          collapsed={collapsed}
+        />
+
+        {/* 3. Blog & Diễn đàn */}
+        <SidebarNavItem
+          icon={<MessageSquare size={20} />}
+          label="Blog & Diễn đàn"
+          isActive={location.pathname === '/dashboard/student/blog'}
+          onClick={() => { setSelectedCourse(null); navigate('/dashboard/student/blog'); }}
+          title="Blog & Diễn đàn"
+          collapsed={collapsed}
+        />
+
+      </div>
+
+      {/* ── Hover-mode hint (shown at bottom when hover-expanded but not pinned) ── */}
+      {isHovered && !isPinned && (
+        <div style={{
+          marginTop: 'auto',
+          paddingTop: '12px',
+          borderTop: '1px solid #F3F4F6',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          gap: '6px',
+          opacity: 0.55,
+          animation: 'fadeIn 200ms ease-out',
+        }}>
+          <span style={{ fontSize: '10px', color: '#6B7280', whiteSpace: 'nowrap', fontWeight: 500 }}>
+            Nhấn ☰ để ghim
+          </span>
+        </div>
+      )}
+    </aside>
+  );
+}
+
 export default function DashbroadStudent() {
   const currentUser = getUser();
   const navigate = useNavigate();
@@ -232,7 +498,7 @@ export default function DashbroadStudent() {
 
     fetchClassmates();
   }, [selectedCourse]);
-  
+
   // 4. Load class blogs when a course is selected
   useEffect(() => {
     if (!selectedCourse) {
@@ -338,7 +604,7 @@ export default function DashbroadStudent() {
 
   const formatDate = (dateString) => {
     if (!dateString) return 'Vừa xong';
-    return new Date(dateString).toLocaleDateString('vi-VN', { 
+    return new Date(dateString).toLocaleDateString('vi-VN', {
       day: '2-digit', month: '2-digit', year: 'numeric',
       hour: '2-digit', minute: '2-digit', timeZone: 'Asia/Ho_Chi_Minh'
     });
@@ -349,7 +615,7 @@ export default function DashbroadStudent() {
       triggerNotification("⚠️ Vui lòng nhập đầy đủ tiêu đề và nội dung thảo luận.", "info");
       return;
     }
-    
+
     try {
       setLoadingBlogs(true);
       const payload = {
@@ -458,7 +724,7 @@ export default function DashbroadStudent() {
   const studentEmail = currentUser?.email || '';
 
   return (
-    <div id="flipped-classroom-app-root" className="bg-slate-50 min-h-screen flex flex-col font-sans transition select-text">
+    <div id="flipped-classroom-app-root" style={{ background: '#F7F9FC', minHeight: '100vh', display: 'flex', flexDirection: 'column', fontFamily: "'Inter', 'Segoe UI', sans-serif" }}>
 
       {/* Top Header Navigation panel */}
       <HeaderLMS
@@ -495,69 +761,30 @@ export default function DashbroadStudent() {
       )}
 
       {/* Main Container */}
-      <div className="flex-1 flex overflow-hidden">
+      <div style={{ flex: 1, display: 'flex', overflow: 'hidden' }}>
 
-        {/* Left Side Navigation Rail */}
-        <aside
-          className={`hidden md:flex flex-col bg-white border-r border-gray-200 shrink-0 select-none py-4 items-center justify-between overflow-hidden transition-all duration-300 ease-in-out ${sidebarOpen ? 'w-56 opacity-100' : 'w-0 opacity-0 border-r-0'
-            }`}
-        >
-          <div className="flex flex-col gap-1 items-start w-full px-3">
+        {/*
+         * ── Three-State Sidebar (Google Classroom style) ──────────────
+         *  sidebarOpen (existing state) → now means "isPinned"
+         *  isHovered   (local state)    → hover-expand trigger
+         *  isExpanded  = isPinned || isHovered → drives all visual states
+         *
+         * States:
+         *  1. Collapsed (default)  → 72px, icons only
+         *  2. Hover Expanded       → 240px while mouse is inside
+         *  3. Pinned               → hamburger clicked → always 240px
+         * ─────────────────────────────────────────────────────────────
+         */}
+        <SidebarRail
+          isPinned={sidebarOpen}
+          selectedCourse={selectedCourse}
+          location={location}
+          setSelectedCourse={setSelectedCourse}
+          navigate={navigate}
+        />
 
-            {/* 1. Home button */}
-            <button
-              onClick={() => {
-                setSelectedCourse(null);
-                navigate('/dashboard/student');
-              }}
-              className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl transition cursor-pointer text-left ${!selectedCourse && location.pathname === '/dashboard/student'
-                ? "bg-emerald-50 text-emerald-700"
-                : "text-gray-600 hover:bg-gray-100 hover:text-gray-900"
-                }`}
-              title="Lớp học của tôi"
-            >
-              <Home size={20} className="stroke-[2.2] shrink-0" />
-              <span className="text-xs font-semibold whitespace-nowrap">Lớp học</span>
-            </button>
-
-
-
-            {/* 4. Enrolled courses collection list icon */}
-            <button
-              onClick={() => {
-                setSelectedCourse(null);
-                navigate('/dashboard/student');
-              }}
-              className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-gray-600 hover:bg-gray-100 hover:text-gray-900 transition cursor-pointer text-left"
-              title="Khóa đào tạo"
-            >
-              <GraduationCap size={20} className="stroke-[2.2] shrink-0" />
-              <span className="text-xs font-semibold whitespace-nowrap">Học kỳ hiện tại</span>
-            </button>
-
-            {/* Blog button */}
-            <button
-              onClick={() => {
-                setSelectedCourse(null);
-                navigate('/dashboard/student/blog');
-              }}
-              className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl transition cursor-pointer text-left ${location.pathname === '/dashboard/student/blog'
-                ? "bg-emerald-50 text-emerald-700"
-                : "text-gray-600 hover:bg-gray-100 hover:text-gray-900"
-                }`}
-              title="Blog & Diễn đàn"
-            >
-              <MessageSquare size={20} className="stroke-[2.2] shrink-0" />
-              <span className="text-xs font-semibold whitespace-nowrap">Blog & Diễn đàn</span>
-            </button>
-          </div>
-
-
-
-        </aside>
-
-        {/* Right workspace core content frame */}
-        <main className="flex-1 overflow-y-auto bg-slate-50 p-4 sm:p-6 lg:p-8 flex flex-col gap-6">
+        {/* ── Right workspace core content frame ── */}
+        <main style={{ flex: 1, overflowY: 'auto', background: '#F7F9FC', display: 'flex', flexDirection: 'column', gap: '0' }}>
 
           {error && (
             <div className="bg-red-50 border border-red-200 text-red-700 text-xs rounded-xl p-4 text-left">
@@ -567,8 +794,8 @@ export default function DashbroadStudent() {
 
           {location.pathname === "/dashboard/student/blog" ? (
             <div className="animate-fade-in">
-              <SharedBlogForum 
-                initialSelectedBlog={blogForDetail} 
+              <SharedBlogForum
+                initialSelectedBlog={blogForDetail}
                 onClearInitialBlog={() => setBlogForDetail(null)}
               />
             </div>
@@ -779,73 +1006,73 @@ export default function DashbroadStudent() {
                             </div>
                           )}
                         </div>
-  
-                          {/* Thread Blog Posts (Real data) */}
-                          {loadingBlogs && classBlogs.length === 0 ? (
-                            <div className="flex justify-center py-12">
-                              <Loader2 size={24} className="animate-spin text-emerald-700" />
-                            </div>
-                          ) : classBlogs.length > 0 ? (
-                            classBlogs.map((blog) => (
-                              <div key={blog.id} className="bg-white border border-gray-200 rounded-xl p-4 shadow-3xs text-left space-y-4">
-  
-                                <div className="flex items-start justify-between">
-                                  <div className="flex items-center gap-3">
-                                    <div className="w-9 h-9 rounded-full bg-[#0a4823] text-white font-extrabold flex items-center justify-center text-sm shadow-2xs shrink-0 select-none">
-                                      {blog.authorFullName?.[0]?.toUpperCase() || "S"}
-                                    </div>
-                                    <div className="leading-none">
-                                      <span className="text-xs font-bold text-gray-800 flex items-center gap-1.5">
-                                        {blog.authorFullName}
-                                        {(() => {
-                                          const r = String(blog.role || blog.authorRole || blog.AuthorRole || "").toLowerCase();
-                                          if (r === "admin") return <span className="bg-rose-50 text-rose-800 font-extrabold text-[8.5px] px-1.5 py-0.5 rounded border border-rose-100 uppercase">Admin</span>;
-                                          if (r === "lecturer" || r === "teacher" || r.includes("giảng viên")) return <span className="bg-emerald-50 text-emerald-800 font-extrabold text-[8.5px] px-1.5 py-0.5 rounded border border-emerald-100 uppercase">Giảng viên</span>;
-                                          return <span className="bg-gray-50 text-gray-600 font-extrabold text-[8.5px] px-1.5 py-0.5 rounded border border-gray-100 uppercase">Học viên</span>;
-                                        })()}
-                                      </span>
-                                      <span className="text-[9.5px] text-gray-400 font-semibold block mt-1 uppercase">
-                                        {formatDate(blog.createdAt)} • {(() => {
-                                          const r = String(blog.role || blog.authorRole || blog.AuthorRole || "").toLowerCase();
-                                          if (r === "admin") return "Admin";
-                                          if (r === "lecturer" || r === "teacher" || r.includes("giảng viên")) return "Giảng viên";
-                                          return "Học viên";
-                                        })()}
-                                      </span>
-                                    </div>
+
+                        {/* Thread Blog Posts (Real data) */}
+                        {loadingBlogs && classBlogs.length === 0 ? (
+                          <div className="flex justify-center py-12">
+                            <Loader2 size={24} className="animate-spin text-emerald-700" />
+                          </div>
+                        ) : classBlogs.length > 0 ? (
+                          classBlogs.map((blog) => (
+                            <div key={blog.id} className="bg-white border border-gray-200 rounded-xl p-4 shadow-3xs text-left space-y-4">
+
+                              <div className="flex items-start justify-between">
+                                <div className="flex items-center gap-3">
+                                  <div className="w-9 h-9 rounded-full bg-[#0a4823] text-white font-extrabold flex items-center justify-center text-sm shadow-2xs shrink-0 select-none">
+                                    {blog.authorFullName?.[0]?.toUpperCase() || "S"}
                                   </div>
-                                  <button className="p-1 text-gray-400 hover:text-gray-700 rounded-full transition">
-                                    <MoreVertical size={16} />
-                                  </button>
-                                </div>
-  
-                                <div className="space-y-2 overflow-hidden">
-                                  <h4 className="text-sm font-bold text-gray-900 break-words">{blog.title}</h4>
-                                  <div className="text-xs text-gray-700 leading-relaxed font-medium whitespace-pre-line bg-gray-50/40 p-3 rounded-lg border border-gray-100 break-words">
-                                    {blog.content}
+                                  <div className="leading-none">
+                                    <span className="text-xs font-bold text-gray-800 flex items-center gap-1.5">
+                                      {blog.authorFullName}
+                                      {(() => {
+                                        const r = String(blog.role || blog.authorRole || blog.AuthorRole || "").toLowerCase();
+                                        if (r === "admin") return <span className="bg-rose-50 text-rose-800 font-extrabold text-[8.5px] px-1.5 py-0.5 rounded border border-rose-100 uppercase">Admin</span>;
+                                        if (r === "lecturer" || r === "teacher" || r.includes("giảng viên")) return <span className="bg-emerald-50 text-emerald-800 font-extrabold text-[8.5px] px-1.5 py-0.5 rounded border border-emerald-100 uppercase">Giảng viên</span>;
+                                        return <span className="bg-gray-50 text-gray-600 font-extrabold text-[8.5px] px-1.5 py-0.5 rounded border border-gray-100 uppercase">Học viên</span>;
+                                      })()}
+                                    </span>
+                                    <span className="text-[9.5px] text-gray-400 font-semibold block mt-1 uppercase">
+                                      {formatDate(blog.createdAt)} • {(() => {
+                                        const r = String(blog.role || blog.authorRole || blog.AuthorRole || "").toLowerCase();
+                                        if (r === "admin") return "Admin";
+                                        if (r === "lecturer" || r === "teacher" || r.includes("giảng viên")) return "Giảng viên";
+                                        return "Học viên";
+                                      })()}
+                                    </span>
                                   </div>
                                 </div>
-  
-                                {/* Blog Interactions - Link to detail or comments */}
-                                <div className="border-t border-gray-100 pt-3 flex items-center gap-4">
-                                  <button 
-                                    onClick={() => {
-                                      setBlogForDetail(blog);
-                                      navigate('/dashboard/student/blog');
-                                    }}
-                                    className="flex items-center gap-1.5 text-[10px] font-bold text-emerald-700 uppercase hover:underline cursor-pointer"
-                                  >
-                                    <MessageSquare size={13} />
-                                    <span>Xem thảo luận & bình luận</span>
-                                  </button>
+                                <button className="p-1 text-gray-400 hover:text-gray-700 rounded-full transition">
+                                  <MoreVertical size={16} />
+                                </button>
+                              </div>
+
+                              <div className="space-y-2 overflow-hidden">
+                                <h4 className="text-sm font-bold text-gray-900 break-words">{blog.title}</h4>
+                                <div className="text-xs text-gray-700 leading-relaxed font-medium whitespace-pre-line bg-gray-50/40 p-3 rounded-lg border border-gray-100 break-words">
+                                  {blog.content}
                                 </div>
                               </div>
-                            ))
-                          ) : (
-                            <div className="text-center py-12 bg-gray-50/50 rounded-xl border border-dashed border-gray-200">
-                              <p className="text-xs text-gray-400 font-medium">Chưa có thông báo hay bài thảo luận nào trong lớp này.</p>
+
+                              {/* Blog Interactions - Link to detail or comments */}
+                              <div className="border-t border-gray-100 pt-3 flex items-center gap-4">
+                                <button
+                                  onClick={() => {
+                                    setBlogForDetail(blog);
+                                    navigate('/dashboard/student/blog');
+                                  }}
+                                  className="flex items-center gap-1.5 text-[10px] font-bold text-emerald-700 uppercase hover:underline cursor-pointer"
+                                >
+                                  <MessageSquare size={13} />
+                                  <span>Xem thảo luận & bình luận</span>
+                                </button>
+                              </div>
                             </div>
-                          )}
+                          ))
+                        ) : (
+                          <div className="text-center py-12 bg-gray-50/50 rounded-xl border border-dashed border-gray-200">
+                            <p className="text-xs text-gray-400 font-medium">Chưa có thông báo hay bài thảo luận nào trong lớp này.</p>
+                          </div>
+                        )}
                       </div>
                     </div>
                   </div>

@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { getAcademicTerms, getStudentClasses, getClassStudents } from '../../services/studentService';
-import { BookOpen, User, Calendar, Loader2, X, Users } from 'lucide-react';
-import styles from './DashbroadStudent.module.css'; // Sử dụng lại CSS module của Dashboard
+import { BookOpen, User, Calendar, Loader2, Users, Search, ChevronDown, Folder, Bell, MoreVertical } from 'lucide-react';
+import styles from './StudentDashboard.module.css';
 
 export default function StudentDashboard() {
     const [terms, setTerms] = useState([]);
@@ -133,61 +133,40 @@ export default function StudentDashboard() {
         return nameMatch || codeMatch || classIdMatch;
     });
 
+    // Banner color per course code
+    const getBannerColor = (code) => {
+        if (!code) return 'linear-gradient(135deg, #064e3b 0%, #065f46 100%)';
+        const c = code.toLowerCase();
+        if (c.includes('prj')) return 'linear-gradient(135deg, #1e3a8a 0%, #1e40af 100%)';
+        if (c.includes('se') || c.includes('oop')) return 'linear-gradient(135deg, #78350f 0%, #92400e 100%)';
+        if (c.includes('mad') || c.includes('csd')) return 'linear-gradient(135deg, #312e81 0%, #3730a3 100%)';
+        return 'linear-gradient(135deg, #064e3b 0%, #065f46 100%)';
+    };
+
+    const activeCount = classes.length;
+
     return (
-        <div style={{ padding: '24px' }}>
-            {/* Thanh giao diện Tìm kiếm & Bộ lọc */}
-            <div style={{
-                display: 'flex',
-                justifyContent: 'space-between',
-                alignItems: 'center',
-                marginBottom: '28px',
-                flexWrap: 'wrap',
-                gap: '16px',
-                backgroundColor: '#fff',
-                padding: '20px',
-                borderRadius: '16px',
-                border: '1px solid #e2e8f0',
-                boxShadow: '0 1px 3px rgba(0,0,0,0.02)'
-            }}>
-                <div style={{ flex: '1 1 300px' }}>
-                    <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: 700, color: '#64748b', marginBottom: '6px', textTransform: 'uppercase' }}>
-                        Tìm kiếm môn học
-                    </label>
+        <div style={{ padding: '24px 28px', maxWidth: '1400px', margin: '0 auto', display: 'flex', flexDirection: 'column', gap: '20px' }}>
+
+            {/* Search & Filter Bar */}
+            <div className={styles.filterBar}>
+                <div className={styles.searchWrapper}>
+                    <Search size={16} className={styles.searchIcon} />
                     <input
                         type="text"
-                        placeholder="Nhập tên môn học, mã môn học hoặc mã lớp..."
+                        placeholder="Tìm kiếm tên môn học, mã môn học hoặc mã lớp..."
                         value={searchTerm}
                         onChange={(e) => setSearchTerm(e.target.value)}
-                        style={{
-                            width: '100%',
-                            padding: '10px 16px',
-                            borderRadius: '8px',
-                            border: '1px solid #cbd5e1',
-                            fontSize: '0.875rem',
-                            outline: 'none',
-                            color: '#334155'
-                        }}
+                        className={styles.searchInput}
                     />
                 </div>
 
-                <div style={{ display: 'flex', gap: '16px', flexWrap: 'wrap' }}>
-                    <div>
-                        <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: 700, color: '#64748b', marginBottom: '6px', textTransform: 'uppercase' }}>
-                            Năm học
-                        </label>
+                <div className={styles.filterGroup}>
+                    <div className={styles.filterSelectWrapper}>
                         <select
                             value={selectedYear}
                             onChange={(e) => setSelectedYear(e.target.value)}
-                            style={{
-                                padding: '10px 16px',
-                                borderRadius: '8px',
-                                border: '1px solid #cbd5e1',
-                                backgroundColor: '#fff',
-                                fontSize: '0.875rem',
-                                fontWeight: 600,
-                                color: '#334155',
-                                minWidth: '120px'
-                            }}
+                            className={styles.filterSelect}
                         >
                             {years.map(year => (
                                 <option key={year} value={year}>
@@ -195,197 +174,179 @@ export default function StudentDashboard() {
                                 </option>
                             ))}
                         </select>
+                        <ChevronDown size={14} className={styles.filterSelectIcon} />
                     </div>
 
-                    <div>
-                        <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: 700, color: '#64748b', marginBottom: '6px', textTransform: 'uppercase' }}>
-                            Kỳ học
-                        </label>
+                    <div className={styles.filterSelectWrapper}>
                         <select
                             value={selectedSemester}
                             onChange={(e) => setSelectedSemester(e.target.value)}
-                            style={{
-                                padding: '10px 16px',
-                                borderRadius: '8px',
-                                border: '1px solid #cbd5e1',
-                                backgroundColor: '#fff',
-                                fontSize: '0.875rem',
-                                fontWeight: 600,
-                                color: '#334155',
-                                minWidth: '120px'
-                            }}
+                            className={styles.filterSelect}
                         >
                             <option value="Spring">Kỳ Spring</option>
                             <option value="Summer">Kỳ Summer</option>
                             <option value="Fall">Kỳ Fall</option>
                         </select>
+                        <ChevronDown size={14} className={styles.filterSelectIcon} />
                     </div>
                 </div>
             </div>
 
+            {/* Error Banner */}
             {error && (
-                <div style={{
-                    padding: '16px',
-                    backgroundColor: '#fef2f2',
-                    border: '1px solid #fee2e2',
-                    borderRadius: '12px',
-                    color: '#b91c1c',
-                    marginBottom: '24px',
-                    fontSize: '0.875rem'
-                }}>
+                <div className={styles.errorBanner}>
                     {error}
                 </div>
             )}
 
+            {/* Classes section */}
             {loading ? (
-                <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '200px', gap: '8px' }}>
-                    <Loader2 className="animate-spin" style={{ color: '#0D3E26' }} />
-                    <span style={{ color: '#64748b', fontSize: '0.875rem' }}>Đang tải danh sách lớp học...</span>
+                <div className={styles.loadingState}>
+                    <Loader2 size={22} style={{ color: '#0f766e', animation: 'spin 1s linear infinite' }} />
+                    <span>Đang tải danh sách lớp học...</span>
                 </div>
             ) : filteredClasses.length === 0 ? (
-                <div style={{
-                    textAlign: 'center',
-                    padding: '48px 24px',
-                    backgroundColor: '#fff',
-                    borderRadius: '16px',
-                    border: '1px dashed #cbd5e1'
-                }}>
-                    <div style={{ fontSize: '3rem', marginBottom: '16px' }}>🎒</div>
-                    <h3 style={{ fontSize: '1.125rem', fontWeight: 600, color: '#334155', margin: 0 }}>
-                        Không tìm thấy lớp học nào
-                    </h3>
-                    <p style={{ color: '#64748b', fontSize: '0.875rem', marginTop: '6px' }}>
-                        {searchTerm ? 'Không tìm thấy lớp học nào khớp với từ khóa tìm kiếm.' : 'Không có lớp học nào trong học kỳ được chọn.'}
+                <div className={styles.emptyState}>
+                    <div className={styles.emptyIcon}>🎒</div>
+                    <h3 className={styles.emptyTitle}>Không tìm thấy lớp học nào</h3>
+                    <p className={styles.emptyDescription}>
+                        {searchTerm
+                            ? 'Không tìm thấy lớp học nào khớp với từ khóa tìm kiếm.'
+                            : 'Không có lớp học nào trong học kỳ được chọn.'}
                     </p>
                 </div>
             ) : (
-                <div style={{
-                    display: 'grid',
-                    gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))',
-                    gap: '24px'
-                }}>
-                    {filteredClasses.map((cls) => (
-                        <div
-                            key={cls.id}
-                            className="bg-white rounded-3xl border border-slate-100 shadow-sm overflow-hidden hover:shadow-xl transition-all cursor-pointer group"
-                            onClick={() => handleOpenClassDetail(cls)}
-                        >
-                            <div style={{ padding: '20px' }}>
-                                <div style={{
-                                    display: 'inline-flex',
-                                    alignItems: 'center',
-                                    gap: '6px',
-                                    backgroundColor: '#e6f4ea',
-                                    color: '#0d3e26',
-                                    fontSize: '0.75rem',
-                                    fontWeight: 700,
-                                    padding: '4px 10px',
-                                    borderRadius: '9999px',
-                                    marginBottom: '12px'
-                                }}>
-                                    <BookOpen size={12} />
-                                    {cls.id}
-                                </div>
+                <>
+                    {/* Section header */}
+                    <div className={styles.sectionHeader}>
+                        <h3 className={styles.sectionTitle}>
+                            <BookOpen size={16} style={{ color: '#0f766e' }} />
+                            Lớp học của tôi
+                        </h3>
+                        <span className={styles.sectionCount}>{filteredClasses.length} lớp</span>
+                    </div>
 
-                                <h4 style={{
-                                    fontSize: '1.125rem',
-                                    fontWeight: 700,
-                                    color: '#1e293b',
-                                    margin: '0 0 12px 0',
-                                    lineHeight: '1.4'
-                                }}>
-                                    {cls.courseName} ({cls.courseCode})
-                                </h4>
-
-                                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '12px', color: '#475569' }}>
-                                    <User size={16} style={{ color: '#94a3b8' }} />
-                                    <span style={{ fontSize: '0.875rem' }}>GV: <strong>{cls.lecturerName}</strong></span>
-                                </div>
-                            </div>
-
-                            <div style={{
-                                padding: '16px 20px',
-                                borderTop: '1px solid #f1f5f9',
-                                display: 'flex',
-                                justifyContent: 'space-between',
-                                alignItems: 'center'
-                            }}>
-                                <div style={{ display: 'flex', alignItems: 'center', gap: '6px', color: '#64748b', fontSize: '0.75rem' }}>
-                                    <Calendar size={14} />
-                                    <span>{cls.startDate || 'N/A'} - {cls.endDate || 'N/A'}</span>
-                                </div>
-
-                                <button 
-                                    onClick={(e) => { e.stopPropagation(); handleOpenClassDetail(cls); }}
-                                    style={{
-                                        padding: '6px 12px',
-                                        backgroundColor: '#0D3E26',
-                                        color: '#fff',
-                                        border: 'none',
-                                        borderRadius: '8px',
-                                        fontSize: '0.875rem',
-                                        fontWeight: 600,
-                                        cursor: 'pointer'
-                                    }}
+                    {/* Cards grid */}
+                    <div className={styles.cardsGrid}>
+                        {filteredClasses.map((cls) => (
+                            <div
+                                key={cls.id}
+                                className={styles.classCard}
+                                onClick={() => handleOpenClassDetail(cls)}
+                            >
+                                {/* Banner */}
+                                <div
+                                    className={styles.cardBanner}
+                                    style={{ background: getBannerColor(cls.courseCode) }}
                                 >
-                                    Vào lớp
-                                </button>
+                                    <div className={styles.cardBannerDecor} />
+                                    <div className={styles.cardBannerDecor2} />
+
+                                    <div className={styles.cardBannerTop}>
+                                        <h3 className={styles.cardCourseCode}>{cls.courseCode || cls.id}</h3>
+                                        <span className={styles.cardSemesterBadge}>{selectedSemester}</span>
+                                    </div>
+
+                                    <div className={styles.cardBannerBottom}>
+                                        <p className={styles.cardLecturer}>
+                                            <User size={12} />
+                                            GV: {cls.lecturerName || 'Chưa phân công'}
+                                        </p>
+                                    </div>
+                                </div>
+
+                                {/* Body */}
+                                <div className={styles.cardBody}>
+                                    <h4 className={styles.cardCourseName}>{cls.courseName}</h4>
+                                    <div className={styles.cardMeta}>
+                                        <Calendar size={13} className={styles.cardMetaIcon} />
+                                        <span>{cls.startDate || 'N/A'} — {cls.endDate || 'N/A'}</span>
+                                    </div>
+                                </div>
+
+                                {/* Footer */}
+                                <div className={styles.cardFooter}>
+                                    <div className={styles.cardActions}>
+                                        <button
+                                            className={styles.cardActionBtn}
+                                            title="Thư mục khóa học"
+                                            onClick={(e) => e.stopPropagation()}
+                                        >
+                                            <Folder size={16} />
+                                        </button>
+                                        <button
+                                            className={styles.cardActionBtn}
+                                            title="Thông báo"
+                                            onClick={(e) => e.stopPropagation()}
+                                        >
+                                            <Bell size={16} />
+                                        </button>
+                                        <button
+                                            className={styles.cardActionBtn}
+                                            title="Tùy chọn thêm"
+                                            onClick={(e) => e.stopPropagation()}
+                                        >
+                                            <MoreVertical size={16} />
+                                        </button>
+                                    </div>
+
+                                    <button
+                                        onClick={(e) => { e.stopPropagation(); handleOpenClassDetail(cls); }}
+                                        className={styles.cardEnterBtn}
+                                    >
+                                        Vào lớp
+                                    </button>
+                                </div>
                             </div>
-                        </div>
-                    ))}
-                </div>
+                        ))}
+                    </div>
+                </>
             )}
 
+            {/* Class Detail Modal */}
             {selectedClass && (
                 <div
                     onClick={() => setSelectedClass(null)}
-                    style={{
-                        position: 'fixed', inset: 0, backgroundColor: 'rgba(0,0,0,0.45)',
-                        display: 'flex', justifyContent: 'center', alignItems: 'center',
-                        zIndex: 9999, padding: '16px'
-                    }}
+                    className={styles.modalOverlay}
                 >
                     <div
                         onClick={e => e.stopPropagation()}
-                        style={{
-                            backgroundColor: '#fff', borderRadius: '20px',
-                            width: '100%', maxWidth: '600px', maxHeight: '88vh',
-                            overflowY: 'auto', boxShadow: '0 25px 60px rgba(0,0,0,0.25)',
-                            display: 'flex', flexDirection: 'column'
-                        }}
+                        className={styles.modalBox}
                     >
-                        <div style={{ padding: '24px 24px 16px', borderBottom: '1px solid #f1f5f9', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                        {/* Modal Header */}
+                        <div className={styles.modalHeader}>
                             <div>
-                                <div style={{ display: 'inline-flex', alignItems: 'center', gap: 6, backgroundColor: '#e6f4ea', color: '#0d3e26', fontSize: '0.75rem', fontWeight: 700, padding: '3px 10px', borderRadius: 999, marginBottom: 8 }}>
+                                <div className={styles.modalClassBadge}>
                                     <BookOpen size={11} /> {selectedClass.id}
                                 </div>
-                                <h2 style={{ fontSize: '1.125rem', fontWeight: 700, color: '#1e293b', margin: '0 0 6px' }}>
+                                <h2 className={styles.modalTitle}>
                                     {selectedClass.courseName} ({selectedClass.courseCode})
                                 </h2>
-                                <div style={{ display: 'flex', gap: 16, flexWrap: 'wrap' }}>
-                                    <span style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: '0.8125rem', color: '#64748b' }}>
-                                        <User size={13} /> GV: <strong style={{ color: '#334155' }}>{selectedClass.lecturerName || '—'}</strong>
+                                <div className={styles.modalMeta}>
+                                    <span className={styles.modalMetaItem}>
+                                        <User size={13} />
+                                        GV: <strong>{selectedClass.lecturerName || '—'}</strong>
                                     </span>
-                                    <span style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: '0.8125rem', color: '#64748b' }}>
-                                        <Calendar size={13} /> {selectedClass.startDate || 'N/A'} – {selectedClass.endDate || 'N/A'}
+                                    <span className={styles.modalMetaItem}>
+                                        <Calendar size={13} />
+                                        {selectedClass.startDate || 'N/A'} – {selectedClass.endDate || 'N/A'}
                                     </span>
                                 </div>
                             </div>
                             <button
                                 onClick={() => setSelectedClass(null)}
-                                style={{ background: '#f1f5f9', border: 'none', borderRadius: 8, width: 32, height: 32, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', fontSize: '1rem', color: '#64748b', flexShrink: 0 }}
-                                onMouseEnter={e => e.currentTarget.style.background = '#e2e8f0'}
-                                onMouseLeave={e => e.currentTarget.style.background = '#f1f5f9'}
+                                className={styles.modalCloseBtn}
                             >✕</button>
                         </div>
 
-                        {/* Student list section */}
-                        <div style={{ padding: '16px 24px 24px', flex: 1 }}>
-                            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
-                                <h3 style={{ fontSize: '0.9375rem', fontWeight: 700, color: '#1e293b', margin: 0, display: 'flex', alignItems: 'center', gap: 6 }}>
-                                    <Users size={16} color="#0D3E26" /> Danh sách học viên
+                        {/* Modal Body — Student list section */}
+                        <div className={styles.modalBody}>
+                            <div className={styles.studentListHeader}>
+                                <h3 className={styles.studentListTitle}>
+                                    <Users size={16} style={{ color: '#0f766e' }} />
+                                    Danh sách học viên
                                     {!loadingStudents && (
-                                        <span style={{ fontSize: '0.75rem', fontWeight: 600, background: '#e6f4ea', color: '#0d3e26', padding: '2px 8px', borderRadius: 999 }}>
+                                        <span className={styles.studentCountBadge}>
                                             {classStudents.length} người
                                         </span>
                                     )}
@@ -398,37 +359,33 @@ export default function StudentDashboard() {
                                 placeholder="Tìm kiếm học viên..."
                                 value={studentSearchTerm}
                                 onChange={e => setStudentSearchTerm(e.target.value)}
-                                style={{ width: '100%', padding: '8px 14px', borderRadius: 8, border: '1px solid #cbd5e1', fontSize: '0.875rem', outline: 'none', marginBottom: 14, boxSizing: 'border-box', color: '#334155' }}
-                                onFocus={e => e.target.style.borderColor = '#0D3E26'}
-                                onBlur={e => e.target.style.borderColor = '#cbd5e1'}
+                                className={styles.studentSearchInput}
                             />
 
                             {loadingStudents ? (
-                                <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: 100, gap: 8 }}>
-                                    <Loader2 size={18} style={{ color: '#0D3E26', animation: 'spin 1s linear infinite' }} />
-                                    <span style={{ color: '#64748b', fontSize: '0.875rem' }}>Đang tải danh sách...</span>
+                                <div className={styles.loadingState} style={{ minHeight: 100 }}>
+                                    <Loader2 size={18} style={{ color: '#0f766e', animation: 'spin 1s linear infinite' }} />
+                                    <span>Đang tải danh sách...</span>
                                 </div>
                             ) : classStudents.length === 0 ? (
-                                <div style={{ textAlign: 'center', padding: '24px', color: '#94a3b8', fontSize: '0.875rem' }}>
+                                <div style={{ textAlign: 'center', padding: '24px', color: '#9CA3AF', fontSize: '13px' }}>
                                     Chưa có học viên nào trong lớp này.
                                 </div>
                             ) : (
-                                <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                                <div className={styles.studentList}>
                                     {classStudents
                                         .filter(s => {
                                             const q = studentSearchTerm.toLowerCase();
                                             return !q || (s.fullName || '').toLowerCase().includes(q) || (s.id || '').toLowerCase().includes(q) || (s.email || '').toLowerCase().includes(q);
                                         })
                                         .map((s, idx) => (
-                                            <div key={s.id || idx} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '10px 14px', borderRadius: 10, background: '#f8fafc', border: '1px solid #e2e8f0' }}>
-                                                <div style={{ width: 34, height: 34, borderRadius: '50%', background: 'linear-gradient(135deg, #0D3E26, #10b981)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontWeight: 700, fontSize: '0.875rem', flexShrink: 0 }}>
+                                            <div key={s.id || idx} className={styles.studentItem}>
+                                                <div className={styles.studentAvatar}>
                                                     {(s.fullName || s.id || '?')[0].toUpperCase()}
                                                 </div>
                                                 <div style={{ minWidth: 0, flex: 1 }}>
-                                                    <div style={{ fontWeight: 600, fontSize: '0.875rem', color: '#1e293b', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                                                        {s.fullName || '—'}
-                                                    </div>
-                                                    <div style={{ fontSize: '0.75rem', color: '#94a3b8' }}>{s.email || s.id}</div>
+                                                    <div className={styles.studentName}>{s.fullName || '—'}</div>
+                                                    <div className={styles.studentSub}>{s.email || s.id}</div>
                                                 </div>
                                             </div>
                                         ))

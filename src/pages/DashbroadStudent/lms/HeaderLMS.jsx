@@ -1,11 +1,10 @@
 import React, { useState } from "react";
 import {
   Menu,
-  Plus,
   BookOpen,
   LogOut,
-  User,
-  ChevronDown
+  ChevronDown,
+  User
 } from "lucide-react";
 
 export default function HeaderLMS({
@@ -29,103 +28,277 @@ export default function HeaderLMS({
   const avatarLetter = studentName.trim().split(" ").pop()?.charAt(0).toUpperCase() || "N";
 
   return (
-    <header className="sticky top-0 z-50 bg-white border-b border-gray-200 h-16 flex items-center justify-between select-none px-4">
+    <header style={{
+      position: "sticky",
+      top: 0,
+      zIndex: 50,
+      background: "#ffffff",
+      borderBottom: "1px solid #E5E7EB",
+      height: "60px",
+      display: "flex",
+      alignItems: "center",
+      justifyContent: "space-between",
+      padding: "0 20px",
+      boxShadow: "0 1px 4px rgba(0,0,0,0.05)",
+      userSelect: "none",
+    }}>
 
-      {/* Left side: Navigation button & Flipped LMS logo */}
-      <div className="flex items-center gap-1.5 h-full">
-        {/* Menu toggle button on the far left */}
-        <button
-          onClick={onToggleSidebar}
-          className={`p-2 hover:bg-gray-100 rounded-full transition cursor-pointer ${
-            sidebarOpen ? 'text-emerald-600' : 'text-gray-500 hover:text-gray-800'
-          }`}
-          title={sidebarOpen ? 'Ẩn thanh điều hướng' : 'Hiện thanh điều hướng'}
-        >
-          <Menu size={20} className={`transition-transform duration-300 ${sidebarOpen ? 'rotate-0' : 'rotate-90'}`} />
-        </button>
+      {/* ─── Left side: Toggle + Brand ─── */}
+      <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+        {/* Sidebar toggle */}
+        <MenuToggle sidebarOpen={sidebarOpen} onToggleSidebar={onToggleSidebar} />
 
-        {/* Brand Logo */}
-        <div 
+        {/* Brand logo */}
+        <div
           onClick={onHome}
-          className="flex items-center gap-2.5 ml-1 cursor-pointer hover:opacity-80 transition"
+          style={{ display: "flex", alignItems: "center", gap: "10px", cursor: "pointer", marginLeft: "4px" }}
+          title="Trang chủ"
         >
-          <div className="text-emerald-600 bg-emerald-50 p-2 rounded-lg flex items-center justify-center shrink-0 border border-emerald-100">
-            <BookOpen size={18} className="stroke-[2.5]" />
+          <div style={{
+            width: "34px",
+            height: "34px",
+            background: "rgba(15,118,110,0.08)",
+            border: "1px solid rgba(15,118,110,0.15)",
+            borderRadius: "10px",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            flexShrink: 0,
+          }}>
+            <BookOpen size={17} style={{ color: "#0f766e", strokeWidth: 2.5 }} />
           </div>
-          <div className="flex flex-col text-left justify-center">
-            <span className="font-black text-[15px] text-emerald-900 tracking-wider font-sans leading-none">
+          <div style={{ display: "flex", flexDirection: "column", justifyContent: "center" }}>
+            <span style={{
+              fontWeight: 800,
+              fontSize: "14px",
+              color: "#064e3b",
+              letterSpacing: "0.04em",
+              lineHeight: 1,
+            }}>
               FLIPPED LMS
             </span>
-            <span className="text-[9.5px] font-extrabold text-emerald-600 mt-1 tracking-widest leading-none">
-              HỌC VIÊN
+            <span style={{
+              fontSize: "9px",
+              fontWeight: 700,
+              color: "#0f766e",
+              letterSpacing: "0.1em",
+              lineHeight: 1,
+              marginTop: "3px",
+              textTransform: "uppercase",
+            }}>
+              Học viên
             </span>
           </div>
         </div>
       </div>
 
-      {/* Right side: Plus (+) and User Profile Pill with dropdown */}
-      <div className="flex items-center gap-3">
+      {/* ─── Right side: Avatar + Dropdown ─── */}
+      <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
 
-
-        {/* User Profile Pill — click to open/close dropdown */}
-        <div className="relative">
-          <div
+        {/* User Profile Pill */}
+        <div style={{ position: "relative" }}>
+          <AvatarPill
+            avatarLetter={avatarLetter}
+            studentName={studentName}
+            showLauncher={showLauncher}
             onClick={() => setShowLauncher(!showLauncher)}
-            className={`border transition-all px-3 py-1.5 rounded-full flex items-center gap-2.5 shadow-2xs cursor-pointer select-none ${
-              showLauncher
-                ? 'border-emerald-300 bg-emerald-50'
-                : 'border-gray-200 bg-gray-50/50 hover:bg-gray-50 hover:border-gray-300'
-            }`}
-            title={`${studentName} (${studentCode})`}
-          >
-            <div className="w-8 h-8 rounded-full bg-[#0a4823] text-white font-bold flex items-center justify-center text-xs shadow-xs shrink-0">
-              {avatarLetter}
-            </div>
-            <div className="text-left font-sans leading-none pr-0.5">
-              <span className="text-xs font-bold text-gray-800 block">
-                {studentName}
-              </span>
-              <span className="text-[9px] text-gray-400 font-semibold block mt-0.5">
-                Student
-              </span>
-            </div>
-            <ChevronDown
-              size={14}
-              className={`text-gray-400 transition-transform duration-200 ${showLauncher ? 'rotate-180' : 'rotate-0'}`}
-            />
-          </div>
+          />
 
-          {/* Dropdown panel */}
+          {/* Dropdown */}
           {showLauncher && (
-            <div className="absolute right-0 mt-2.5 w-72 bg-white border border-gray-200 rounded-2xl shadow-xl p-4 space-y-4 animate-fade-in text-left z-50 font-sans">
-
-              {/* User profile details at the top */}
-              <div className="flex flex-col items-center text-center pb-3 border-b border-gray-100">
-                <div className="w-14 h-14 rounded-full bg-[#0a4823] text-white font-bold flex items-center justify-center text-xl shadow-xs mb-2">
-                  {avatarLetter}
+            <>
+              {/* Backdrop */}
+              <div
+                style={{ position: "fixed", inset: 0, zIndex: 40 }}
+                onClick={() => setShowLauncher(false)}
+              />
+              <div style={{
+                position: "absolute",
+                right: 0,
+                top: "calc(100% + 10px)",
+                width: "260px",
+                background: "#ffffff",
+                border: "1px solid #E5E7EB",
+                borderRadius: "16px",
+                boxShadow: "0 8px 32px rgba(0,0,0,0.12)",
+                padding: "16px",
+                zIndex: 50,
+                animation: "fadeIn 0.15s ease-out",
+              }}>
+                {/* User profile */}
+                <div style={{
+                  display: "flex",
+                  flexDirection: "column",
+                  alignItems: "center",
+                  textAlign: "center",
+                  paddingBottom: "14px",
+                  borderBottom: "1px solid #F3F4F6",
+                  marginBottom: "10px",
+                }}>
+                  <div style={{
+                    width: "52px",
+                    height: "52px",
+                    borderRadius: "50%",
+                    background: "linear-gradient(135deg, #064e3b, #0d9488)",
+                    color: "#ffffff",
+                    fontWeight: 800,
+                    fontSize: "20px",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    marginBottom: "10px",
+                    boxShadow: "0 2px 8px rgba(15,118,110,0.3)",
+                  }}>
+                    {avatarLetter}
+                  </div>
+                  <span style={{ fontSize: "14px", fontWeight: 700, color: "#111827", display: "block" }}>{studentName}</span>
+                  <span style={{ fontSize: "12px", color: "#6B7280", marginTop: "2px", display: "block" }}>{studentEmail || "Chưa cập nhật email"}</span>
+                  <span style={{
+                    display: "inline-block",
+                    marginTop: "8px",
+                    fontSize: "10px",
+                    fontWeight: 700,
+                    textTransform: "uppercase",
+                    letterSpacing: "0.08em",
+                    background: "rgba(15,118,110,0.1)",
+                    color: "#0f766e",
+                    padding: "2px 10px",
+                    borderRadius: "999px",
+                  }}>
+                    Học viên
+                  </span>
                 </div>
-                <h3 className="font-bold text-sm text-gray-800">{studentName}</h3>
-                <p className="text-xs text-gray-500 mt-0.5">{studentEmail || "Chưa cập nhật email"}</p>
-              </div>
 
-              {/* Action buttons */}
-              <div className="space-y-2">
-
+                {/* Actions */}
                 <button
-                  onClick={() => {
-                    setShowLauncher(false);
-                    onLogout();
+                  onClick={() => { setShowLauncher(false); onLogout(); }}
+                  style={{
+                    width: "100%",
+                    display: "flex",
+                    alignItems: "center",
+                    gap: "8px",
+                    padding: "8px 10px",
+                    fontSize: "13px",
+                    fontWeight: 600,
+                    color: "#DC2626",
+                    background: "transparent",
+                    border: "none",
+                    borderRadius: "10px",
+                    cursor: "pointer",
+                    transition: "background 150ms ease",
+                    textAlign: "left",
                   }}
-                  className="w-full flex items-center gap-2 px-2 py-1.5 text-xs text-red-600 hover:bg-red-50 rounded-lg transition cursor-pointer"
+                  onMouseEnter={e => e.currentTarget.style.background = "#FEF2F2"}
+                  onMouseLeave={e => e.currentTarget.style.background = "transparent"}
                 >
-                  <LogOut size={13} className="text-red-500" />
-                  <span>Đăng xuất tài khoản</span>
+                  <LogOut size={14} style={{ color: "#EF4444" }} />
+                  Đăng xuất tài khoản
                 </button>
               </div>
-            </div>
+            </>
           )}
         </div>
       </div>
     </header>
+  );
+}
+
+// ─── Sub-components ───────────────────────────────────────────
+
+function MenuToggle({ sidebarOpen, onToggleSidebar }) {
+  const [hov, setHov] = useState(false);
+  const isPinned = sidebarOpen;
+  return (
+    <button
+      onClick={onToggleSidebar}
+      onMouseEnter={() => setHov(true)}
+      onMouseLeave={() => setHov(false)}
+      title={isPinned ? "Bỏ ghim thanh điều hướng" : "Ghim thanh điều hướng (luôn mở rộng)"}
+      style={{
+        width: "36px",
+        height: "36px",
+        borderRadius: "8px",
+        background: isPinned
+          ? "rgba(15,118,110,0.1)"
+          : hov ? "#F3F4F6" : "transparent",
+        border: isPinned ? "1px solid rgba(15,118,110,0.2)" : "none",
+        cursor: "pointer",
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        color: isPinned ? "#0f766e" : (hov ? "#374151" : "#6B7280"),
+        transition: "background 200ms ease, color 200ms ease, border-color 200ms ease",
+        flexShrink: 0,
+        position: "relative",
+      }}
+    >
+      <Menu size={20} />
+      {/* Pin indicator dot */}
+      {isPinned && (
+        <span style={{
+          position: "absolute",
+          top: "5px",
+          right: "5px",
+          width: "5px",
+          height: "5px",
+          borderRadius: "50%",
+          background: "#0f766e",
+        }} />
+      )}
+    </button>
+  );
+}
+
+function AvatarPill({ avatarLetter, studentName, showLauncher, onClick }) {
+  const [hov, setHov] = useState(false);
+  return (
+    <div
+      onClick={onClick}
+      onMouseEnter={() => setHov(true)}
+      onMouseLeave={() => setHov(false)}
+      style={{
+        display: "flex",
+        alignItems: "center",
+        gap: "8px",
+        padding: "5px 12px 5px 5px",
+        borderRadius: "999px",
+        border: showLauncher ? "1px solid rgba(15,118,110,0.3)" : `1px solid ${hov ? "#D1D5DB" : "#E5E7EB"}`,
+        background: showLauncher ? "rgba(15,118,110,0.06)" : (hov ? "#F9FAFB" : "#ffffff"),
+        cursor: "pointer",
+        transition: "all 200ms ease",
+        boxShadow: "0 1px 4px rgba(0,0,0,0.06)",
+        userSelect: "none",
+      }}
+    >
+      <div style={{
+        width: "30px",
+        height: "30px",
+        borderRadius: "50%",
+        background: "linear-gradient(135deg, #064e3b, #0d9488)",
+        color: "#ffffff",
+        fontWeight: 700,
+        fontSize: "13px",
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        flexShrink: 0,
+      }}>
+        {avatarLetter}
+      </div>
+      <div style={{ lineHeight: 1, textAlign: "left" }}>
+        <span style={{ fontSize: "13px", fontWeight: 600, color: "#111827", display: "block" }}>
+          {studentName.length > 18 ? studentName.slice(0, 18) + "…" : studentName}
+        </span>
+        <span style={{ fontSize: "10px", color: "#9CA3AF", display: "block", marginTop: "2px" }}>Student</span>
+      </div>
+      <ChevronDown
+        size={14}
+        style={{
+          color: "#9CA3AF",
+          transition: "transform 200ms ease",
+          transform: showLauncher ? "rotate(180deg)" : "rotate(0deg)",
+        }}
+      />
+    </div>
   );
 }
