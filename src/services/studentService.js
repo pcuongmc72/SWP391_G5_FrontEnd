@@ -1,4 +1,6 @@
 import api from './api';
+import { uploadFileToCloudinary } from './cloudinaryService';
+
 
 /**
  * Lấy danh sách các học kỳ (Academic Terms)
@@ -83,17 +85,18 @@ export const submitAssignment = async (classId, assignmentId, payload) => {
 };
 
 /**
- * Tải file lên máy chủ thông qua endpoint api/Upload
+ * Tải file lên đám mây thông qua Cloudinary (đồng bộ cơ chế với Lecturer)
  * @param {File} file - Đối tượng file cần tải lên
  */
 export const uploadFile = async (file) => {
-    const formData = new FormData();
-    formData.append('file', file);
-    const response = await api.post('/api/Upload', formData, {
-        headers: {
-            'Content-Type': 'multipart/form-data',
-        },
-    });
-    return response.data; // Trả về { data: { url, fileName, size } }
+    const res = await uploadFileToCloudinary(file);
+    return {
+        data: {
+            url: res.url,
+            fileName: file.name,
+            size: res.size
+        }
+    };
 };
+
 
