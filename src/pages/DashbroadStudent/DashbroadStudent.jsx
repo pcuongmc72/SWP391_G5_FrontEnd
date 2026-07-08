@@ -13,7 +13,11 @@ import {
   Send,
   Loader2,
   CheckCircle2,
-  CircleAlert
+  CircleAlert,
+  BookOpen,
+  ClipboardList,
+  Award,
+  Users
 } from 'lucide-react';
 
 // Services
@@ -825,71 +829,76 @@ export default function DashbroadStudent() {
               <div className="space-y-6 animate-fade-in text-left">
 
                 {/* Google Classroom Universal Tab bar navigation */}
-                <div id="classroom-tabs-nav" className="bg-white border-b border-gray-250 px-4 sm:px-6 flex items-center justify-between -mx-4 sm:-mx-6 lg:-mx-8 -mt-4 sm:-mt-6 lg:-mt-8 mb-4 sticky top-0 z-40 select-none">
-                  <div className="flex items-center gap-1.5 md:gap-3 overflow-x-auto scrollbar-none h-13">
+                <div id="classroom-tabs-nav" className="bg-white border-b border-gray-250 px-4 sm:px-6 flex items-center justify-between -mx-4 sm:-mx-6 lg:-mx-8 -mt-4 sm:-mt-6 lg:-mt-8 mb-4 sticky top-0 z-40 select-none shadow-xs">
+                  <div className="flex items-center gap-1.5 md:gap-3 overflow-x-auto scrollbar-none py-2.5">
                     <button
                       onClick={() => setSelectedCourse(null)}
-                      className="p-2 text-gray-500 hover:text-gray-900 rounded-full hover:bg-gray-100 transition mr-1 font-bold flex items-center gap-1 shrink-0 cursor-pointer"
+                      className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold text-gray-500 hover:text-gray-900 hover:bg-gray-100 transition duration-300 ease-in-out shrink-0 cursor-pointer"
                       title="Quay lại tất cả lớp học"
                     >
-                      <ArrowLeft size={16} className="inline" />
-                      <span className="text-xs">Lớp học</span>
+                      <ArrowLeft size={15} />
+                      <span>Lớp học</span>
                     </button>
 
-                    <div className="flex items-center h-full gap-1 border-b border-transparent">
+                    <div className="flex items-center gap-1.5 sm:gap-2">
                       <button
                         onClick={() => setActiveCourseTab("stream")}
-                        className={`px-4 h-full text-xs font-bold flex items-center justify-center border-b-[3px] transition-all relative ${activeCourseTab === "stream"
-                          ? "border-emerald-600 text-emerald-800 font-extrabold"
-                          : "border-transparent text-gray-500 hover:text-gray-800 hover:bg-gray-50 cursor-pointer"
+                        className={`flex items-center gap-2 px-4 py-1.5 rounded-full text-xs font-bold transition-all duration-300 ease-in-out shrink-0 cursor-pointer ${activeCourseTab === "stream"
+                          ? "bg-emerald-50 text-emerald-700 shadow-2xs border border-emerald-200/50 scale-102"
+                          : "text-gray-500 hover:text-gray-800 hover:bg-gray-50 hover:scale-101"
                           }`}
                       >
-                        Bảng tin (Stream)
+                        <MessageSquare size={14} className={activeCourseTab === "stream" ? "text-emerald-600" : ""} />
+                        <span>Bảng tin (Stream)</span>
                       </button>
 
                       <button
                         onClick={() => setActiveCourseTab("classwork")}
-                        className={`px-4 h-full text-xs font-bold flex items-center justify-center border-b-[3px] transition-all relative ${activeCourseTab === "classwork"
-                          ? "border-emerald-600 text-emerald-800 font-extrabold"
-                          : "border-transparent text-gray-500 hover:text-gray-800 hover:bg-gray-50 cursor-pointer"
+                        className={`flex items-center gap-2 px-4 py-1.5 rounded-full text-xs font-bold transition-all duration-300 ease-in-out shrink-0 cursor-pointer ${activeCourseTab === "classwork"
+                          ? "bg-emerald-50 text-emerald-700 shadow-2xs border border-emerald-200/50 scale-102"
+                          : "text-gray-500 hover:text-gray-800 hover:bg-gray-50 hover:scale-101"
                           }`}
                       >
-                        Học liệu
+                        <BookOpen size={14} className={activeCourseTab === "classwork" ? "text-emerald-600" : ""} />
+                        <span>Học liệu</span>
                       </button>
 
                       <button
                         onClick={() => setActiveCourseTab("assignments")}
-                        className={`px-4 h-full text-xs font-bold flex items-center justify-center border-b-[3px] transition-all relative ${activeCourseTab === "assignments"
-                          ? "border-emerald-600 text-emerald-800 font-extrabold"
-                          : "border-transparent text-gray-500 hover:text-gray-800 hover:bg-gray-50 cursor-pointer"
+                        className={`flex items-center gap-2 px-4 py-1.5 rounded-full text-xs font-bold transition-all duration-300 ease-in-out shrink-0 cursor-pointer ${activeCourseTab === "assignments"
+                          ? "bg-emerald-50 text-emerald-700 shadow-2xs border border-emerald-200/50 scale-102"
+                          : "text-gray-500 hover:text-gray-800 hover:bg-gray-50 hover:scale-101"
                           }`}
                       >
-                        Bài tập
+                        <ClipboardList size={14} className={activeCourseTab === "assignments" ? "text-emerald-600" : ""} />
+                        <span>Bài tập</span>
                       </button>
 
                       <button
                         onClick={() => setActiveCourseTab("grades")}
-                        className={`px-4 h-full text-xs font-bold flex items-center justify-center border-b-[3px] transition-all relative ${activeCourseTab === "grades"
-                          ? "border-emerald-600 text-emerald-800 font-extrabold"
-                          : "border-transparent text-gray-500 hover:text-gray-800 hover:bg-gray-50 cursor-pointer"
+                        className={`flex items-center gap-2 px-4 py-1.5 rounded-full text-xs font-bold transition-all duration-300 ease-in-out shrink-0 cursor-pointer ${activeCourseTab === "grades"
+                          ? "bg-emerald-50 text-emerald-700 shadow-2xs border border-emerald-200/50 scale-102"
+                          : "text-gray-500 hover:text-gray-800 hover:bg-gray-50 hover:scale-101"
                           }`}
                       >
-                        Điểm &amp; Nhận xét
+                        <Award size={14} className={activeCourseTab === "grades" ? "text-emerald-600" : ""} />
+                        <span>Điểm &amp; Nhận xét</span>
                       </button>
 
                       <button
                         onClick={() => setActiveCourseTab("people")}
-                        className={`px-4 h-full text-xs font-bold flex items-center justify-center border-b-[3px] transition-all relative ${activeCourseTab === "people"
-                          ? "border-emerald-600 text-emerald-800 font-extrabold"
-                          : "border-transparent text-gray-500 hover:text-gray-800 hover:bg-gray-50 cursor-pointer"
+                        className={`flex items-center gap-2 px-4 py-1.5 rounded-full text-xs font-bold transition-all duration-300 ease-in-out shrink-0 cursor-pointer ${activeCourseTab === "people"
+                          ? "bg-emerald-50 text-emerald-700 shadow-2xs border border-emerald-200/50 scale-102"
+                          : "text-gray-500 hover:text-gray-800 hover:bg-gray-50 hover:scale-101"
                           }`}
                       >
-                        Thành viên (People)
+                        <Users size={14} className={activeCourseTab === "people" ? "text-emerald-600" : ""} />
+                        <span>Thành viên (People)</span>
                       </button>
                     </div>
                   </div>
 
-                  <div className="flex items-center gap-1.5 shrink-0">
+                  <div className="flex items-center gap-1.5 shrink-0 py-2.5">
                     <button
                       onClick={() => triggerNotification("📅 Đã liên kết và đồng bộ thời khóa biểu lớp với Google Calendar của bạn.", "info")}
                       className="p-2 text-gray-400 hover:text-gray-850 hover:bg-gray-100 rounded-full transition cursor-pointer"

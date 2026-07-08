@@ -81,3 +81,19 @@ export const submitAssignment = async (classId, assignmentId, payload) => {
     );
     return response.data;
 };
+
+/**
+ * Tải file lên máy chủ thông qua endpoint api/Upload
+ * @param {File} file - Đối tượng file cần tải lên
+ */
+export const uploadFile = async (file) => {
+    const formData = new FormData();
+    formData.append('file', file);
+    const response = await api.post('/api/Upload', formData, {
+        headers: {
+            'Content-Type': 'multipart/form-data',
+        },
+    });
+    return response.data; // Trả về { data: { url, fileName, size } }
+};
+
