@@ -25,16 +25,10 @@ const STATUS_MAP = {
 function computeStatus(startDate, endDate) {
   if (!startDate || !endDate) return 'COMPLETED';
   const now = new Date();
-  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
+  const todayStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
 
-  const start = new Date(startDate);
-  const startDay = new Date(start.getFullYear(), start.getMonth(), start.getDate()).getTime();
-
-  const end = new Date(endDate);
-  const endDay = new Date(end.getFullYear(), end.getMonth(), end.getDate()).getTime();
-
-  if (today < startDay) return 'UPCOMING';
-  if (today > endDay) return 'COMPLETED';
+  if (todayStr < startDate) return 'UPCOMING';
+  if (todayStr > endDate) return 'COMPLETED';
   return 'ACTIVE';
 }
 
@@ -597,7 +591,7 @@ function TermsDashboard({ onViewClasses, onTermsChange, showToast, toast }) {
 
           const termClasses = allClasses.filter(c => {
             const cTermId = c.academicTermId ?? c.AcademicTermId ?? c.termId ?? c.TermId ?? '';
-            return String(cTermId) === String(editingTerm.id);
+            return String(cTermId).toLowerCase() === String(editingTerm.id).toLowerCase();
           });
 
           const invalidClasses = termClasses.filter(c => {
@@ -659,7 +653,7 @@ function TermsDashboard({ onViewClasses, onTermsChange, showToast, toast }) {
       // Check if any class belongs to this term
       const hasClasses = allClasses.some(c => {
         const cTermId = c.academicTermId ?? c.AcademicTermId ?? c.termId ?? c.TermId ?? '';
-        return String(cTermId) === String(id);
+        return String(cTermId).toLowerCase() === String(id).toLowerCase();
       });
 
       if (hasClasses) {
@@ -723,8 +717,6 @@ function TermsDashboard({ onViewClasses, onTermsChange, showToast, toast }) {
           to   { transform: scale(1);    opacity: 1; }
         }
       `}</style>
-
-      <Toast toast={toast} />
 
       <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
 

@@ -108,3 +108,12 @@ export const removeStudentFromClass = async (classId, studentId) => {
   const res = await api.delete(`/api/classes/${classId}/students/${studentId}`);
   return res.data;
 };
+
+/**
+ * Lấy danh sách học liệu của lớp học dành cho Admin
+ * @param {string} classId
+ */
+export const getClassMaterials = async (classId) => {
+  const res = await api.get(`/api/Classes/${classId}/materials`);
+  return res.data;
+};

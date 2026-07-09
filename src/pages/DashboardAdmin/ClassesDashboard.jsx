@@ -3,6 +3,7 @@ import {
   Plus, Search, Users, BookOpen, Edit2, Trash2,
   X, CheckCircle, AlertCircle, GraduationCap,
   CalendarDays, Calendar, Milestone, Loader2,
+  Play, FileText, File, FileQuestion, Award,
 } from 'lucide-react';
 import { fetchCourses } from '../../services/courseService';
 import {
@@ -13,7 +14,9 @@ import {
   getClassStudents,
   addStudentToClass,
   removeStudentFromClass,
+  getClassMaterials,
 } from '../../services/classService';
+import api from '../../services/api';
 
 /* ─── Helpers ─────────────────────────────────────────── */
 function formatDate(d) {
@@ -47,17 +50,11 @@ const normalizeClass = (c) => {
   let computedStatus = 'ACTIVE';
   if (startDateStr && endDateStr) {
     const now = new Date();
-    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
+    const todayStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
 
-    const start = new Date(startDateStr);
-    const startDay = new Date(start.getFullYear(), start.getMonth(), start.getDate()).getTime();
-
-    const end = new Date(endDateStr);
-    const endDay = new Date(end.getFullYear(), end.getMonth(), end.getDate()).getTime();
-
-    if (today < startDay) {
+    if (todayStr < startDateStr) {
       computedStatus = 'UPCOMING';
-    } else if (today > endDay) {
+    } else if (todayStr > endDateStr) {
       computedStatus = 'CLOSED';
     } else {
       computedStatus = 'ACTIVE';
@@ -157,13 +154,13 @@ function ClassCard({ cls, onEdit, onDelete, onViewDetails, onViewRoadmap }) {
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 12 }}>
         <ClassStatusBadge status={cls.status} />
         <div style={{ display: 'flex', gap: 4 }}>
-          <button 
-            onClick={() => onEdit(cls)} 
-            title={cls.status === 'CLOSED' ? "Lớp học đã đóng - Không thể chỉnh sửa" : "Chỉnh sửa"} 
-            disabled={cls.status === 'CLOSED'}
+          <button
+            onClick={() => onEdit(cls)}
+            title={cls.status === 'CLOSED' || cls.status === 'ACTIVE' ? "Lớp học đang diễn ra hoặc đã kết thúc - Không thể chỉnh sửa" : "Chỉnh sửa"}
+            disabled={cls.status === 'CLOSED' || cls.status === 'ACTIVE'}
             style={iconBtnStyle(
-              cls.status === 'CLOSED' ? '#f1f5f9' : '#f8fafc', 
-              cls.status === 'CLOSED' ? '#cbd5e1' : '#64748b'
+              (cls.status === 'CLOSED' || cls.status === 'ACTIVE') ? '#f1f5f9' : '#f8fafc',
+              (cls.status === 'CLOSED' || cls.status === 'ACTIVE') ? '#cbd5e1' : '#64748b'
             )}
           >
             <Edit2 size={13} />
@@ -238,7 +235,7 @@ function ClassCard({ cls, onEdit, onDelete, onViewDetails, onViewRoadmap }) {
 
 /* ─── ClassDetailModal (API-integrated) ────────────────── */
 function ClassDetailModal({ isOpen, cls, users = [], onSaveDetails, onClose }) {
-  const isClosed = cls?.status === 'CLOSED';
+  const isClosed = cls?.status === 'CLOSED' || cls?.status === 'ACTIVE';
   const [localLecturer, setLocalLecturer] = useState('');
   const [localStudents, setLocalStudents] = useState([]);
   const [originalStudents, setOriginalStudents] = useState([]);
@@ -287,12 +284,17 @@ function ClassDetailModal({ isOpen, cls, users = [], onSaveDetails, onClose }) {
         else if (data && Array.isArray(data.data)) list = data.data;
         else if (data && data.$values && Array.isArray(data.$values)) list = data.$values;
 
-        const normalized = list.map(s => ({
-          id: s.studentId ?? s.StudentId ?? s.id ?? s.Id ?? s.userId ?? s.UserId ?? '',
-          name: s.fullName ?? s.FullName ?? s.name ?? s.Name ?? 'Sinh viên',
-          email: s.email ?? s.Email ?? '',
-          role: 'Student',
-        }));
+        const normalized = list.map(s => {
+          const sId = s.studentId ?? s.StudentId ?? s.id ?? s.Id ?? s.userId ?? s.UserId ?? '';
+          const matchingUser = users.find(u => String(u.id) === String(sId));
+          return {
+            id: sId,
+            name: s.fullName ?? s.FullName ?? s.name ?? s.Name ?? 'Sinh viên',
+            email: s.email ?? s.Email ?? '',
+            role: 'Student',
+            avatarUrl: s.avatarUrl ?? s.AvatarUrl ?? matchingUser?.avatarUrl ?? matchingUser?.AvatarUrl ?? '',
+          };
+        });
         setLocalStudents(normalized);
         setOriginalStudents(normalized);
       })
@@ -467,7 +469,11 @@ function ClassDetailModal({ isOpen, cls, users = [], onSaveDetails, onClose }) {
             marginBottom: 20
           }}>
             <AlertCircle size={17} color="#f43f5e" style={{ flexShrink: 0 }} />
-            <span>Lớp học này đã kết thúc. Bạn chỉ có thể xem danh sách lớp học và không thể thêm giảng viên, sinh viên hoặc thực hiện bất kỳ thay đổi nào.</span>
+            <span>
+              {cls?.status === 'ACTIVE'
+                ? 'Lớp học này đang diễn ra. Bạn chỉ có thể xem danh sách lớp học và không thể thêm giảng viên, sinh viên hoặc thực hiện bất kỳ thay đổi nào.'
+                : 'Lớp học này đã kết thúc. Bạn chỉ có thể xem danh sách lớp học và không thể thêm giảng viên, sinh viên hoặc thực hiện bất kỳ thay đổi nào.'}
+            </span>
           </div>
         )}
 
@@ -496,11 +502,36 @@ function ClassDetailModal({ isOpen, cls, users = [], onSaveDetails, onClose }) {
                 <GraduationCap size={16} /> Giảng viên giảng dạy
               </h4>
 
-              <label style={{ ...labelStyle, fontSize: '0.75rem', color: '#64748b', marginBottom: 4 }}>Chọn giảng viên phụ trách từ danh sách</label>
+              <label style={{ ...labelStyle, fontSize: '0.75rem', color: '#64748b', marginBottom: 4 }}>Tìm kiếm giảng viên</label>
 
+              {/* Ô tìm kiếm bằng ID thủ công */}
+              <div style={{ display: 'flex', gap: 8, marginBottom: 8 }}>
+                <input
+                  type="text"
+                  placeholder="Nhập mã ID giảng viên..."
+                  value={lecturerIdInput}
+                  onChange={e => setLecturerIdInput(e.target.value)}
+                  disabled={isClosed}
+                  style={{ flex: 1, padding: '10px 12px', border: '1.5px solid #e2e8f0', borderRadius: 12, fontSize: '0.875rem', color: '#0f172a', background: isClosed ? '#f1f5f9' : '#ffffff', outline: 'none', transition: 'all 0.15s', boxSizing: 'border-box' }}
+                  onFocus={e => { if (!isClosed) e.target.style.borderColor = '#10b981'; }}
+                  onBlur={e => { if (!isClosed) e.target.style.borderColor = '#e2e8f0'; }}
+                />
+                <button
+                  type="button"
+                  onClick={handleSearchLecturer}
+                  disabled={isClosed}
+                  style={{ padding: '10px 16px', background: isClosed ? '#cbd5e1' : 'linear-gradient(135deg, #0D3E26, #166534)', color: '#fff', border: 'none', borderRadius: 12, fontSize: '0.8125rem', fontWeight: 700, cursor: isClosed ? 'not-allowed' : 'pointer', transition: 'all 0.15s' }}
+                  onMouseEnter={e => { if (!isClosed) e.currentTarget.style.background = 'linear-gradient(135deg, #166534, #15803d)'; }}
+                  onMouseLeave={e => { if (!isClosed) e.currentTarget.style.background = 'linear-gradient(135deg, #0D3E26, #166534)'; }}
+                >
+                  Tìm kiếm
+                </button>
+              </div>
+
+              {/* Hoặc chọn từ Dropdown */}
               <div style={{ display: 'flex', gap: 8, marginBottom: 12 }}>
                 <select
-                  value={lecturerIdInput}
+                  value={lecturersList.some(l => String(l.id) === String(lecturerIdInput)) ? lecturerIdInput : ''}
                   onChange={e => {
                     const val = e.target.value;
                     setLecturerIdInput(val);
@@ -517,7 +548,7 @@ function ClassDetailModal({ isOpen, cls, users = [], onSaveDetails, onClose }) {
                   onFocus={e => { if (!isClosed) e.target.style.borderColor = '#10b981'; }}
                   onBlur={e => { if (!isClosed) e.target.style.borderColor = '#e2e8f0'; }}
                 >
-                  <option value="">-- Chọn giảng viên giảng dạy --</option>
+                  <option value="">-- Hoặc chọn giảng viên từ danh sách --</option>
                   {lecturersList.map(l => (
                     <option key={l.id} value={l.id}>{l.name} [ID: {l.id}]</option>
                   ))}
@@ -539,14 +570,14 @@ function ClassDetailModal({ isOpen, cls, users = [], onSaveDetails, onClose }) {
                     </div>
                   </div>
                   {localLecturer !== searchedLecturer.name ? (
-                    <button 
-                      onClick={handleCommitAssignLecturer} 
+                    <button
+                      onClick={handleCommitAssignLecturer}
                       disabled={isClosed}
-                      style={{ 
-                        padding: '6px 12px', 
-                        background: isClosed ? '#cbd5e1' : 'linear-gradient(135deg, #0D3E26, #166534)', 
-                        color: '#fff', border: 'none', borderRadius: 8, fontSize: '0.75rem', fontWeight: 700, 
-                        cursor: isClosed ? 'not-allowed' : 'pointer', transition: 'all 0.15s', flexShrink: 0 
+                      style={{
+                        padding: '6px 12px',
+                        background: isClosed ? '#cbd5e1' : 'linear-gradient(135deg, #0D3E26, #166534)',
+                        color: '#fff', border: 'none', borderRadius: 8, fontSize: '0.75rem', fontWeight: 700,
+                        cursor: isClosed ? 'not-allowed' : 'pointer', transition: 'all 0.15s', flexShrink: 0
                       }}
                       onMouseEnter={e => { if (!isClosed) e.currentTarget.style.background = 'linear-gradient(135deg, #166534, #15803d)'; }}
                       onMouseLeave={e => { if (!isClosed) e.currentTarget.style.background = 'linear-gradient(135deg, #0D3E26, #166534)'; }}>
@@ -601,10 +632,36 @@ function ClassDetailModal({ isOpen, cls, users = [], onSaveDetails, onClose }) {
 
             {/* Add Student */}
             <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginBottom: 16, borderBottom: '1px solid #f1f5f9', paddingBottom: 16 }}>
-              <label style={{ ...labelStyle, fontSize: '0.75rem', color: '#64748b', marginBottom: 2 }}>Chọn học viên từ danh sách để thêm vào lớp</label>
+              <label style={{ ...labelStyle, fontSize: '0.75rem', color: '#64748b', marginBottom: 2 }}>Tìm kiếm & Thêm sinh viên</label>
+
+              {/* Ô tìm kiếm bằng ID thủ công */}
+              <div style={{ display: 'flex', gap: 8, marginBottom: 8 }}>
+                <input
+                  type="text"
+                  placeholder="Nhập mã ID sinh viên..."
+                  value={studentIdInput}
+                  onChange={e => setStudentIdInput(e.target.value)}
+                  disabled={isClosed}
+                  style={{ flex: 1, padding: '10px 12px', border: '1.5px solid #e2e8f0', borderRadius: 12, fontSize: '0.875rem', color: '#0f172a', background: isClosed ? '#f1f5f9' : '#ffffff', outline: 'none', transition: 'all 0.15s', boxSizing: 'border-box' }}
+                  onFocus={e => { if (!isClosed) e.target.style.borderColor = '#10b981'; }}
+                  onBlur={e => { if (!isClosed) e.target.style.borderColor = '#e2e8f0'; }}
+                />
+                <button
+                  type="button"
+                  onClick={handleSearchStudent}
+                  disabled={isClosed}
+                  style={{ padding: '10px 16px', background: isClosed ? '#cbd5e1' : 'linear-gradient(135deg, #0D3E26, #166534)', color: '#fff', border: 'none', borderRadius: 12, fontSize: '0.8125rem', fontWeight: 700, cursor: isClosed ? 'not-allowed' : 'pointer', transition: 'all 0.15s' }}
+                  onMouseEnter={e => { if (!isClosed) e.currentTarget.style.background = 'linear-gradient(135deg, #166534, #15803d)'; }}
+                  onMouseLeave={e => { if (!isClosed) e.currentTarget.style.background = 'linear-gradient(135deg, #0D3E26, #166534)'; }}
+                >
+                  Tìm kiếm
+                </button>
+              </div>
+
+              {/* Hoặc chọn từ Dropdown */}
               <div style={{ display: 'flex', gap: 8 }}>
                 <select
-                  value={studentIdInput}
+                  value={availableStudents.some(s => String(s.id) === String(studentIdInput)) ? studentIdInput : ''}
                   onChange={e => {
                     const val = e.target.value;
                     setStudentIdInput(val);
@@ -621,7 +678,7 @@ function ClassDetailModal({ isOpen, cls, users = [], onSaveDetails, onClose }) {
                   onFocus={e => { if (!isClosed) e.target.style.borderColor = '#10b981'; }}
                   onBlur={e => { if (!isClosed) e.target.style.borderColor = '#e2e8f0'; }}
                 >
-                  <option value="">-- Chọn sinh viên để thêm --</option>
+                  <option value="">-- Hoặc chọn sinh viên từ danh sách --</option>
                   {availableStudents.map(s => (
                     <option key={s.id} value={s.id}>{s.name} [ID: {s.id}]</option>
                   ))}
@@ -631,8 +688,22 @@ function ClassDetailModal({ isOpen, cls, users = [], onSaveDetails, onClose }) {
               {searchedStudent && (
                 <div style={{ marginTop: 10, padding: '12px 14px', background: '#ecfdf5', borderRadius: 12, border: '1px solid #a7f3d0', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 10, minWidth: 0 }}>
-                    <div style={{ width: 32, height: 32, borderRadius: '50%', background: '#10b981', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontSize: '0.75rem', fontWeight: 800, flexShrink: 0 }}>
-                      {getInitials(searchedStudent.name)}
+                    <div style={{ width: 32, height: 32, borderRadius: '50%', overflow: 'hidden', flexShrink: 0 }}>
+                      {searchedStudent.avatarUrl ? (
+                        <img
+                          src={searchedStudent.avatarUrl}
+                          alt={searchedStudent.name}
+                          style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                          onError={(e) => {
+                            e.target.onerror = null;
+                            e.target.src = `https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(searchedStudent.name)}`;
+                          }}
+                        />
+                      ) : (
+                        <div style={{ width: '100%', height: '100%', background: '#10b981', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontSize: '0.75rem', fontWeight: 800 }}>
+                          {getInitials(searchedStudent.name)}
+                        </div>
+                      )}
                     </div>
                     <div style={{ minWidth: 0 }}>
                       <div style={{ fontSize: '0.8125rem', fontWeight: 700, color: '#065f46', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
@@ -641,14 +712,14 @@ function ClassDetailModal({ isOpen, cls, users = [], onSaveDetails, onClose }) {
                       <div style={{ fontSize: '0.7rem', color: '#64748b', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{searchedStudent.email}</div>
                     </div>
                   </div>
-                  <button 
-                    onClick={handleCommitAddStudent} 
+                  <button
+                    onClick={handleCommitAddStudent}
                     disabled={isClosed}
-                    style={{ 
-                      padding: '6px 12px', 
-                      background: isClosed ? '#cbd5e1' : 'linear-gradient(135deg, #0D3E26, #166534)', 
-                      color: '#fff', border: 'none', borderRadius: 8, fontSize: '0.75rem', fontWeight: 700, 
-                      cursor: isClosed ? 'not-allowed' : 'pointer', transition: 'all 0.15s', flexShrink: 0 
+                    style={{
+                      padding: '6px 12px',
+                      background: isClosed ? '#cbd5e1' : 'linear-gradient(135deg, #0D3E26, #166534)',
+                      color: '#fff', border: 'none', borderRadius: 8, fontSize: '0.75rem', fontWeight: 700,
+                      cursor: isClosed ? 'not-allowed' : 'pointer', transition: 'all 0.15s', flexShrink: 0
                     }}
                     onMouseEnter={e => { if (!isClosed) e.currentTarget.style.background = 'linear-gradient(135deg, #166534, #15803d)'; }}
                     onMouseLeave={e => { if (!isClosed) e.currentTarget.style.background = 'linear-gradient(135deg, #0D3E26, #166534)'; }}>
@@ -710,8 +781,22 @@ function ClassDetailModal({ isOpen, cls, users = [], onSaveDetails, onClose }) {
                       onMouseLeave={e => { e.currentTarget.style.background = '#f8fafc'; e.currentTarget.style.borderColor = '#f1f5f9'; }}
                     >
                       <div style={{ display: 'flex', alignItems: 'center', gap: 10, minWidth: 0 }}>
-                        <div style={{ width: 32, height: 32, borderRadius: '50%', background: avatarBg, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontSize: '0.75rem', fontWeight: 800, flexShrink: 0 }}>
-                          {getInitials(std.name)}
+                        <div style={{ width: 32, height: 32, borderRadius: '50%', overflow: 'hidden', flexShrink: 0 }}>
+                          {std.avatarUrl ? (
+                            <img
+                              src={std.avatarUrl}
+                              alt={std.name}
+                              style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                              onError={(e) => {
+                                e.target.onerror = null;
+                                e.target.src = `https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(std.name)}`;
+                              }}
+                            />
+                          ) : (
+                            <div style={{ width: '100%', height: '100%', background: avatarBg, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontSize: '0.75rem', fontWeight: 800 }}>
+                              {getInitials(std.name)}
+                            </div>
+                          )}
                         </div>
                         <div style={{ minWidth: 0 }}>
                           <div style={{ fontSize: '0.8125rem', fontWeight: 700, color: '#1e293b', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
@@ -782,130 +867,349 @@ function ClassDetailModal({ isOpen, cls, users = [], onSaveDetails, onClose }) {
   );
 }
 
-/* ─── Roadmap Generator ─── */
-const generateRoadmap = (courseCode, courseName) => {
-  const code = String(courseCode || '').toUpperCase();
-  const name = String(courseName || '');
-  const isCSharp = code.includes('PRN') || code.includes('CS') || name.toLowerCase().includes('c#') || name.toLowerCase().includes('lập trình');
-  const isSWP = code.includes('SWP') || code.includes('PROJ') || name.toLowerCase().includes('dự án') || name.toLowerCase().includes('đồ án');
-
-  if (isCSharp) {
-    return [
-      { week: 'Tuần 1', title: 'Cài đặt môi trường & Cú pháp cơ bản .NET C#', status: 'COMPLETED', lessons: ['Khởi tạo dự án Console App trong Visual Studio', 'Biến, toán tử và các kiểu dữ liệu cơ bản', 'Cấu trúc điều kiện rẽ nhánh và vòng lặp'], note: 'Sinh viên cần cài đặt trước Visual Studio 2022 Community hoặc Rider.', resources: ['Slide bài học 1', 'Lab 1 - Cơ bản C#'] },
-      { week: 'Tuần 2', title: 'Lập trình Hướng đối tượng (OOP) nâng cao', status: 'COMPLETED', lessons: ['Tính kế thừa, đóng gói, đa hình', 'Tính trừu tượng (Abstract class & Interface)', 'Xử lý ngoại lệ (Exception Handling)'], note: 'Trọng tâm bài học nằm ở phần áp dụng Đa hình trong thiết kế hệ thống.', resources: ['Slide bài học 2', 'Lab 2 - Quản lý nhân viên'] },
-      { week: 'Tuần 3', title: 'Làm việc với Collections, LINQ & Generics', status: 'ACTIVE', lessons: ['Generic class & Generic method', 'Sử dụng List, Dictionary, HashSet', 'Truy vấn dữ liệu nâng cao với LINQ'], note: 'Tuần này có bài trắc nghiệm nhanh 10 phút đầu giờ học.', resources: ['Slide bài học 3', 'CheatSheet truy vấn LINQ'] },
-      { week: 'Tuần 4', title: 'Tương tác Database với Entity Framework Core', status: 'UPCOMING', lessons: ['Cài đặt EF Core Packages & DbContext', 'Cấu hình Code-First / Db-First mappings', 'Thao tác CRUD với Database thực tế'], note: 'Cần có hệ quản trị CSDL SQL Server cài sẵn.', resources: ['Hướng dẫn cài đặt SQL Server', 'Slide EF Core'] },
-      { week: 'Tuần 5', title: 'Xây dựng RESTful API với ASP.NET Core Web API', status: 'UPCOMING', lessons: ['Kiến trúc Controllers & API Routing', 'Dependency Injection trong ASP.NET Core', 'Model Validation & Trả về JSON chuẩn'], note: 'Đọc trước tài liệu kiến trúc REST API.', resources: ['API Design Guidelines', 'Slide Web API'] },
-      { week: 'Tuần 6', title: 'Bảo mật Web API: Xác thực JWT & Phân quyền', status: 'UPCOMING', lessons: ['Cơ chế hoạt động của JSON Web Token', 'Tạo và giải mã JWT trong Backend', 'Phân quyền phân vai với [Authorize(Roles = "...")]'], note: 'Đây là bài học cực kỳ quan trọng cho dự án môn học.', resources: ['Tài liệu JWT Auth', 'Mẫu cấu hình bảo mật'] },
-      { week: 'Tuần 7', title: 'Kiểm thử phần mềm & Triển khai ứng dụng', status: 'UPCOMING', lessons: ['Viết Unit Test với xUnit', 'Mock dependencies bằng Moq', 'Đóng gói và triển khai hosting'], note: 'Tuần cuối cùng - Ôn tập chuẩn bị thi thực hành cuối kỳ.', resources: ['Slide Testing', 'Đề cương ôn tập'] },
-    ];
-  }
-
-  if (isSWP) {
-    return [
-      { week: 'Tuần 1', title: 'Thành lập nhóm & Định hình Ý tưởng Dự án', status: 'COMPLETED', lessons: ['Phân chia vai trò thành viên (WBS)', 'Phân tích tính khả thi và định hướng giải pháp', 'Lập tiến độ tổng quan (Gantt Chart)'], note: 'Nhóm trưởng nộp lại đề xuất đề tài trước thứ Sáu.', resources: ['Mẫu đề xuất đề tài', 'Bảng Gantt Chart mẫu'] },
-      { week: 'Tuần 2', title: 'Phân tích Yêu cầu & Thiết kế Hệ thống', status: 'COMPLETED', lessons: ['Phân tích yêu cầu chức năng & phi chức năng', 'Vẽ sơ đồ Use Case và Sơ đồ hoạt động (Activity)', 'Thiết kế Mockup UI/UX ban đầu bằng Figma'], note: 'Cần đặc biệt chú ý đến luồng nghiệp vụ chính của hệ thống.', resources: ['Tài liệu SRS mẫu', 'Figma Wireframe Kit'] },
-      { week: 'Tuần 3', title: 'Thiết kế Cấu trúc CSDL (ERD) & Khung dự án', status: 'ACTIVE', lessons: ['Vẽ sơ đồ ERD tối ưu hóa quan hệ', 'Khởi tạo GitHub repository chung của nhóm', 'Cấu trúc Skeleton dự án FrontEnd và BackEnd'], note: 'Cả nhóm phải thực hành commit code lên nhánh phát triển phụ.', resources: ['Slide Database Design', 'Git Workflow Guideline'] },
-      { week: 'Tuần 4', title: 'Sprint 1: Xây dựng các tính năng Core & Auth', status: 'UPCOMING', lessons: ['Code giao diện Đăng nhập, Đăng ký', 'Xây dựng API đăng nhập & lưu trữ Token', 'Kết nối cơ sở dữ liệu thực tế'], note: 'Giảng viên sẽ đánh giá tiến độ Sprint 1 trực tiếp.', resources: ['Tiêu chí chấm Sprint 1', 'Mẫu báo cáo tuần'] },
-      { week: 'Tuần 5', title: 'Sprint 2: Tính năng nghiệp vụ chính & Quản trị', status: 'UPCOMING', lessons: ['Phát triển giao diện Dashboard Admin', 'Code các luồng giao dịch nghiệp vụ cốt lõi', 'Xử lý phân quyền người dùng'], note: 'Kiểm soát chặt chẽ các lỗi rò rỉ dữ liệu hoặc phân quyền sai.', resources: ['Tài liệu kỹ thuật nghiệp vụ', 'Mẫu báo cáo Sprint 2'] },
-      { week: 'Tuần 6', title: 'Sprint 3: Tích hợp hệ thống & Kiểm thử tổng thể', status: 'UPCOMING', lessons: ['Ghép nối giao diện API toàn diện', 'Thực hiện kiểm thử hộp đen (Black-box testing)', 'Sửa lỗi giao diện và vá lỗi logic bảo mật'], note: 'Tập trung cao độ sửa các lỗi nghiêm trọng (Critical bugs).', resources: ['Mẫu kịch bản kiểm thử (Test Case)', 'Bảng log lỗi nhóm'] },
-      { week: 'Tuần 7', title: 'Hoàn thiện Sản phẩm, Triển khai & Demo bảo vệ', status: 'UPCOMING', lessons: ['Triển khai ứng dụng lên server cloud', 'Quay video demo sản phẩm hoạt động', 'Viết báo cáo tổng kết môn học (Final Report)'], note: 'Buổi bảo vệ thử trước giảng viên hướng dẫn.', resources: ['Slide mẫu bảo vệ', 'Tiêu chí đánh giá chung cuộc'] },
-    ];
-  }
-
-  return [
-    { week: 'Chặng 1', title: 'Làm quen & Khái niệm nền tảng cốt lõi', status: 'COMPLETED', lessons: ['Giới thiệu đề cương học phần', 'Lịch sử phát triển và các định nghĩa nền tảng', 'Các công cụ làm việc cơ bản'], note: 'Sinh viên tải đề cương môn học học phần.', resources: ['Đề cương học phần', 'Tài liệu giới thiệu'] },
-    { week: 'Chặng 2', title: 'Nghiên cứu chuyên sâu lý thuyết chuyên ngành', status: 'ACTIVE', lessons: ['Các mô hình kiến trúc cốt lõi', 'Phân tích các nguyên lý làm việc', 'Nghiên cứu tài liệu tham khảo khoa học'], note: 'Sinh viên chuẩn bị bài thảo luận nhóm số 1.', resources: ['Bài đọc nghiên cứu 1', 'Slide chuyên đề 2'] },
-    { week: 'Chặng 3', title: 'Thực hành ứng dụng & Giải quyết tình huống thực tế', status: 'UPCOMING', lessons: ['Giải quyết bài toán thực tế (Case study)', 'Thực hành viết báo cáo phân tích chuyên đề', 'Tối ưu hóa các giải pháp lựa chọn'], note: 'Nộp báo cáo chuyên đề thực tế qua hệ thống LMS.', resources: ['Đề bài chuyên đề case-study', 'Tiêu chuẩn chấm điểm'] },
-    { week: 'Chặng 4', title: 'Đánh giá quá trình, Ôn tập & Thi cuối kỳ', status: 'UPCOMING', lessons: ['Trình bày kết quả nghiên cứu nhóm', 'Hỏi đáp phản biện cùng giảng viên', 'Đề cương hệ thống hóa kiến thức môn học'], note: 'Chúc các sinh viên ôn tập tốt và thi đạt kết quả cao!', resources: ['Đề cương ôn thi cuối khóa'] },
-  ];
+/* ─── Type config cho học liệu ───────────────────────── */
+const MATERIAL_TYPE_CONFIG = {
+  video: { label: 'Video', icon: Play, color: '#8b5cf6', bg: '#f5f3ff', border: '#c4b5fd' },
+  pdf: { label: 'PDF', icon: FileText, color: '#ef4444', bg: '#fef2f2', border: '#fca5a5' },
+  document: { label: 'Tài liệu', icon: File, color: '#3b82f6', bg: '#eff6ff', border: '#93c5fd' },
+  quiz: { label: 'Quiz', icon: FileQuestion, color: '#f59e0b', bg: '#fffbeb', border: '#fcd34d' },
 };
 
-/* ─── ClassRoadmapModal ─────────────────────────────────── */
-function ClassRoadmapModal({ isOpen, cls, onClose }) {
-  if (!isOpen || !cls) return null;
-  const roadmapData = generateRoadmap(cls.courseCode, cls.courseName);
-  const completedCount = roadmapData.filter(r => r.status === 'COMPLETED').length;
-  const progressPercent = Math.round((completedCount / roadmapData.length) * 100);
+function getMaterialTypeConfig(type) {
+  return MATERIAL_TYPE_CONFIG[type?.toLowerCase()] || MATERIAL_TYPE_CONFIG.document;
+}
 
-  const getStatusStyle = (status) => {
-    switch (status) {
-      case 'COMPLETED': return { label: 'Đã hoàn thành', bg: '#ecfdf5', color: '#10b981', border: '#a7f3d0' };
-      case 'ACTIVE': return { label: 'Đang giảng dạy', bg: '#fffbeb', color: '#d97706', border: '#fcd34d' };
-      default: return { label: 'Chờ học', bg: '#f8fafc', color: '#64748b', border: '#e2e8f0' };
-    }
+/** Parse tên chương từ chuỗi "TênMôn ÷ TênChương" → chỉ trả về "TênChương" */
+function parseChapterDisplayName(raw) {
+  if (!raw || !raw.trim()) return 'Chung';
+  const SEPARATOR = ' ÷ ';
+  if (raw.includes(SEPARATOR)) return raw.split(SEPARATOR)[1].trim();
+  return raw.trim();
+}
+
+/* ─── ClassRoadmapModal (API-integrated) ─────────────── */
+function ClassRoadmapModal({ isOpen, cls, onClose }) {
+  const [chapters, setChapters] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [apiError, setApiError] = useState('');
+  const [openChapters, setOpenChapters] = useState({});
+
+  useEffect(() => {
+    if (!isOpen || !cls) return;
+    setChapters([]);
+    setApiError('');
+    setOpenChapters({});
+
+    const fetchRoadmap = async () => {
+      setLoading(true);
+      try {
+        // Thử các endpoint theo thứ tự ưu tiên — Admin có thể bị chặn ở Lecturer endpoint
+        let rawList = [];
+        let usedChapters = false;
+
+        // Phương án 1: getClassMaterials (Admin-level endpoint nếu backend hỗ trợ)
+        try {
+          const res = await getClassMaterials(cls.id);
+          const data = res; // classService đã trả về res.data
+          if (Array.isArray(data)) rawList = data;
+          else if (data?.data && Array.isArray(data.data)) rawList = data.data;
+          else if (data?.$values && Array.isArray(data.$values)) rawList = data.$values;
+          else if (data?.data?.chapters && Array.isArray(data.data.chapters)) {
+            // Nếu trả về dạng roadmap (chapters)
+            setChapters(data.data.chapters.map(ch => ({
+              chapterName: ch.chapterName || 'Chung',
+              displayName: parseChapterDisplayName(ch.chapterName || 'Chung'),
+              materials: ch.materials || [],
+            })));
+            const initialOpen = {};
+            data.data.chapters.forEach(ch => { initialOpen[ch.chapterName || 'Chung'] = true; });
+            setOpenChapters(initialOpen);
+            usedChapters = true;
+          }
+        } catch (e1) {
+          // Phương án 1 thất bại (403/404) → thử Phương án 2
+          try {
+            const res2 = await api.get(`/api/student-classes/${encodeURIComponent(cls.id)}/roadmap`);
+            const data2 = res2.data;
+            // Student roadmap trả về { success, data: { chapters: [...] } }
+            const chaptersFromApi = data2?.data?.chapters ?? data2?.chapters ?? null;
+            if (chaptersFromApi && Array.isArray(chaptersFromApi)) {
+              setChapters(chaptersFromApi.map(ch => ({
+                chapterName: ch.chapterName || 'Chung',
+                displayName: parseChapterDisplayName(ch.chapterName || 'Chung'),
+                materials: ch.materials || [],
+              })));
+              const initialOpen = {};
+              chaptersFromApi.forEach(ch => { initialOpen[ch.chapterName || 'Chung'] = true; });
+              setOpenChapters(initialOpen);
+              usedChapters = true;
+            } else {
+              // Có thể trả về dạng mảng phẳng
+              const flat = Array.isArray(data2) ? data2 : (data2?.data && Array.isArray(data2.data) ? data2.data : []);
+              rawList = flat;
+            }
+          } catch (e2) {
+            // Cả 2 endpoint đều thất bại
+            throw new Error(`Không có quyền xem học liệu lớp này (403). Backend cần cấp quyền Admin cho endpoint học liệu.`);
+          }
+        }
+
+        if (usedChapters) return; // Đã set chapters từ roadmap endpoint
+
+        /* Nhóm học liệu phẳng theo tên chương */
+        const chapterMap = {};
+        rawList.forEach(m => {
+          const rawChapter = m.chapter ?? m.Chapter ?? '';
+          const chapterKey = rawChapter || 'Chung';
+          if (!chapterMap[chapterKey]) chapterMap[chapterKey] = [];
+          chapterMap[chapterKey].push(m);
+        });
+
+        const grouped = Object.entries(chapterMap).map(([key, materials]) => ({
+          chapterName: key,
+          displayName: parseChapterDisplayName(key),
+          materials,
+        }));
+
+        setChapters(grouped);
+        const initialOpen = {};
+        grouped.forEach(ch => { initialOpen[ch.chapterName] = true; });
+        setOpenChapters(initialOpen);
+      } catch (err) {
+        setApiError(err.message || 'Không thể tải lộ trình học tập. Vui lòng thử lại.');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchRoadmap();
+  }, [isOpen, cls?.id]);
+
+  if (!isOpen || !cls) return null;
+
+  const toggleChapter = (key) => {
+    setOpenChapters(prev => ({ ...prev, [key]: !prev[key] }));
   };
 
+  /* Thống kê tổng học liệu */
+  const allMaterials = chapters.flatMap(ch => ch.materials);
+  const totalCount = allMaterials.length;
+
+  /* Đếm số học liệu đã được đánh dấu hoàn thành (có trường completedByUsers) */
+  const completedCount = allMaterials.filter(m =>
+    m.completedByUsers && Array.isArray(m.completedByUsers) && m.completedByUsers.length > 0
+  ).length;
+  const progressPercent = totalCount > 0 ? Math.round((completedCount / totalCount) * 100) : 0;
+
   return (
-    <div onClick={e => { if (e.target === e.currentTarget) onClose(); }} style={{ position: 'fixed', inset: 0, zIndex: 9000, background: 'rgba(0,0,0,0.4)', backdropFilter: 'blur(5px)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 20, animation: 'clsFadeIn 0.18s ease' }}>
-      <div style={{ background: '#fff', borderRadius: 24, padding: '2rem', width: '100%', maxWidth: 740, boxShadow: '0 24px 60px rgba(0,0,0,0.22)', animation: 'clsSlideUp 0.22s ease', maxHeight: '85vh', overflowY: 'auto' }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20, borderBottom: '1px solid #f1f5f9', paddingBottom: 16 }}>
+    <div
+      onClick={e => { if (e.target === e.currentTarget) onClose(); }}
+      style={{
+        position: 'fixed', inset: 0, zIndex: 9000,
+        background: 'rgba(0,0,0,0.4)', backdropFilter: 'blur(5px)',
+        display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 20,
+        animation: 'clsFadeIn 0.18s ease',
+      }}
+    >
+      <div style={{
+        background: '#fff', borderRadius: 24, padding: '2rem',
+        width: '100%', maxWidth: 760,
+        boxShadow: '0 24px 60px rgba(0,0,0,0.22)',
+        animation: 'clsSlideUp 0.22s ease',
+        maxHeight: '85vh', overflowY: 'auto',
+        display: 'flex', flexDirection: 'column', gap: 20,
+      }}>
+
+        {/* ── Header ── */}
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid #f1f5f9', paddingBottom: 16 }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
             <div style={{ width: 42, height: 42, borderRadius: 12, background: 'linear-gradient(135deg, #ecfdf5, #d1fae5)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
               <Milestone size={22} color="#0D3E26" />
             </div>
             <div>
-              <h3 style={{ margin: 0, fontSize: '1.15rem', fontWeight: 800, color: '#0D3E26' }}>Lộ trình dạy & học: {cls.courseName || 'Môn học'}</h3>
-              <p style={{ margin: 0, fontSize: '0.8rem', color: '#94a3b8', marginTop: 2 }}>Lớp: <span style={{ fontWeight: 700, color: '#0D3E26' }}>{cls.code}</span> | Giảng viên: <span style={{ fontWeight: 700, color: '#0D3E26' }}>{cls.lecturer || 'Chưa phân công'}</span></p>
+              <h3 style={{ margin: 0, fontSize: '1.1rem', fontWeight: 800, color: '#0D3E26' }}>
+                Lộ trình học liệu: {cls.courseName || 'Môn học'}
+              </h3>
+              <p style={{ margin: 0, fontSize: '0.78rem', color: '#94a3b8', marginTop: 2 }}>
+                Lớp: <span style={{ fontWeight: 700, color: '#0D3E26' }}>{cls.code}</span>
+                {cls.lecturer && <> | GV: <span style={{ fontWeight: 700, color: '#0D3E26' }}>{cls.lecturer}</span></>}
+              </p>
             </div>
           </div>
           <button onClick={onClose} style={{ ...iconBtnStyle('#f1f5f9', '#64748b'), width: 32, height: 32 }}><X size={18} /></button>
         </div>
 
-        <div style={{ background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: 18, padding: '16px 20px', marginBottom: 24, display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 20 }}>
-          <div style={{ flex: 1 }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
-              <span style={{ fontSize: 13, fontWeight: 700, color: '#1e293b' }}>Tiến độ giảng dạy</span>
-              <span style={{ fontSize: 13, fontWeight: 800, color: '#0D3E26' }}>{completedCount} / {roadmapData.length} phần ({progressPercent}%)</span>
+        {/* ── Stats bar ── */}
+        {!loading && !apiError && totalCount > 0 && (
+          <div style={{ background: '#f0fdf4', border: '1px solid #a7f3d0', borderRadius: 16, padding: '14px 20px', display: 'flex', alignItems: 'center', gap: 20, flexWrap: 'wrap' }}>
+            <div style={{ flex: 1, minWidth: 200 }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
+                <span style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 13, fontWeight: 700, color: '#1e293b' }}>
+                  <Award size={14} color="#0f766e" /> Tiến độ lớp
+                </span>
+                <span style={{ fontSize: 13, fontWeight: 800, color: '#0f766e' }}>{progressPercent}%</span>
+              </div>
+              <div style={{ height: 8, background: '#d1fae5', borderRadius: 999, overflow: 'hidden' }}>
+                <div style={{ height: '100%', width: `${progressPercent}%`, background: 'linear-gradient(90deg, #0f766e, #10b981)', borderRadius: 999, transition: 'width 0.4s ease' }} />
+              </div>
             </div>
-            <div style={{ width: '100%', height: 8, background: '#e2e8f0', borderRadius: 999, overflow: 'hidden' }}>
-              <div style={{ height: '100%', width: `${progressPercent}%`, background: 'linear-gradient(90deg, #0D3E26, #10b981)', borderRadius: 999, transition: 'width 0.4s ease' }} />
+            <div style={{ display: 'flex', gap: 16, flexWrap: 'wrap', fontSize: 12 }}>
+              <span style={{ color: '#475569', fontWeight: 600 }}>
+                <strong>{chapters.length}</strong> chương
+              </span>
+              <span style={{ color: '#475569', fontWeight: 600 }}>
+                <strong>{totalCount}</strong> học liệu
+              </span>
             </div>
           </div>
-          <div style={{ background: '#ecfdf5', color: '#065f46', border: '1px solid #a7f3d0', padding: '6px 12px', borderRadius: 10, fontSize: 11, fontWeight: 700, whiteSpace: 'nowrap' }}>Lộ trình học tập chuẩn</div>
-        </div>
+        )}
 
-        <div style={{ position: 'relative', display: 'flex', flexDirection: 'column', gap: 20, paddingLeft: 20, borderLeft: '2.5px dashed #cbd5e1', marginLeft: 10, marginBottom: 10 }}>
-          {roadmapData.map((item, idx) => {
-            const statusStyle = getStatusStyle(item.status);
-            const isCompleted = item.status === 'COMPLETED';
-            const isActive = item.status === 'ACTIVE';
-            return (
-              <div key={idx} style={{ position: 'relative' }}>
-                <div style={{ position: 'absolute', left: -27.5, top: 4, width: 13, height: 13, borderRadius: '50%', background: isCompleted ? '#10b981' : (isActive ? '#f59e0b' : '#94a3b8'), border: `3px solid ${isCompleted ? '#ecfdf5' : (isActive ? '#fffbeb' : '#fff')}`, boxShadow: isActive ? '0 0 0 4px rgba(245,158,11,0.2)' : 'none', animation: isActive ? 'clsPulse 2s infinite' : 'none', zIndex: 2 }} />
-                <div style={{ background: isActive ? '#fffbeb' : '#ffffff', border: `1.5px solid ${isActive ? '#fcd34d' : '#e2e8f0'}`, borderRadius: 18, padding: 16, boxShadow: isActive ? '0 4px 20px rgba(217,119,6,0.06)' : '0 1px 4px rgba(0,0,0,0.02)', transition: 'transform 0.15s ease' }}
-                  onMouseEnter={e => { e.currentTarget.style.transform = 'translateX(2px)'; }}
-                  onMouseLeave={e => { e.currentTarget.style.transform = 'none'; }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: 10, marginBottom: 10 }}>
-                    <div>
-                      <span style={{ fontSize: 10, fontWeight: 800, color: isCompleted ? '#065f46' : '#64748b', background: isCompleted ? '#d1fae5' : '#f1f5f9', padding: '2px 7px', borderRadius: 6, textTransform: 'uppercase', letterSpacing: '0.04em' }}>{item.week}</span>
-                      <h4 style={{ margin: '6px 0 0', fontSize: '0.92rem', fontWeight: 800, color: '#1e293b' }}>{item.title}</h4>
+        {/* ── Loading ── */}
+        {loading && (
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '3rem', gap: 12, color: '#64748b', fontSize: '0.875rem', background: '#f8fafc', borderRadius: 16, border: '1px solid #e2e8f0' }}>
+            <Loader2 size={22} color="#10b981" style={{ animation: 'spin 1s linear infinite' }} />
+            Đang tải lộ trình học tập...
+          </div>
+        )}
+
+        {/* ── API Error ── */}
+        {!loading && apiError && (
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '14px 18px', background: '#fff1f2', border: '1px solid #fecdd3', borderRadius: 14, fontSize: '0.875rem', color: '#be123c', fontWeight: 600 }}>
+            <AlertCircle size={17} color="#f43f5e" />
+            {apiError}
+          </div>
+        )}
+
+        {/* ── Empty state ── */}
+        {!loading && !apiError && chapters.length === 0 && (
+          <div style={{ textAlign: 'center', padding: '3rem 2rem', background: '#fff', borderRadius: 16, border: '1px dashed #cbd5e1' }}>
+            <div style={{ fontSize: '2.5rem', marginBottom: 12 }}>📂</div>
+            <h3 style={{ fontSize: '1rem', fontWeight: 600, color: '#334155', margin: 0 }}>Lớp học chưa có học liệu nào</h3>
+            <p style={{ color: '#64748b', fontSize: '0.875rem', marginTop: 6 }}>Giảng viên chưa tải lên tài liệu học tập cho lớp này.</p>
+          </div>
+        )}
+
+        {/* ── Chapter Accordion list ── */}
+        {!loading && !apiError && chapters.length > 0 && (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+            {chapters.map((ch, chIdx) => {
+              const isOpen = !!openChapters[ch.chapterName];
+              return (
+                <div key={ch.chapterName} style={{ border: '1px solid #e2e8f0', borderRadius: 16, overflow: 'hidden', background: '#fff', boxShadow: '0 1px 3px rgba(0,0,0,0.03)' }}>
+                  {/* Chapter header (clickable) */}
+                  <button
+                    onClick={() => toggleChapter(ch.chapterName)}
+                    style={{
+                      width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                      padding: '14px 18px', background: isOpen ? '#f0fdf4' : '#f8fafc',
+                      border: 'none', cursor: 'pointer', transition: 'background 0.15s',
+                      borderBottom: isOpen ? '1px solid #d1fae5' : 'none',
+                    }}
+                  >
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                      <span style={{
+                        width: 26, height: 26, borderRadius: 8,
+                        background: isOpen ? '#0D3E26' : '#e2e8f0',
+                        color: isOpen ? '#fff' : '#64748b',
+                        display: 'flex', alignItems: 'center', justifyContent: 'center',
+                        fontSize: 11, fontWeight: 800, flexShrink: 0,
+                      }}>
+                        {chIdx + 1}
+                      </span>
+                      <span style={{ fontSize: '0.9rem', fontWeight: 700, color: '#0f172a', textAlign: 'left' }}>
+                        {ch.displayName}
+                      </span>
+                      <span style={{ fontSize: 11, color: '#94a3b8', fontWeight: 500 }}>
+                        ({ch.materials.length} học liệu)
+                      </span>
                     </div>
-                    <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4, padding: '3px 9px', borderRadius: 999, fontSize: 10, fontWeight: 700, background: statusStyle.bg, color: statusStyle.color, border: `1px solid ${statusStyle.border}` }}>{statusStyle.label}</span>
-                  </div>
-                  <div style={{ background: isActive ? 'rgba(255,255,255,0.7)' : '#f8fafc', borderRadius: 12, padding: 12, marginBottom: 10 }}>
-                    <span style={{ fontSize: 11, fontWeight: 700, color: '#475569', display: 'block', marginBottom: 6 }}>Nội dung bài học:</span>
-                    <ul style={{ margin: 0, paddingLeft: 16, fontSize: '0.78rem', color: '#475569', display: 'flex', flexDirection: 'column', gap: 4 }}>
-                      {item.lessons.map((lesson, lIdx) => <li key={lIdx}>{lesson}</li>)}
-                    </ul>
-                  </div>
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: 8, fontSize: '0.75rem', borderTop: '1px solid #f1f5f9', paddingTop: 10 }}>
-                    {item.note && <div><strong style={{ color: '#0D3E26' }}>Ghi chú giảng dạy: </strong><span style={{ color: '#64748b', fontStyle: 'italic' }}>{item.note}</span></div>}
-                    {item.resources && item.resources.length > 0 && (
-                      <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
-                        <strong style={{ color: '#475569' }}>Tài liệu đính kèm:</strong>
-                        {item.resources.map((res, rIdx) => (
-                          <span key={rIdx} style={{ background: '#eff6ff', color: '#1d4ed8', border: '1px solid #bfdbfe', padding: '2px 8px', borderRadius: 6, fontSize: 10, fontWeight: 600, cursor: 'pointer' }}
-                            onClick={() => alert(`Tải xuống tài liệu: "${res}"`)} title="Nhấp để tải xuống tài liệu">📄 {res}</span>
-                        ))}
-                      </div>
-                    )}
-                  </div>
+                    <span style={{ color: '#64748b', transition: 'transform 0.2s', display: 'flex', transform: isOpen ? 'rotate(180deg)' : 'rotate(0)' }}>
+                      ▾
+                    </span>
+                  </button>
+
+                  {/* Material list */}
+                  {isOpen && (
+                    <div style={{ padding: '8px 12px 12px', display: 'flex', flexDirection: 'column', gap: 8 }}>
+                      {ch.materials.map((m, mIdx) => {
+                        const typeCfg = getMaterialTypeConfig(m.type ?? m.materialType);
+                        const TypeIcon = typeCfg.icon;
+                        const hasFile = m.fileUrl && m.fileUrl !== '#';
+                        return (
+                          <div
+                            key={m.id ?? mIdx}
+                            style={{
+                              display: 'flex', alignItems: 'center', gap: 12,
+                              padding: '10px 14px',
+                              background: '#f8fafc', border: '1px solid #f1f5f9',
+                              borderRadius: 12, transition: 'all 0.15s',
+                            }}
+                            onMouseEnter={e => { e.currentTarget.style.background = '#f1f5f9'; e.currentTarget.style.borderColor = '#e2e8f0'; }}
+                            onMouseLeave={e => { e.currentTarget.style.background = '#f8fafc'; e.currentTarget.style.borderColor = '#f1f5f9'; }}
+                          >
+                            {/* Type icon */}
+                            <div style={{
+                              width: 34, height: 34, borderRadius: 9,
+                              background: typeCfg.bg, border: `1px solid ${typeCfg.border}`,
+                              display: 'flex', alignItems: 'center', justifyContent: 'center',
+                              flexShrink: 0,
+                            }}>
+                              <TypeIcon size={16} color={typeCfg.color} />
+                            </div>
+
+                            {/* Title + type */}
+                            <div style={{ flex: 1, minWidth: 0 }}>
+                              <div style={{ fontSize: '0.85rem', fontWeight: 700, color: '#1e293b', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                                {m.title || 'Học liệu'}
+                              </div>
+                              <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 3 }}>
+                                <span style={{
+                                  fontSize: 10, fontWeight: 700,
+                                  color: typeCfg.color, background: typeCfg.bg,
+                                  border: `1px solid ${typeCfg.border}`,
+                                  padding: '1px 6px', borderRadius: 4, textTransform: 'uppercase',
+                                }}>
+                                  {typeCfg.label}
+                                </span>
+                                {m.publishDate && (
+                                  <span style={{ fontSize: 10, color: '#94a3b8', fontWeight: 500 }}>
+                                    Ngày đăng: {new Date(m.publishDate).toLocaleDateString('vi-VN')}
+                                  </span>
+                                )}
+                              </div>
+                            </div>
+
+                            {/* File link */}
+                            {hasFile && (
+                              <a
+                                href={m.fileUrl}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                style={{
+                                  display: 'inline-flex', alignItems: 'center', gap: 4,
+                                  fontSize: 11, fontWeight: 700,
+                                  color: '#0D3E26', background: '#ecfdf5',
+                                  border: '1px solid #a7f3d0',
+                                  padding: '4px 10px', borderRadius: 8,
+                                  textDecoration: 'none', flexShrink: 0,
+                                  transition: 'background 0.15s',
+                                }}
+                                onMouseEnter={e => { e.currentTarget.style.background = '#d1fae5'; }}
+                                onMouseLeave={e => { e.currentTarget.style.background = '#ecfdf5'; }}
+                              >
+                                🔗 Xem
+                              </a>
+                            )}
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
                 </div>
-              </div>
-            );
-          })}
-        </div>
+              );
+            })}
+          </div>
+        )}
       </div>
     </div>
   );
@@ -1021,12 +1325,11 @@ function ClassModal({ isOpen, editingClass, classForm, setClassForm, onSave, onC
                   const newEnd = e.target.value;
                   // Tự cập nhật trạng thái khi ngày kết thúc thay đổi
                   const now = new Date();
-                  const start = classForm.startDate ? new Date(classForm.startDate) : null;
-                  const end = newEnd ? new Date(newEnd) : null;
+                  const todayStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
                   let newStatus = classForm.status;
-                  if (start && end) {
-                    if (now < start) newStatus = 'UPCOMING';
-                    else if (now > end) newStatus = 'CLOSED';
+                  if (classForm.startDate && newEnd) {
+                    if (todayStr < classForm.startDate) newStatus = 'UPCOMING';
+                    else if (todayStr > newEnd) newStatus = 'CLOSED';
                     else newStatus = 'ACTIVE';
                   }
                   setClassForm({ ...classForm, endDate: newEnd, status: newStatus });
@@ -1139,7 +1442,7 @@ function ClassesDashboard({ terms = [], selectedTerm, onTermChange, users = [], 
         if (found) list = found;
       }
       const normalized = list.map(normalizeClass);
-      const filtered = normalized.filter(c => String(c.termId) === String(termId));
+      const filtered = normalized.filter(c => String(c.termId).toLowerCase() === String(termId).toLowerCase());
       setClasses(filtered);
     } catch (err) {
       console.error('Error loading classes:', err);
@@ -1196,8 +1499,8 @@ function ClassesDashboard({ terms = [], selectedTerm, onTermChange, users = [], 
 
   const handleOpen = (cls = null) => {
     if (cls) {
-      if (cls.status === 'CLOSED') {
-        showToast('Lớp học này đã kết thúc, không thể thực hiện chỉnh sửa!', 'error');
+      if (cls.status === 'CLOSED' || cls.status === 'ACTIVE') {
+        showToast('Lớp học này đang diễn ra hoặc đã kết thúc, không thể thực hiện chỉnh sửa!', 'error');
         return;
       }
       setEditingClass(cls);
@@ -1208,19 +1511,18 @@ function ClassesDashboard({ terms = [], selectedTerm, onTermChange, users = [], 
         maxStudents: cls.maxStudents || 30, room: cls.room || '', status: cls.status,
       });
     } else {
-      // Chặn tạo lớp học nếu học kỳ đã kết thúc
-      if (term?.status === 'COMPLETED') {
-        showToast('Học kỳ này đã kết thúc, không thể tạo thêm lớp học mới!', 'error');
+      // Chặn tạo lớp học nếu học kỳ đang diễn ra hoặc đã kết thúc
+      if (term?.status === 'ACTIVE' || term?.status === 'COMPLETED') {
+        showToast('Học kỳ này đang diễn ra hoặc đã kết thúc, không thể tạo thêm lớp học mới!', 'error');
         return;
       }
       // Tính trạng thái tự động dựa theo ngày của học kỳ
       const now = new Date();
-      const tStart = term?.startDate ? new Date(term.startDate) : null;
-      const tEnd = term?.endDate ? new Date(term.endDate) : null;
+      const todayStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
       let autoStatus = 'ACTIVE';
-      if (tStart && tEnd) {
-        if (now < tStart) autoStatus = 'UPCOMING';
-        else if (now > tEnd) autoStatus = 'CLOSED';
+      if (term?.startDate && term?.endDate) {
+        if (todayStr < term.startDate) autoStatus = 'UPCOMING';
+        else if (todayStr > term.endDate) autoStatus = 'CLOSED';
         else autoStatus = 'ACTIVE';
       }
       setEditingClass(null);
@@ -1239,15 +1541,15 @@ function ClassesDashboard({ terms = [], selectedTerm, onTermChange, users = [], 
     const { code, courseId, startDate, endDate } = classForm;
     if (!code.trim() || !courseId) { showToast('Vui lòng chọn môn học và nhập mã lớp!', 'error'); return; }
     if (!term?.id) { showToast('Vui lòng chọn học kỳ trước khi tạo lớp học!', 'error'); return; }
-    if (term?.status === 'COMPLETED') {
-      showToast('Học kỳ này đã kết thúc, không thể thực hiện tạo hoặc chỉnh sửa lớp!', 'error');
+    if (term?.status === 'ACTIVE' || term?.status === 'COMPLETED') {
+      showToast('Học kỳ này đang diễn ra hoặc đã kết thúc, không thể thực hiện tạo hoặc chỉnh sửa lớp!', 'error');
       return;
     }
-    if (editingClass && editingClass.status === 'CLOSED') {
-      showToast('Lớp học này đã kết thúc, không thể cập nhật thông tin!', 'error');
+    if (editingClass && (editingClass.status === 'CLOSED' || editingClass.status === 'ACTIVE')) {
+      showToast('Lớp học này đang diễn ra hoặc đã kết thúc, không thể cập nhật thông tin!', 'error');
       return;
     }
-    if (startDate && endDate && new Date(startDate) >= new Date(endDate)) {
+    if (startDate && endDate && startDate >= endDate) {
       showToast('Ngày khai giảng phải trước ngày kết thúc!', 'error'); return;
     }
     try {
@@ -1351,7 +1653,7 @@ function ClassesDashboard({ terms = [], selectedTerm, onTermChange, users = [], 
             </div>
           </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
-            {term && term.status !== 'COMPLETED' && (
+            {term && term.status === 'UPCOMING' && (
               <button onClick={() => handleOpen()} style={{ display: 'inline-flex', alignItems: 'center', gap: 7, padding: '10px 18px', background: 'rgba(255,255,255,0.12)', border: '1.5px solid rgba(255,255,255,0.25)', color: '#fff', borderRadius: 12, fontSize: '0.8125rem', fontWeight: 700, cursor: 'pointer', transition: 'background 0.15s' }}
                 onMouseEnter={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.2)'; }}
                 onMouseLeave={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.12)'; }}>
@@ -1386,7 +1688,7 @@ function ClassesDashboard({ terms = [], selectedTerm, onTermChange, users = [], 
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: 16 }}>
             {activeYear && groupedTerms[activeYear] && groupedTerms[activeYear].length > 0 ? (
               groupedTerms[activeYear].map(termItem => {
-                const isActive = selectedTerm?.id === termItem.id;
+                const isActive = selectedTerm && termItem && String(selectedTerm.id).toLowerCase() === String(termItem.id).toLowerCase();
                 const statusCfg = TERM_STATUS_MAP[termItem.status] || TERM_STATUS_MAP.COMPLETED;
                 return (
                   <div key={termItem.id} onClick={() => onTermChange(termItem)}
@@ -1458,9 +1760,9 @@ function ClassesDashboard({ terms = [], selectedTerm, onTermChange, users = [], 
                 </div>
                 <h3 style={{ fontSize: '1.1rem', fontWeight: 700, color: '#0f172a', margin: '0 0 8px' }}>Chưa có lớp học nào</h3>
                 <p style={{ fontSize: '0.85rem', color: '#94a3b8', margin: '0 0 24px', maxWidth: 300 }}>
-                  {term.status === 'COMPLETED' ? 'Học kỳ này đã kết thúc. Không thể tạo thêm lớp học mới.' : 'Thêm lớp học đầu tiên cho học kỳ này để bắt đầu tổ chức giảng dạy.'}
+                  {(term.status === 'COMPLETED' || term.status === 'ACTIVE') ? 'Học kỳ này đang diễn ra hoặc đã kết thúc. Không thể tạo thêm lớp học mới.' : 'Thêm lớp học đầu tiên cho học kỳ này để bắt đầu tổ chức giảng dạy.'}
                 </p>
-                {term.status !== 'COMPLETED' && (
+                {term.status === 'UPCOMING' && (
                   <button onClick={() => handleOpen()} style={primaryBtnStyle}><Plus size={15} /> Thêm lớp học</button>
                 )}
               </div>

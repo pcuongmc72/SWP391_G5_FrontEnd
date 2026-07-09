@@ -1,21 +1,13 @@
-import { useState } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { isAuthenticated, getRole } from './services/authService';
 import { getHomePathForCurrentUser } from './utils/authStorage';
 import { ROLES } from './constants/roles';
 
 import MainLayout from './layouts/MainLayout';
-
-
-import HomePage from './pages/Home/HomePage';
-import DashboardPage from './pages/Dashboard/DashboardPage';
-
+import LoginPage from './pages/Login/LoginPage';
 import DashboardLecturerPage from './pages/Lecturer/DashboardLecturerPage';
 import DashboardAdminPage from './pages/DashboardAdmin/DashboardAdminPage';
 import DashbroadStudentPage from './pages/DashbroadStudent/DashbroadStudent';
-
-
-import AuthModal from './components/AuthModal/AuthModal';
 import ProtectedRoute from './components/ProtectedRoute/ProtectedRoute';
 import RoleProtectedRoute from './components/RoleProtectedRoute/RoleProtectedRoute';
 import SharedBlogForum from './components/SharedBlogForum/SharedBlogForum';
@@ -24,17 +16,6 @@ function AuthenticatedHomeRedirect() {
   return <Navigate to={getHomePathForCurrentUser()} replace />;
 }
 
-
-function RoleRedirect() {
-  if (!isAuthenticated()) return <Navigate to="/" replace />;
-  const role = getRole();
-
-  if (role === 'admin') return <Navigate to="/dashboard/admin" replace />;
-  if (role === 'student') return <Navigate to="/dashboard/student" replace />;
-  if (role === 'lecturer') return <Navigate to="/dashboard/lecturer" replace />;
-
-  return <Navigate to="/" replace />;
-}
 
 
 function UnauthorizedPage() {
@@ -79,31 +60,36 @@ function UnauthorizedPage() {
  * App — Component gốc
  */
 function App() {
-  const [showLogin, setShowLogin] = useState(false);
-
   return (
     <BrowserRouter>
       <Routes>
-        <Route element={<MainLayout onLogin={() => setShowLogin(true)} />}>
-          <Route
-            path="/"
-            element={
-              isAuthenticated()
-                ? <AuthenticatedHomeRedirect />
-                : <HomePage />
-            }
-          />
-          <Route
-            path="/Home"
-            element={
-              isAuthenticated()
-                ? <AuthenticatedHomeRedirect />
-                : <HomePage />
-            }
-          />
+        {/* ── / và /Home → redirect sang /login nếu chưa đăng nhập ── */}
+        <Route
+          path="/"
+          element={
+            isAuthenticated()
+              ? <AuthenticatedHomeRedirect />
+              : <Navigate to="/login" replace />
+          }
+        />
+        <Route
+          path="/Home"
+          element={
+            isAuthenticated()
+              ? <AuthenticatedHomeRedirect />
+              : <Navigate to="/login" replace />
+          }
+        />
+
+        {/* ── Trang đăng nhập riêng (standalone, không có Navbar) ── */}
+        <Route path="/login" element={<LoginPage />} />
+
+        {/* ── Blog/Forum dưới MainLayout ── */}
+        <Route element={<MainLayout />}>
           <Route path="/blog-forum" element={<SharedBlogForum />} />
           <Route path="/blog" element={<SharedBlogForum />} />
         </Route>
+
 
         {/* ── Trang Admin — chỉ role 'admin' ── */}
         <Route element={<ProtectedRoute allowedRoles={['admin']} />}>
@@ -150,13 +136,7 @@ function App() {
         <Route path="*" element={<Navigate to="/" replace />} />
 
       </Routes>
-
-      {
-        showLogin && (
-          <AuthModal onClose={() => setShowLogin(false)} />
-        )
-      }
-    </BrowserRouter >
+    </BrowserRouter>
   );
 }
 

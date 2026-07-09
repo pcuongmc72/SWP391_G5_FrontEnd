@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import {
-  Users, Plus, Edit2, Search, CheckCircle, Eye, EyeOff
+  Plus, Edit2, Search, CheckCircle, Eye, EyeOff
 } from 'lucide-react';
 
 /**
@@ -10,15 +10,10 @@ import {
 function AdminDashboard({
   /* ── Core collections ── */
   users,
-  setUsers,
   currentUser,
   isLoading,
 
   /* ── Presenter states from Container ── */
-  searchQuery,
-  setSearchQuery,
-  roleFilter,
-  setRoleFilter,
   isUserModalOpen,
   setIsUserModalOpen,
   editingUser,
@@ -33,6 +28,8 @@ function AdminDashboard({
   handleToggleUserStatus,
 }) {
   const [showPassword, setShowPassword] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [roleFilter, setRoleFilter] = useState('ALL');
 
   /* ── Derived data ── */
   const filteredUsers = users.filter(u => {
@@ -171,52 +168,42 @@ function AdminDashboard({
                         </span>
                       </td>
                       <td className="px-6 py-4 align-middle">
-                        <span className={`inline-flex items-center justify-center px-2.5 py-0.5 rounded-full text-xs font-bold ${String(u.role).toUpperCase() === 'ADMIN' ? 'bg-amber-100 text-amber-800' :
-                          String(u.role).toUpperCase() === 'LECTURER' ? 'bg-blue-100 text-blue-800' :
+                        <span className={`inline-flex items-center justify-center px-2.5 py-0.5 rounded-full text-xs font-bold ${String(u.role || '').trim().toUpperCase() === 'ADMIN' ? 'bg-amber-100 text-amber-800' :
+                          String(u.role || '').trim().toUpperCase() === 'LECTURER' ? 'bg-blue-100 text-blue-800' :
                             'bg-emerald-100 text-emerald-800'
                           }`}>{u.role}</span>
                       </td>
                       <td className="px-6 py-4 align-middle">
-                        <button 
+                        <button
                           onClick={() => {
-                            if (String(u.role).toUpperCase() === 'ADMIN') {
-                              showToast('Không thể thay đổi trạng thái tài khoản Admin!', 'error');
+                            if (currentUser && currentUser.id === u.id) {
+                              showToast('Không thể tự vô hiệu hóa tài khoản của chính mình!', 'error');
                               return;
                             }
                             handleToggleUserStatus(u.id);
-                          }} 
-                          title={String(u.role).toUpperCase() === 'ADMIN' ? "Không thể thay đổi trạng thái của tài khoản Admin" : "Bấm để thay đổi trạng thái"}
-                          className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-semibold ${
-                            String(u.role).toUpperCase() === 'ADMIN'
-                              ? 'bg-slate-100 text-slate-400 border border-slate-200 cursor-not-allowed'
-                              : u.status === 'ACTIVE'
+                          }}
+                          title={currentUser && currentUser.id === u.id ? "Không thể tự vô hiệu hóa tài khoản của chính mình" : "Bấm để thay đổi trạng thái"}
+                          className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-semibold ${currentUser && currentUser.id === u.id
+                            ? 'bg-slate-100 text-slate-400 border border-slate-200 cursor-not-allowed'
+                            : u.status === 'ACTIVE'
                               ? 'bg-emerald-50 text-emerald-700 border border-emerald-200 cursor-pointer'
                               : 'bg-rose-50 text-rose-700 border border-rose-200 cursor-pointer'
-                          }`}>
-                          <span className={`h-1.5 w-1.5 rounded-full ${
-                            String(u.role).toUpperCase() === 'ADMIN'
-                              ? 'bg-slate-300'
-                              : u.status === 'ACTIVE'
+                            }`}>
+                          <span className={`h-1.5 w-1.5 rounded-full ${currentUser && currentUser.id === u.id
+                            ? 'bg-slate-300'
+                            : u.status === 'ACTIVE'
                               ? 'bg-emerald-600'
                               : 'bg-rose-600'
-                          }`} />
+                            }`} />
                           {u.status === 'ACTIVE' ? 'Hoạt động' : 'Bị Khóa'}
                         </button>
                       </td>
                       <td className="px-6 py-4 text-right align-middle">
                         <div className="flex justify-end gap-2">
-                          {String(u.role).toUpperCase() === 'ADMIN' ? (
-                            <span 
-                              title="Không thể chỉnh sửa tài khoản Admin"
-                              className="p-1 px-2.5 border border-slate-100 bg-slate-50 rounded-lg text-xs font-semibold text-slate-400 flex items-center gap-1 cursor-not-allowed">
-                              <Edit2 className="h-3 w-3" /> Sửa
-                            </span>
-                          ) : (
-                            <button onClick={() => handleOpenUserModal(u)}
-                              className="p-1 px-2.5 border border-slate-200 rounded-lg text-xs font-semibold text-slate-700 hover:bg-slate-50 hover:border-slate-300 transition-colors flex items-center gap-1 cursor-pointer">
-                              <Edit2 className="h-3 w-3" /> Sửa
-                            </button>
-                          )}
+                          <button onClick={() => handleOpenUserModal(u)}
+                            className="p-1 px-2.5 border border-slate-200 rounded-lg text-xs font-semibold text-slate-700 hover:bg-slate-50 hover:border-slate-300 transition-colors flex items-center gap-1 cursor-pointer">
+                            <Edit2 className="h-3 w-3" /> Sửa
+                          </button>
                         </div>
                       </td>
                     </tr>
@@ -233,6 +220,19 @@ function AdminDashboard({
         <div className="fixed inset-0 bg-black/40 backdrop-blur-sm z-50 flex items-center justify-center p-4" onClick={e => { if (e.target === e.currentTarget) setIsUserModalOpen(false); }}>
           <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md p-6">
             <h3 className="text-lg font-bold text-slate-800 mb-4">{editingUser ? 'Chỉnh sửa tài khoản' : 'Tạo tài khoản mới'}</h3>
+
+            {/* Avatar Preview */}
+            <div className="flex flex-col items-center mb-4">
+              <img
+                src={userForm.avatarUrl || `https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(userForm.name || 'User')}`}
+                alt="Avatar Preview"
+                onError={e => {
+                  e.target.src = `https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(userForm.name || 'User')}`;
+                }}
+                className="h-20 w-20 rounded-full object-cover ring-4 ring-emerald-50 shadow-md"
+              />
+            </div>
+
             <form onSubmit={handleSaveUser} className="space-y-4">
               <div>
                 <label className="block text-sm font-semibold text-slate-700 mb-1">
@@ -252,6 +252,11 @@ function AdminDashboard({
                 <label className="block text-sm font-semibold text-slate-700 mb-1">Email <span className="text-rose-500">*</span></label>
                 <input type="email" value={userForm.email} onChange={e => setUserForm({ ...userForm, email: e.target.value })}
                   className="w-full border border-slate-200 rounded-xl px-3 py-2 text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-emerald-800" placeholder="example@email.com" />
+              </div>
+              <div>
+                <label className="block text-sm font-semibold text-slate-700 mb-1">Đường dẫn ảnh đại diện (Avatar URL)</label>
+                <input type="text" value={userForm.avatarUrl || ''} onChange={e => setUserForm({ ...userForm, avatarUrl: e.target.value })}
+                  className="w-full border border-slate-200 rounded-xl px-3 py-2 text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-emerald-800" placeholder="https://example.com/avatar.png" />
               </div>
               <div>
                 <label className="block text-sm font-semibold text-slate-700 mb-1">
@@ -282,7 +287,9 @@ function AdminDashboard({
                 <div>
                   <label className="block text-sm font-semibold text-slate-700 mb-1">Vai trò</label>
                   <select value={userForm.role} onChange={e => setUserForm({ ...userForm, role: e.target.value })}
-                    className="w-full border border-slate-200 rounded-xl px-3 py-2 text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-emerald-800">
+                    disabled={currentUser && currentUser.id === userForm.id}
+                    title={currentUser && currentUser.id === userForm.id ? "Không thể tự thay đổi vai trò của chính mình" : ""}
+                    className="w-full border border-slate-200 rounded-xl px-3 py-2 text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-emerald-800 disabled:bg-slate-50 disabled:text-slate-400 disabled:border-slate-100">
                     <option value="Student">Student</option>
                     <option value="Lecturer">Lecturer</option>
                     <option value="Admin">Admin</option>
@@ -291,7 +298,9 @@ function AdminDashboard({
                 <div>
                   <label className="block text-sm font-semibold text-slate-700 mb-1">Trạng thái</label>
                   <select value={userForm.status} onChange={e => setUserForm({ ...userForm, status: e.target.value })}
-                    className="w-full border border-slate-200 rounded-xl px-3 py-2 text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-emerald-800">
+                    disabled={currentUser && currentUser.id === userForm.id}
+                    title={currentUser && currentUser.id === userForm.id ? "Không thể tự thay đổi trạng thái của chính mình" : ""}
+                    className="w-full border border-slate-200 rounded-xl px-3 py-2 text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-emerald-800 disabled:bg-slate-50 disabled:text-slate-400 disabled:border-slate-100">
                     <option value="ACTIVE">Hoạt động</option>
                     <option value="INACTIVE">Khóa</option>
                   </select>

@@ -166,3 +166,28 @@ export const promoteStudentInClass = async (classId, studentId, role = 'assistan
 export const uploadFile = async (file, onProgress) => {
   return await uploadFileToCloudinary(file, onProgress);
 };
+
+// Quizzes
+export const createQuiz = async (body) => {
+  const response = await api.post('/api/Lecturer/quizzes', body);
+  return unwrap(response);
+};
+
+export const getQuizDetails = async (quizId) => {
+  const response = await api.get(`/api/Lecturer/quizzes/${encodeURIComponent(quizId)}`);
+  return unwrap(response);
+};
+
+export const updateQuiz = async (quizId, body) => {
+  const response = await api.put(`/api/Lecturer/quizzes/${encodeURIComponent(quizId)}`, body);
+  return unwrap(response);
+};
+
+export const deleteQuiz = async (quizId) => {
+  await api.delete(`/api/Lecturer/quizzes/${encodeURIComponent(quizId)}`);
+};
+
+export const getQuizAttempts = async (quizId) => {
+  const response = await api.get(`/api/Lecturer/quizzes/${encodeURIComponent(quizId)}/attempts`);
+  return unwrap(response);
+};
