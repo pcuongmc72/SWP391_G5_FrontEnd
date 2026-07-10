@@ -19,6 +19,7 @@ import AuthModal from './components/AuthModal/AuthModal';
 import ProtectedRoute from './components/ProtectedRoute/ProtectedRoute';
 import RoleProtectedRoute from './components/RoleProtectedRoute/RoleProtectedRoute';
 import SharedBlogForum from './components/SharedBlogForum/SharedBlogForum';
+import ResetPassword from './pages/ResetPassword/ResetPassword';
 
 function AuthenticatedHomeRedirect() {
   return <Navigate to={getHomePathForCurrentUser()} replace />;
@@ -142,6 +143,8 @@ function App() {
         {/* ── Redirect /dashboard → trang đúng role ── */}
         <Route path="/dashboard" element={<AuthenticatedHomeRedirect />} />
         <Route path="/db" element={<Navigate to="/dashboard" replace />} />
+
+        <Route path="/reset-password" element={<ResetPassword />} />
 
         {/* ── Không có quyền ── */}
         <Route path="/unauthorized" element={<UnauthorizedPage />} />

@@ -79,3 +79,23 @@ export const getRole = () => {
     (Array.isArray(user.roles) ? user.roles[0] : null);
   return raw ? String(raw).toLowerCase() : null;
 };
+
+/**
+ * Yêu cầu gửi link reset mật khẩu
+ * POST /api/Auth/forgot-password
+ * Body: { email }
+ */
+export const forgotPassword = async (email) => {
+  const response = await api.post('/api/Auth/forgot-password', { email });
+  return response.data;
+};
+
+/**
+ * Đặt lại mật khẩu mới bằng token
+ * POST /api/Auth/reset-password
+ * Body: { token, newPassword }
+ */
+export const resetPassword = async (token, newPassword) => {
+  const response = await api.post('/api/Auth/reset-password', { token, newPassword });
+  return response.data;
+};
