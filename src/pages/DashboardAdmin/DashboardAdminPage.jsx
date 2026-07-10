@@ -1,9 +1,10 @@
-import { useState, useEffect, useMemo, useCallback } from 'react';
+import { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import {
-  Users, LogOut, BookOpen, Calendar, GraduationCap, MessageSquare
+  Users, LogOut, BookOpen, Calendar, GraduationCap, MessageSquare, ChevronDown, KeyRound
 } from 'lucide-react';
 import { logout, getUser } from '../../services/authService';
+import ChangePasswordModal from '../../components/ChangePasswordModal/ChangePasswordModal';
 import { getUsers, createUser, updateUser } from '../../services/userService';
 import { fetchAcademicTerms } from '../../services/academicTermService';
 import styles from './DashboardAdminPage.module.css';
@@ -66,6 +67,20 @@ function DashboardAdminPage() {
   const user = getUser();
   const navigate = useNavigate();
   const location = useLocation();
+  const [dropdownOpen, setDropdownOpen] = useState(false);
+  const [profileOpen, setProfileOpen] = useState(false);
+  const dropdownRef = useRef(null);
+
+  // Close dropdown on outside click
+  useEffect(() => {
+    const handler = (e) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(e.target)) {
+        setDropdownOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, []);
 
   useEffect(() => {
     if (location.pathname === '/dashboard/admin' || location.pathname === '/dashboard/admin/') {
@@ -443,14 +458,101 @@ function DashboardAdminPage() {
         <header className={styles.topbar}>
           <div />
           <div className={styles.topbarRight}>
-            <div className={styles.userBadge}>
-              <div className={styles.avatar} aria-hidden="true">
-                {user?.name?.[0]?.toUpperCase() || user?.email?.[0]?.toUpperCase() || 'A'}
+            <div style={{ position: 'relative' }} ref={dropdownRef}>
+              <div 
+                className={styles.userBadge} 
+                onClick={() => setDropdownOpen(!dropdownOpen)}
+              >
+                <div className={styles.avatar} aria-hidden="true">
+                  {user?.name?.[0]?.toUpperCase() || user?.email?.[0]?.toUpperCase() || 'A'}
+                </div>
+                <div className={styles.userInfo}>
+                  <span className={styles.userName}>{user?.name || 'Quản trị viên'}</span>
+                  <span className={styles.userRole}>Admin</span>
+                </div>
+                <ChevronDown size={14} style={{ color: '#64748b', marginLeft: '4px' }} />
               </div>
-              <div className={styles.userInfo}>
-                <span className={styles.userName}>{user?.name || 'Quản trị viên'}</span>
-                <span className={styles.userRole}>Admin</span>
-              </div>
+
+              {dropdownOpen && (
+                <div style={{
+                  position: 'absolute',
+                  right: 0,
+                  top: 'calc(100% + 8px)',
+                  width: '220px',
+                  background: '#ffffff',
+                  border: '1px solid #e2e8f0',
+                  borderRadius: '12px',
+                  boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05)',
+                  padding: '8px 0',
+                  zIndex: 50,
+                  display: 'flex',
+                  flexDirection: 'column',
+                }}>
+                  <div style={{
+                    padding: '8px 16px 12px',
+                    borderBottom: '1px solid #f1f5f9',
+                    marginBottom: '6px',
+                  }}>
+                    <div style={{ fontSize: '13px', fontWeight: 600, color: '#0f172a' }}>
+                      {user?.name || 'Quản trị viên'}
+                    </div>
+                    <div style={{ fontSize: '11px', color: '#64748b', marginTop: '2px', wordBreak: 'break-all' }}>
+                      {user?.email || 'admin@fpt.edu.vn'}
+                    </div>
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={() => { setDropdownOpen(false); setProfileOpen(true); }}
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '8px',
+                      padding: '8px 16px',
+                      background: 'none',
+                      border: 'none',
+                      textAlign: 'left',
+                      fontSize: '13px',
+                      color: '#334155',
+                      cursor: 'pointer',
+                      width: '100%',
+                      fontFamily: 'inherit',
+                    }}
+                    onMouseEnter={e => e.currentTarget.style.background = '#f1f5f9'}
+                    onMouseLeave={e => e.currentTarget.style.background = 'none'}
+                  >
+                    <KeyRound size={14} style={{ color: '#64748b' }} />
+                    Đổi mật khẩu
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={handleLogout}
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '8px',
+                      padding: '8px 16px',
+                      background: 'none',
+                      border: 'none',
+                      textAlign: 'left',
+                      fontSize: '13px',
+                      color: '#ef4444',
+                      cursor: 'pointer',
+                      width: '100%',
+                      fontFamily: 'inherit',
+                      borderTop: '1px solid #f1f5f9',
+                      marginTop: '6px',
+                      paddingTop: '10px',
+                    }}
+                    onMouseEnter={e => e.currentTarget.style.background = '#fef2f2'}
+                    onMouseLeave={e => e.currentTarget.style.background = 'none'}
+                  >
+                    <LogOut size={14} style={{ color: '#ef4444' }} />
+                    Đăng xuất
+                  </button>
+                </div>
+              )}
             </div>
           </div>
         </header>
@@ -505,6 +607,7 @@ function DashboardAdminPage() {
           )}
         </div>
       </div>
+      <ChangePasswordModal isOpen={profileOpen} onClose={() => setProfileOpen(false)} />
     </div>
   );
 }

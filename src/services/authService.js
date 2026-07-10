@@ -99,3 +99,13 @@ export const resetPassword = async (token, newPassword) => {
   const response = await api.post('/api/Auth/reset-password', { token, newPassword });
   return response.data;
 };
+
+/**
+ * Đổi mật khẩu của tài khoản đang đăng nhập
+ * POST /api/Auth/change-password
+ * Body: { currentPassword, newPassword }
+ */
+export const changePassword = async (currentPassword, newPassword) => {
+  const response = await api.post('/api/Auth/change-password', { currentPassword, newPassword });
+  return response.data;
+};

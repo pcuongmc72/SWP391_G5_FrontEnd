@@ -5,7 +5,7 @@ import {
   LogOut, Search, Bell, ChevronDown,
   User, KeyRound, X, Pencil, Check, Mail, Phone, MapPin, Briefcase, Users,
 } from 'lucide-react';
-import { logout, updateProfile } from '../../services/authService';
+import { logout, updateProfile, changePassword } from '../../services/authService';
 import { getStoredUser, getUserDisplayName, persistAuth } from '../../utils/authStorage';
 import { LecturerWorkspaceProvider, useLecturerWorkspace } from '../../context/LecturerWorkspaceContext';
 import styles from './DashboardLecturerPage.module.css';
@@ -220,17 +220,22 @@ function ChangePasswordSection() {
   const [msg, setMsg]     = useState('');
   const [saving, setSaving] = useState(false);
 
-  const handleChange = (e) => {
+  const handleChange = async (e) => {
     e.preventDefault();
     if (form.next !== form.confirm) { setMsg('Mật khẩu xác nhận không khớp.'); return; }
     if (form.next.length < 6)       { setMsg('Mật khẩu mới phải ít nhất 6 ký tự.'); return; }
     setSaving(true);
-    // TODO: gọi API PUT /api/Auth/change-password
-    setTimeout(() => {
+    setMsg('');
+    try {
+      await changePassword(form.current, form.next);
       setMsg('Đổi mật khẩu thành công!');
       setForm({ current: '', next: '', confirm: '' });
+    } catch (err) {
+      console.error(err);
+      setMsg(err.message || 'Có lỗi xảy ra khi đổi mật khẩu.');
+    } finally {
       setSaving(false);
-    }, 800);
+    }
   };
 
   return (

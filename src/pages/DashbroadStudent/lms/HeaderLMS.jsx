@@ -4,7 +4,8 @@ import {
   BookOpen,
   LogOut,
   ChevronDown,
-  User
+  User,
+  KeyRound
 } from "lucide-react";
 
 export default function HeaderLMS({
@@ -19,7 +20,8 @@ export default function HeaderLMS({
   onLogout,
   onToggleSidebar,
   sidebarOpen,
-  onHome
+  onHome,
+  onChangePassword
 }) {
   const [showLauncher, setShowLauncher] = useState(false);
   const percentComplete = totalCount > 0 ? Math.round((completedCount / totalCount) * 100) : 0;
@@ -170,6 +172,32 @@ export default function HeaderLMS({
                 </div>
 
                 {/* Actions */}
+                <button
+                  onClick={() => { setShowLauncher(false); onChangePassword(); }}
+                  style={{
+                    width: "100%",
+                    display: "flex",
+                    alignItems: "center",
+                    gap: "8px",
+                    padding: "8px 10px",
+                    fontSize: "13px",
+                    fontWeight: 600,
+                    color: "#374151",
+                    background: "transparent",
+                    border: "none",
+                    borderRadius: "10px",
+                    cursor: "pointer",
+                    transition: "background 150ms ease",
+                    textAlign: "left",
+                    marginBottom: "4px",
+                  }}
+                  onMouseEnter={e => e.currentTarget.style.background = "#F3F4F6"}
+                  onMouseLeave={e => e.currentTarget.style.background = "transparent"}
+                >
+                  <KeyRound size={14} style={{ color: "#4B5563" }} />
+                  Đổi mật khẩu
+                </button>
+
                 <button
                   onClick={() => { setShowLauncher(false); onLogout(); }}
                   style={{

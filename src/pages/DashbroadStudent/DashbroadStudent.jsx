@@ -34,6 +34,7 @@ import StudentRoadmap from './StudentRoadmap';
 import StudentAssignments from './StudentAssignments';
 import StudentGrades from './StudentGrades';
 import SharedBlogForum from '../../components/SharedBlogForum/SharedBlogForum';
+import ChangePasswordModal from '../../components/ChangePasswordModal/ChangePasswordModal';
 
 const INITIAL_PROGRESS = {
   completedLectures: ["l-1-1"],
@@ -356,6 +357,7 @@ export default function DashbroadStudent() {
   const [currentView, setCurrentView] = useState("overview"); // "overview" | "player"
   const [activeCourseTab, setActiveCourseTab] = useState("stream"); // "stream" | "classwork" | "people"
   const [sidebarOpen, setSidebarOpen] = useState(true); // Sidebar toggle state
+  const [changePasswordOpen, setChangePasswordOpen] = useState(false);
 
   // Announcements State
   const [announcementText, setAnnouncementText] = useState("");
@@ -747,6 +749,7 @@ export default function DashbroadStudent() {
           setSelectedCourse(null);
           navigate('/dashboard/student');
         }}
+        onChangePassword={() => setChangePasswordOpen(true)}
       />
 
       {/* Visual notification banner */}
@@ -1262,6 +1265,7 @@ export default function DashbroadStudent() {
           )}
         </main>
       </div>
+      <ChangePasswordModal isOpen={changePasswordOpen} onClose={() => setChangePasswordOpen(false)} />
     </div>
   );
 }
