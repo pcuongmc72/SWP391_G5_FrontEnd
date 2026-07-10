@@ -8,7 +8,7 @@ import { getHomePathForCurrentUser, getUserRole } from '../../utils/authStorage'
  */
 function RoleProtectedRoute({ allowedRoles = [ROLES.LECTURER] }) {
   if (!isAuthenticated()) {
-    return <Navigate to="/" replace />;
+    return <Navigate to="/login" replace />;
   }
 
   const role = normalizeRole(getUserRole());
