@@ -99,4 +99,34 @@ export const uploadFile = async (file) => {
     };
 };
 
+/**
+ * Lấy chi tiết đề thi cho sinh viên
+ */
+export const getQuizDetailsForStudent = async (quizId) => {
+    const response = await api.get(`/api/Student/quizzes/${quizId}`);
+    return response.data;
+};
 
+/**
+ * Bắt đầu làm bài
+ */
+export const startQuizAttempt = async (quizId) => {
+    const response = await api.post(`/api/Student/quizzes/${quizId}/attempts`);
+    return response.data;
+};
+
+/**
+ * Nộp bài thi
+ */
+export const submitQuizAttempt = async (quizId, attemptId, payload) => {
+    const response = await api.post(`/api/Student/quizzes/${quizId}/attempts/${attemptId}/submit`, payload);
+    return response.data;
+};
+
+/**
+ * Xem lịch sử làm bài
+ */
+export const getStudentQuizAttempts = async (quizId) => {
+    const response = await api.get(`/api/Student/quizzes/${quizId}/attempts`);
+    return response.data;
+};
