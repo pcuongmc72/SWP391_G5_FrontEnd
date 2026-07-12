@@ -1,9 +1,10 @@
-import { useState, useEffect, useMemo, useCallback } from 'react';
+import { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import {
-  LayoutGrid, Users, LogOut, BookOpen, Calendar, GraduationCap
+  Users, LogOut, BookOpen, Calendar, GraduationCap, MessageSquare, ChevronDown, KeyRound
 } from 'lucide-react';
 import { logout, getUser } from '../../services/authService';
+import ChangePasswordModal from '../../components/ChangePasswordModal/ChangePasswordModal';
 import { getUsers, createUser, updateUser } from '../../services/userService';
 import { fetchAcademicTerms } from '../../services/academicTermService';
 import styles from './DashboardAdminPage.module.css';
@@ -11,15 +12,17 @@ import AdminDashboard from './AdminDashboard';
 import TermsDashboard from './TermsDashboard';
 import ClassesDashboard from './ClassesDashboard';
 import CoursesDashboard from './CoursesDashboard';
+import SharedBlogForum from '../../components/SharedBlogForum/SharedBlogForum';
 
 /* ── Sidebar tabs definition ── */
 const SIDEBAR_TABS = [
-  { key: 'overview', label: 'Tổng quan', icon: LayoutGrid, path: '/dashboard/admin' },
   { key: 'accounts', label: 'Quản lý tài khoản', icon: Users, path: '/dashboard/admin/account-management' },
   { key: 'courses', label: 'Quản lý môn học', icon: GraduationCap, path: '/dashboard/admin/courses-management' },
   { key: 'terms', label: 'Quản lý kỳ học', icon: Calendar, path: '/dashboard/admin/terms-management' },
   { key: 'classes', label: 'Quản lý lớp học', icon: BookOpen, path: '/dashboard/admin/classes-management' },
+  { key: 'blog', label: 'Blog & Diễn đàn', icon: MessageSquare, path: '/dashboard/admin/blog-management' },
 ];
+
 /**
  * normalizeUser — Tự động chuẩn hóa dữ liệu từ backend trả về
  * Hỗ trợ linh hoạt cả PascalCase, camelCase và kiểu trạng thái (status).
@@ -41,13 +44,16 @@ const normalizeUser = (u) => {
   }
 
   const resolvedName = u.fullName ?? u.FullName ?? u.name ?? u.Name ?? u.fullname ?? 'Người dùng';
+  const rawRole = String(u.role ?? u.Role ?? '').trim();
+  const normalizedRole = rawRole ? (rawRole.charAt(0).toUpperCase() + rawRole.slice(1).toLowerCase()) : 'Student';
+
   return {
     id: u.id ?? u.Id ?? '',
     username: u.username ?? u.Username ?? '',
     name: resolvedName,
     email: u.email ?? u.Email ?? '',
     password: u.password ?? u.Password ?? '••••••••',
-    role: (u.role ?? u.Role) ? (String(u.role ?? u.Role).charAt(0).toUpperCase() + String(u.role ?? u.Role).slice(1).toLowerCase()) : 'Student',
+    role: normalizedRole,
     status: normalizedStatus,
     avatarUrl: u.avatarUrl ?? u.AvatarUrl ?? `https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(resolvedName)}`
   };
@@ -61,8 +67,26 @@ function DashboardAdminPage() {
   const user = getUser();
   const navigate = useNavigate();
   const location = useLocation();
+  const [dropdownOpen, setDropdownOpen] = useState(false);
+  const [profileOpen, setProfileOpen] = useState(false);
+  const dropdownRef = useRef(null);
 
-  const isTabActive = location.pathname === '/dashboard/admin/account-management';
+  // Close dropdown on outside click
+  useEffect(() => {
+    const handler = (e) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(e.target)) {
+        setDropdownOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, []);
+
+  useEffect(() => {
+    if (location.pathname === '/dashboard/admin' || location.pathname === '/dashboard/admin/') {
+      navigate('/dashboard/admin/account-management', { replace: true });
+    }
+  }, [location.pathname, navigate]);
 
   /* ── Core collections ── */
   const [users, setUsers] = useState([]);
@@ -104,16 +128,10 @@ function DashboardAdminPage() {
   const getDynamicTermStatus = (startDate, endDate) => {
     if (!startDate || !endDate) return 'COMPLETED';
     const now = new Date();
-    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
+    const todayStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
 
-    const start = new Date(startDate);
-    const startDay = new Date(start.getFullYear(), start.getMonth(), start.getDate()).getTime();
-
-    const end = new Date(endDate);
-    const endDay = new Date(end.getFullYear(), end.getMonth(), end.getDate()).getTime();
-
-    if (today < startDay) return 'UPCOMING';
-    if (today > endDay) return 'COMPLETED';
+    if (todayStr < startDate) return 'UPCOMING';
+    if (todayStr > endDate) return 'COMPLETED';
     return 'ACTIVE';
   };
 
@@ -130,7 +148,7 @@ function DashboardAdminPage() {
 
   const resolvedSelectedTerm = useMemo(() => {
     if (!selectedTerm) return null;
-    const termInList = resolvedTerms.find(t => t.id === selectedTerm.id);
+    const termInList = resolvedTerms.find(t => String(t.id).toLowerCase() === String(selectedTerm.id).toLowerCase());
     return termInList || {
       ...selectedTerm,
       status: getDynamicTermStatus(selectedTerm.startDate, selectedTerm.endDate)
@@ -146,9 +164,7 @@ function DashboardAdminPage() {
     navigate('/dashboard/admin/classes-management');
   }, [navigate]);
 
-  /* ── Sub-component states passed as props ── */
-  const [searchQuery, setSearchQuery] = useState('');
-  const [roleFilter, setRoleFilter] = useState('ALL');
+
 
   /* ── Modal / Form States ── */
   const [isUserModalOpen, setIsUserModalOpen] = useState(false);
@@ -211,10 +227,6 @@ function DashboardAdminPage() {
 
   /* ── User CRUD ── */
   const handleOpenUserModal = (user) => {
-    if (user && String(user.role).toUpperCase() === 'ADMIN') {
-      showToast('Không thể chỉnh sửa tài khoản Admin!', 'error');
-      return;
-    }
     if (user) {
       setEditingUser(user);
       setUserForm({
@@ -236,10 +248,6 @@ function DashboardAdminPage() {
 
   const handleSaveUser = async (e) => {
     e.preventDefault();
-    if (editingUser && String(editingUser.role).toUpperCase() === 'ADMIN') {
-      showToast('Không thể chỉnh sửa tài khoản Admin!', 'error');
-      return;
-    }
     const cleanId = userForm.id.trim();
     const cleanName = userForm.name.trim();
     const cleanEmail = userForm.email.trim();
@@ -247,8 +255,30 @@ function DashboardAdminPage() {
       ? editingUser.username
       : (cleanEmail.includes('@') ? cleanEmail.split('@')[0].toLowerCase() : cleanId.toLowerCase());
 
-    if (!editingUser && !cleanId) { showToast('Vui lòng điền mã định danh ID!', 'error'); return; }
+    if (!editingUser) {
+      if (!cleanId) {
+        showToast('Vui lòng điền mã định danh ID!', 'error');
+        return;
+      }
+      const idRegex = /^[A-Z]{2}\d{6}$/;
+      if (!idRegex.test(cleanId)) {
+        showToast('ID phải bắt đầu bằng 2 chữ cái in hoa và theo sau là đúng 6 chữ số (VD: HE187159, GV123456)!', 'error');
+        return;
+      }
+    }
     if (!cleanName || !cleanEmail) { showToast('Vui lòng điền đầy đủ thông tin bắt buộc!', 'error'); return; }
+
+    // Ngăn chặn tự khóa hoặc tự đổi vai trò của chính mình
+    if (editingUser && user && user.id === editingUser.id) {
+      if (userForm.status !== 'ACTIVE') {
+        showToast('Không thể tự vô hiệu hóa tài khoản của chính mình!', 'error');
+        return;
+      }
+      if (String(userForm.role).toUpperCase() !== 'ADMIN') {
+        showToast('Không thể tự thay đổi vai trò của chính mình!', 'error');
+        return;
+      }
+    }
 
     // Yêu cầu nhập mật khẩu cho tài khoản
     if (!userForm.password.trim()) {
@@ -298,9 +328,6 @@ function DashboardAdminPage() {
         if (users.some(u => u.id.trim().toLowerCase() === cleanId.toLowerCase())) {
           showToast('Mã định danh (ID) này đã tồn tại trên hệ thống!', 'error'); return;
         }
-        if (users.some(u => u.email.toLowerCase() === cleanEmail.toLowerCase())) {
-          showToast('Địa chỉ Email đã tồn tại trên hệ thống!', 'error'); return;
-        }
 
         const created = await createUser(payload);
         // Kiểm tra xem phản hồi trả về từ API có phải là đối tượng User hợp lệ không
@@ -316,12 +343,15 @@ function DashboardAdminPage() {
       let detailedMsg = err.message || 'Không thể lưu thông tin tài khoản!';
       if (err.response?.data) {
         const data = err.response.data;
-        detailedMsg = data.title ?? data.message ?? data.error ?? (typeof data === 'string' ? data : err.message);
         if (data.errors) {
           const firstErrKey = Object.keys(data.errors)[0];
-          if (firstErrKey) {
-            detailedMsg += ` (${firstErrKey}: ${data.errors[firstErrKey][0]})`;
+          if (firstErrKey && data.errors[firstErrKey][0]) {
+            detailedMsg = data.errors[firstErrKey][0];
+          } else {
+            detailedMsg = data.title ?? data.message ?? data.error ?? (typeof data === 'string' ? data : err.message);
           }
+        } else {
+          detailedMsg = data.title ?? data.message ?? data.error ?? (typeof data === 'string' ? data : err.message);
         }
       }
       showToast(`Không thể lưu tài khoản: ${detailedMsg}`, 'error');
@@ -332,8 +362,8 @@ function DashboardAdminPage() {
     const target = users.find(u => u.id === userId);
     if (!target) return;
 
-    if (String(target.role).toUpperCase() === 'ADMIN') {
-      showToast('Không thể thay đổi trạng thái tài khoản Admin!', 'error');
+    if (user && user.id === userId) {
+      showToast('Không thể tự vô hiệu hóa tài khoản của chính mình!', 'error');
       return;
     }
 
@@ -345,11 +375,15 @@ function DashboardAdminPage() {
       isActive: nextStatus === 'ACTIVE',
       IsActive: nextStatus === 'ACTIVE',
       Status: nextStatus,
+      avatarUrl: target.avatarUrl || '',
+      AvatarUrl: target.avatarUrl || '',
 
       // PascalCase mapping for backend
       Id: target.id,
       Username: target.username,
       Name: target.name,
+      fullName: target.name,
+      FullName: target.name,
       Email: target.email,
       Role: target.role
     };
@@ -361,7 +395,22 @@ function DashboardAdminPage() {
       setUsers(users.map(u => u.id === userId ? { ...u, status: nextStatus } : u));
       showToast(`Đã ${nextStatus === 'ACTIVE' ? 'kích hoạt lại' : 'vô hiệu hóa'} tài khoản thành công!`);
     } catch (err) {
-      showToast(err.message || 'Không thể thay đổi trạng thái tài khoản!', 'error');
+      console.error('FLIPPED LMS TOGGLE STATUS FAILED. Detailed response:', err.response?.data || err);
+      let detailedMsg = err.message || 'Không thể thay đổi trạng thái tài khoản!';
+      if (err.response?.data) {
+        const data = err.response.data;
+        if (data.errors) {
+          const firstErrKey = Object.keys(data.errors)[0];
+          if (firstErrKey && data.errors[firstErrKey][0]) {
+            detailedMsg = data.errors[firstErrKey][0];
+          } else {
+            detailedMsg = data.title ?? data.message ?? data.error ?? (typeof data === 'string' ? data : err.message);
+          }
+        } else {
+          detailedMsg = data.title ?? data.message ?? data.error ?? (typeof data === 'string' ? data : err.message);
+        }
+      }
+      showToast(`Không thể thay đổi trạng thái tài khoản: ${detailedMsg}`, 'error');
     }
   };
 
@@ -385,7 +434,7 @@ function DashboardAdminPage() {
         <nav className={styles.sidebarNav} aria-label="Admin navigation">
           <div className={styles.navGroupLabel}>Chức năng làm việc</div>
           {SIDEBAR_TABS.map(({ key, label, icon: Icon, path }) => {
-            const isActive = location.pathname === path || (key === 'overview' && location.pathname === '/dashboard/admin/');
+            const isActive = location.pathname === path;
             return (
               <button key={key}
                 className={`${styles.navItem} ${isActive ? styles.active : ''}`}
@@ -409,48 +458,108 @@ function DashboardAdminPage() {
         <header className={styles.topbar}>
           <div />
           <div className={styles.topbarRight}>
-            <div className={styles.userBadge}>
-              <div className={styles.avatar} aria-hidden="true">
-                {user?.name?.[0]?.toUpperCase() || user?.email?.[0]?.toUpperCase() || 'A'}
+            <div style={{ position: 'relative' }} ref={dropdownRef}>
+              <div 
+                className={styles.userBadge} 
+                onClick={() => setDropdownOpen(!dropdownOpen)}
+              >
+                <div className={styles.avatar} aria-hidden="true">
+                  {user?.name?.[0]?.toUpperCase() || user?.email?.[0]?.toUpperCase() || 'A'}
+                </div>
+                <div className={styles.userInfo}>
+                  <span className={styles.userName}>{user?.name || 'Quản trị viên'}</span>
+                  <span className={styles.userRole}>Admin</span>
+                </div>
+                <ChevronDown size={14} style={{ color: '#64748b', marginLeft: '4px' }} />
               </div>
-              <div className={styles.userInfo}>
-                <span className={styles.userName}>{user?.name || 'Quản trị viên'}</span>
-                <span className={styles.userRole}>Admin</span>
-              </div>
+
+              {dropdownOpen && (
+                <div style={{
+                  position: 'absolute',
+                  right: 0,
+                  top: 'calc(100% + 8px)',
+                  width: '220px',
+                  background: '#ffffff',
+                  border: '1px solid #e2e8f0',
+                  borderRadius: '12px',
+                  boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05)',
+                  padding: '8px 0',
+                  zIndex: 50,
+                  display: 'flex',
+                  flexDirection: 'column',
+                }}>
+                  <div style={{
+                    padding: '8px 16px 12px',
+                    borderBottom: '1px solid #f1f5f9',
+                    marginBottom: '6px',
+                  }}>
+                    <div style={{ fontSize: '13px', fontWeight: 600, color: '#0f172a' }}>
+                      {user?.name || 'Quản trị viên'}
+                    </div>
+                    <div style={{ fontSize: '11px', color: '#64748b', marginTop: '2px', wordBreak: 'break-all' }}>
+                      {user?.email || 'admin@fpt.edu.vn'}
+                    </div>
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={() => { setDropdownOpen(false); setProfileOpen(true); }}
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '8px',
+                      padding: '8px 16px',
+                      background: 'none',
+                      border: 'none',
+                      textAlign: 'left',
+                      fontSize: '13px',
+                      color: '#334155',
+                      cursor: 'pointer',
+                      width: '100%',
+                      fontFamily: 'inherit',
+                    }}
+                    onMouseEnter={e => e.currentTarget.style.background = '#f1f5f9'}
+                    onMouseLeave={e => e.currentTarget.style.background = 'none'}
+                  >
+                    <KeyRound size={14} style={{ color: '#64748b' }} />
+                    Đổi mật khẩu
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={handleLogout}
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '8px',
+                      padding: '8px 16px',
+                      background: 'none',
+                      border: 'none',
+                      textAlign: 'left',
+                      fontSize: '13px',
+                      color: '#ef4444',
+                      cursor: 'pointer',
+                      width: '100%',
+                      fontFamily: 'inherit',
+                      borderTop: '1px solid #f1f5f9',
+                      marginTop: '6px',
+                      paddingTop: '10px',
+                    }}
+                    onMouseEnter={e => e.currentTarget.style.background = '#fef2f2'}
+                    onMouseLeave={e => e.currentTarget.style.background = 'none'}
+                  >
+                    <LogOut size={14} style={{ color: '#ef4444' }} />
+                    Đăng xuất
+                  </button>
+                </div>
+              )}
             </div>
           </div>
         </header>
 
         {/* Content Area */}
         <div className={styles.content}>
-          {location.pathname === '/dashboard/admin' ? (
-            /* ══ TRANG TỔNG QUAN (OVERVIEW) ══ */
-            <div className="space-y-6">
-              {/* Welcome Card */}
-              <div className="bg-white rounded-3xl p-6 border border-slate-100 shadow-sm">
-                <h2 className="text-xl font-bold text-slate-800 font-display">Chào mừng đến với Hệ thống Quản trị!</h2>
-                <p className="text-slate-500 text-sm mt-1">Dưới đây là một số thống kê nhanh và các công cụ làm việc dành riêng cho bạn.</p>
-              </div>
-
-              {/* Quick Info Grid */}
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                <div className="bg-white rounded-3xl p-6 border border-slate-100 shadow-sm flex items-center gap-4">
-                  <div className="p-3 bg-emerald-50 text-emerald-800 rounded-2xl">
-                    <Users className="h-6 w-6" />
-                  </div>
-                  <div>
-                    <h3 className="text-sm font-semibold text-slate-500">Tài khoản trên hệ thống</h3>
-                    <p className="text-2xl font-bold text-slate-800 mt-1">{users.length}</p>
-                  </div>
-                </div>
-              </div>
-
-
-              <div className="bg-slate-50 rounded-3xl p-6 border border-slate-200/60 border-dashed text-slate-600 text-sm">
-
-              </div>
-            </div>
-          ) : location.pathname === '/dashboard/admin/courses-management' ? (
+          {location.pathname === '/dashboard/admin/courses-management' ? (
             /* ══ TRANG QUẢN LÝ KHÓA HỌC (COURSES MANAGEMENT) ══ */
             <CoursesDashboard
               toast={toast}
@@ -465,7 +574,7 @@ function DashboardAdminPage() {
               showToast={showToast}
             />
           ) : location.pathname === '/dashboard/admin/classes-management' ? (
-            /* ══ TRANG QUẢN LÝ LớP HỌC (CLASSES MANAGEMENT) ══ */
+            /* ══ TRANG QUẢN LÝ LỚP HỌC (CLASSES MANAGEMENT) ══ */
             <ClassesDashboard
               terms={resolvedTerms}
               selectedTerm={resolvedSelectedTerm}
@@ -474,18 +583,15 @@ function DashboardAdminPage() {
               toast={toast}
               showToast={showToast}
             />
+          ) : location.pathname === '/dashboard/admin/blog-management' ? (
+            <SharedBlogForum />
           ) : (
             /* ══ TRANG QUẢN LÝ TÀI KHOẢN (ACCOUNT MANAGEMENT) ══ */
             <AdminDashboard
               users={users}
-              setUsers={setUsers}
               currentUser={user}
               isLoading={isLoading}
 
-              searchQuery={searchQuery}
-              setSearchQuery={setSearchQuery}
-              roleFilter={roleFilter}
-              setRoleFilter={setRoleFilter}
               isUserModalOpen={isUserModalOpen}
               setIsUserModalOpen={setIsUserModalOpen}
               editingUser={editingUser}
@@ -501,6 +607,7 @@ function DashboardAdminPage() {
           )}
         </div>
       </div>
+      <ChangePasswordModal isOpen={profileOpen} onClose={() => setProfileOpen(false)} />
     </div>
   );
 }

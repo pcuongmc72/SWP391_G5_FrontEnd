@@ -1,0 +1,270 @@
+/* DashbroadStudent.module.css — Material Design 3 inspired sidebar + layout */
+
+/* ===========================
+   PAGE LAYOUT
+   =========================== */
+.page {
+    display: flex;
+    min-height: 100vh;
+    background: #F7F9FC;
+    font-family: 'Inter', 'Segoe UI', sans-serif;
+}
+
+/* ===========================
+   SIDEBAR — Material Design
+   =========================== */
+.sidebar {
+    width: 240px;
+    flex-shrink: 0;
+    background: #ffffff;
+    border-right: 1px solid #E5E7EB;
+    display: flex;
+    flex-direction: column;
+    padding: 20px 12px;
+    position: sticky;
+    top: 0;
+    height: 100vh;
+    overflow-y: auto;
+    overflow-x: hidden;
+    transition: width 300ms cubic-bezier(0.4, 0, 0.2, 1), opacity 300ms ease;
+}
+
+.sidebarLogo {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 24px;
+    padding: 0 8px;
+}
+
+.sidebarLogoIcon {
+    width: 36px;
+    height: 36px;
+    background: rgba(15, 118, 110, 0.1);
+    border: 1px solid rgba(15, 118, 110, 0.15);
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+
+.sidebarLogoIcon svg {
+    width: 18px;
+    height: 18px;
+    color: #0f766e;
+}
+
+.sidebarLogoText {
+    font-size: 13px;
+    font-weight: 800;
+    color: #064e3b;
+    letter-spacing: 0.04em;
+    line-height: 1;
+}
+
+.sidebarLogoSub {
+    display: block;
+    font-size: 9px;
+    font-weight: 700;
+    color: #0f766e;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    margin-top: 3px;
+}
+
+.navGroupLabel {
+    font-size: 10px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: #9CA3AF;
+    padding: 0 12px;
+    margin: 8px 0 6px;
+}
+
+.sidebarNav {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    flex: 1;
+}
+
+/* ─── Nav Item ─── */
+.navItem {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 0 12px;
+    height: 48px;
+    border-radius: 12px;
+    font-size: 14px;
+    font-weight: 500;
+    color: #4B5563;
+    border: none;
+    background: none;
+    cursor: pointer;
+    font-family: inherit;
+    width: 100%;
+    text-align: left;
+    transition: background 200ms cubic-bezier(0.4, 0, 0.2, 1), color 200ms ease;
+    position: relative;
+    margin-bottom: 2px;
+}
+
+.navItem:hover {
+    background: #F3F4F6;
+    color: #111827;
+}
+
+.navItem.active {
+    background: rgba(15, 118, 110, 0.1);
+    color: #0f766e;
+    font-weight: 600;
+}
+
+.navItem.active .navIcon {
+    color: #0f766e;
+}
+
+.navIcon {
+    width: 20px;
+    height: 20px;
+    flex-shrink: 0;
+    color: #9CA3AF;
+    transition: color 200ms ease;
+}
+
+.navItem:hover .navIcon {
+    color: #374151;
+}
+
+/* ─── Logout Button ─── */
+.logoutBtn {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 0 12px;
+    height: 48px;
+    border-radius: 12px;
+    font-size: 14px;
+    font-weight: 600;
+    font-family: inherit;
+    color: #6B7280;
+    background: none;
+    border: none;
+    border-top: 1px solid #F3F4F6;
+    cursor: pointer;
+    width: 100%;
+    text-align: left;
+    transition: background 200ms ease, color 200ms ease;
+    margin-top: auto;
+    padding-top: 16px;
+}
+
+.logoutBtn:hover {
+    background: #FEF2F2;
+    color: #DC2626;
+}
+
+.logoutBtn:hover .navIcon {
+    color: #DC2626;
+}
+
+/* ===========================
+   MAIN CONTENT AREA
+   =========================== */
+.main {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    overflow: auto;
+    min-width: 0;
+    background: #F7F9FC;
+}
+
+/* ===========================
+   TOP BAR
+   =========================== */
+.topbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 24px;
+    height: 60px;
+    border-bottom: 1px solid #E5E7EB;
+    background: #ffffff;
+    position: sticky;
+    top: 0;
+    z-index: 10;
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.04);
+    flex-shrink: 0;
+}
+
+.topbarRight {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+/* ─── User Badge ─── */
+.userBadge {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 5px 12px 5px 5px;
+    border-radius: 9999px;
+    background: #ffffff;
+    border: 1px solid #E5E7EB;
+    cursor: pointer;
+    transition: border-color 200ms ease, background 200ms ease;
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.06);
+}
+
+.userBadge:hover {
+    border-color: #D1D5DB;
+    background: #F9FAFB;
+}
+
+.avatar {
+    width: 30px;
+    height: 30px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #064e3b, #0d9488);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 13px;
+    font-weight: 700;
+    color: #fff;
+    flex-shrink: 0;
+}
+
+.userInfo {
+    display: flex;
+    flex-direction: column;
+}
+
+.userName {
+    font-size: 13px;
+    font-weight: 600;
+    color: #111827;
+    line-height: 1.2;
+}
+
+.userRole {
+    font-size: 10px;
+    color: #9CA3AF;
+    line-height: 1.2;
+    margin-top: 1px;
+}
+
+/* ===========================
+   CONTENT AREA
+   =========================== */
+.content {
+    padding: 24px 28px;
+    flex: 1;
+    max-width: 1400px;
+    width: 100%;
+}

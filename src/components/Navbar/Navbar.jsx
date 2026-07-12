@@ -1,4 +1,5 @@
 import { BookOpen } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 import styles from './Navbar.module.css';
 
 /**
@@ -6,14 +7,12 @@ import styles from './Navbar.module.css';
  * Props:
  *   onNavigate(view)   — điều hướng theo view key
  *   activeView         — view đang active
- *   onOpenLogin()      — mở modal đăng nhập
- *   onOpenRegister()   — mở modal đăng ký
  */
-function Navbar({ onNavigate, activeView, onOpenLogin }) {
+function Navbar({ onNavigate, activeView }) {
+  const navigate = useNavigate();
   const navItems = [
     { key: 'home',    label: 'Trang chủ' },
     { key: 'courses', label: 'Khóa học' },
-    { key: 'blog',    label: 'Blog công khai' },
     { key: 'about',   label: 'Giới thiệu' },
     { key: 'contact', label: 'Liên hệ' },
   ];
@@ -62,7 +61,7 @@ function Navbar({ onNavigate, activeView, onOpenLogin }) {
           <button
             id="btn-login"
             className={styles.btnPrimary}
-            onClick={onOpenLogin}
+            onClick={() => navigate('/login')}
           >
             Đăng nhập
           </button>

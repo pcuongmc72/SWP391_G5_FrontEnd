@@ -1,30 +1,24 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { isAuthenticated, getRole } from './services/authService';
+import { getHomePathForCurrentUser } from './utils/authStorage';
+import { ROLES } from './constants/roles';
 
-// Layout
 import MainLayout from './layouts/MainLayout';
-
-// Pages
-import HomePage from './pages/Home/HomePage';
+import LoginPage from './pages/Login/LoginPage';
+import DashboardLecturerPage from './pages/Lecturer/DashboardLecturerPage';
 import DashboardAdminPage from './pages/DashboardAdmin/DashboardAdminPage';
-
-// Components
+import DashbroadStudentPage from './pages/DashbroadStudent/DashbroadStudent';
 import ProtectedRoute from './components/ProtectedRoute/ProtectedRoute';
+import RoleProtectedRoute from './components/RoleProtectedRoute/RoleProtectedRoute';
+import SharedBlogForum from './components/SharedBlogForum/SharedBlogForum';
+import ResetPassword from './pages/ResetPassword/ResetPassword';
 
-/**
- * Redirect thông minh sau khi đăng nhập theo role
- */
-function RoleRedirect() {
-  if (!isAuthenticated()) return <Navigate to="/" replace />;
-  const role = getRole();
-  if (role === 'admin') return <Navigate to="/dashboard/admin" replace />;
-  // Thêm role khác ở đây khi có thêm trang
-  return <Navigate to="/" replace />;
+function AuthenticatedHomeRedirect() {
+  return <Navigate to={getHomePathForCurrentUser()} replace />;
 }
 
-/**
- * Trang báo không có quyền truy cập
- */
+
+
 function UnauthorizedPage() {
   return (
     <div style={{
@@ -70,25 +64,33 @@ function App() {
   return (
     <BrowserRouter>
       <Routes>
-        {/* ── Trang công khai (layout chứa Navbar + Footer) ── */}
+        {/* ── / và /Home → redirect sang /login nếu chưa đăng nhập ── */}
+        <Route
+          path="/"
+          element={
+            isAuthenticated()
+              ? <AuthenticatedHomeRedirect />
+              : <Navigate to="/login" replace />
+          }
+        />
+        <Route
+          path="/Home"
+          element={
+            isAuthenticated()
+              ? <AuthenticatedHomeRedirect />
+              : <Navigate to="/login" replace />
+          }
+        />
+
+        {/* ── Trang đăng nhập riêng (standalone, không có Navbar) ── */}
+        <Route path="/login" element={<LoginPage />} />
+
+        {/* ── Blog/Forum dưới MainLayout ── */}
         <Route element={<MainLayout />}>
-          <Route
-            path="/"
-            element={
-              isAuthenticated()
-                ? <RoleRedirect />
-                : <HomePage />
-            }
-          />
-          <Route
-            path="/Home"
-            element={
-              isAuthenticated()
-                ? <RoleRedirect />
-                : <HomePage />
-            }
-          />
+          <Route path="/blog-forum" element={<SharedBlogForum />} />
+          <Route path="/blog" element={<SharedBlogForum />} />
         </Route>
+
 
         {/* ── Trang Admin — chỉ role 'admin' ── */}
         <Route element={<ProtectedRoute allowedRoles={['admin']} />}>
@@ -97,16 +99,45 @@ function App() {
           <Route path="/dashboard/admin/courses-management" element={<DashboardAdminPage />} />
           <Route path="/dashboard/admin/terms-management" element={<DashboardAdminPage />} />
           <Route path="/dashboard/admin/classes-management" element={<DashboardAdminPage />} />
+          <Route path="/dashboard/admin/blog-management" element={<DashboardAdminPage />} />
+        </Route>
+
+
+        {/* ── Trang Lecturer — chỉ role 'lecturer' ── */}
+        <Route element={<RoleProtectedRoute allowedRoles={[ROLES.LECTURER]} />}>
+          <Route path="/lecturer/dashboard" element={<Navigate to="/dashboard/lecturer" replace />} />
+          <Route path="/dashboard/lecturer" element={<DashboardLecturerPage />} />
+          <Route path="/dashboard/lecturer/materials" element={<DashboardLecturerPage />} />
+          <Route path="/dashboard/lecturer/classes-list" element={<DashboardLecturerPage />} />
+          <Route path="/dashboard/lecturer/assignments" element={<DashboardLecturerPage />} />
+          <Route path="/dashboard/lecturer/grading" element={<DashboardLecturerPage />} />
+          <Route path="/dashboard/lecturer/feedback" element={<DashboardLecturerPage />} />
+          <Route path="/dashboard/lecturer/progress" element={<DashboardLecturerPage />} />
+          <Route path="/dashboard/lecturer/promotion" element={<DashboardLecturerPage />} />
+          <Route path="/dashboard/lecturer/blog" element={<DashboardLecturerPage />} />
+          <Route path="/dashboard/lecturer/schedule" element={<DashboardLecturerPage />} />
+          <Route path="/dashboard/lecturer/schedule/:classId" element={<DashboardLecturerPage />} />
+          <Route path="/lecturer/classes" element={<Navigate to="/dashboard/lecturer/schedule" replace />} />
+          <Route path="/lecturer/classes/:classId" element={<Navigate to="/dashboard/lecturer/schedule" replace />} />
+        </Route>
+        {/* ── Trang Student — chỉ role 'student' ── */}
+        <Route element={<ProtectedRoute allowedRoles={['student']} />}>
+          <Route path="/dashboard/student" element={<DashbroadStudentPage />} />
+          <Route path="/dashboard/student/blog" element={<DashbroadStudentPage />} />
         </Route>
 
         {/* ── Redirect /dashboard → trang đúng role ── */}
-        <Route path="/dashboard" element={<RoleRedirect />} />
+        <Route path="/dashboard" element={<AuthenticatedHomeRedirect />} />
+        <Route path="/db" element={<Navigate to="/dashboard" replace />} />
+
+        <Route path="/reset-password" element={<ResetPassword />} />
 
         {/* ── Không có quyền ── */}
         <Route path="/unauthorized" element={<UnauthorizedPage />} />
 
         {/* ── Catch-all ── */}
         <Route path="*" element={<Navigate to="/" replace />} />
+
       </Routes>
     </BrowserRouter>
   );

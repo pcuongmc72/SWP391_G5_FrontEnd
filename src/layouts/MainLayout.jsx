@@ -2,24 +2,21 @@ import { useState } from 'react';
 import { Outlet, useNavigate } from 'react-router-dom';
 import Navbar from '../components/Navbar/Navbar';
 import Footer from '../components/Footer/Footer';
-import AuthModal from '../components/AuthModal/AuthModal';
 import styles from './MainLayout.module.css';
 
 /**
  * MainLayout — Layout chính cho các trang công khai
- * Bao gồm: Navbar sticky, Footer, và modal Auth
+ * Bao gồm: Navbar sticky, Footer
  */
-function MainLayout({ onLogin }) {
-  const [showLogin, setShowLogin]   = useState(false);
+function MainLayout() {
   const [activeView, setActiveView] = useState('home');
   const navigate = useNavigate();
 
   const handleNavigate = (view) => {
     setActiveView(view);
     const routes = {
-      home:    '/',
+      home:    '/login',
       courses: '/courses',
-      blog:    '/blog',
       about:   '/about',
       contact: '/contact',
     };
@@ -31,7 +28,6 @@ function MainLayout({ onLogin }) {
       <Navbar
         onNavigate={handleNavigate}
         activeView={activeView}
-        onOpenLogin={() => setShowLogin(true)}
       />
 
       <main className={styles.main} id="main-content">
@@ -39,11 +35,6 @@ function MainLayout({ onLogin }) {
       </main>
 
       <Footer onNavigate={handleNavigate} />
-
-      {/* Modal đăng nhập */}
-      {showLogin && (
-        <AuthModal onClose={() => setShowLogin(false)} />
-      )}
     </div>
   );
 }

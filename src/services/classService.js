@@ -1,4 +1,5 @@
 import api from './api';
+import { normalizeData } from '../utils/dataNormalization';
 
 /**
  * classService — Các hàm gọi API liên quan đến Class (Lớp học)
@@ -18,14 +19,26 @@ import api from './api';
 
 /* ── Classes ──────────────────────────────────────────────────── */
 
-/**
- * Lấy danh sách tất cả lớp học.
- * @param {string} [termId] - Nếu truyền vào sẽ filter theo học kỳ (query param)
- */
 export const getClasses = async (termId) => {
   const params = termId ? { academicTermId: termId } : {};
   const res = await api.get('/api/Classes', { params });
-  return res.data;
+  return normalizeData(res.data);
+};
+
+/**
+ * Lấy danh sách lớp học của một user cụ thể (sinh viên/giảng viên)
+ * @param {string} userId
+ * @param {string} [academicTermId] - Nếu truyền vào sẽ filter theo học kỳ (query param)
+ * @param {string} role - Role của user (student/lecturer)
+ */
+export const getUserClasses = async (userId, academicTermId, role) => {
+  // Backend expects lowercase role: 'student' or 'lecturer'
+  const normalizedRole = role ? role.toLowerCase() : role;
+  const params = {};
+  if (academicTermId) params.academicTermId = academicTermId;
+  if (normalizedRole) params.role = normalizedRole;
+  const res = await api.get(`/api/Classes/user/${userId}`, { params });
+  return normalizeData(res.data);
 };
 
 /**
@@ -93,5 +106,14 @@ export const addStudentToClass = async (classId, studentId) => {
  */
 export const removeStudentFromClass = async (classId, studentId) => {
   const res = await api.delete(`/api/classes/${classId}/students/${studentId}`);
+  return res.data;
+};
+
+/**
+ * Lấy danh sách học liệu của lớp học dành cho Admin
+ * @param {string} classId
+ */
+export const getClassMaterials = async (classId) => {
+  const res = await api.get(`/api/Classes/${classId}/materials`);
   return res.data;
 };

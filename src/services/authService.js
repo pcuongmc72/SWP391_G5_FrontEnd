@@ -39,6 +39,13 @@ export const getToken = () => localStorage.getItem('access_token');
  */
 export const isAuthenticated = () => !!getToken();
 
+export const updateProfile = async (userData) => {
+  const response = await api.put('/api/Auth/profile', userData);
+  return response.data;
+};
+
+export { getStoredUser, getUserRole, getHomePathForCurrentUser } from '../utils/authStorage';
+
 /**
  * Lấy thông tin user đang lưu
  * @returns {object|null}
@@ -46,7 +53,11 @@ export const isAuthenticated = () => !!getToken();
 export const getUser = () => {
   try {
     const raw = localStorage.getItem('user');
-    return raw ? JSON.parse(raw) : null;
+    if (!raw) return null;
+    const user = JSON.parse(raw);
+    // Chuẩn hóa ID để dùng thống nhất ở frontend
+    if (user && !user.id && user.Id) user.id = user.Id;
+    return user;
   } catch {
     return null;
   }
@@ -67,4 +78,34 @@ export const getRole = () => {
     user.userRole ??
     (Array.isArray(user.roles) ? user.roles[0] : null);
   return raw ? String(raw).toLowerCase() : null;
+};
+
+/**
+ * Yêu cầu gửi link reset mật khẩu
+ * POST /api/Auth/forgot-password
+ * Body: { email }
+ */
+export const forgotPassword = async (email) => {
+  const response = await api.post('/api/Auth/forgot-password', { email });
+  return response.data;
+};
+
+/**
+ * Đặt lại mật khẩu mới bằng token
+ * POST /api/Auth/reset-password
+ * Body: { token, newPassword }
+ */
+export const resetPassword = async (token, newPassword) => {
+  const response = await api.post('/api/Auth/reset-password', { token, newPassword });
+  return response.data;
+};
+
+/**
+ * Đổi mật khẩu của tài khoản đang đăng nhập
+ * POST /api/Auth/change-password
+ * Body: { currentPassword, newPassword }
+ */
+export const changePassword = async (currentPassword, newPassword) => {
+  const response = await api.post('/api/Auth/change-password', { currentPassword, newPassword });
+  return response.data;
 };

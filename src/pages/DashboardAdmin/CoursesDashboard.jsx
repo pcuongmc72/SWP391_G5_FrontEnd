@@ -1,7 +1,7 @@
 import React, { useState, useMemo, useEffect, useCallback } from 'react';
 import {
   Plus, Search, Edit2, Trash2, X, CheckCircle,
-  AlertCircle, Loader2, BookOpen, GraduationCap, HelpCircle
+  AlertCircle, Loader2, GraduationCap
 } from 'lucide-react';
 import {
   fetchCourses,
@@ -521,8 +521,6 @@ function CoursesDashboard({ showToast, toast }) {
           to   { transform: scale(1);    opacity: 1; }
         }
       `}</style>
-
-      <Toast toast={toast} />
 
       <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
 
