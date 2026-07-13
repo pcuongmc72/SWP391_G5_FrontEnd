@@ -17,6 +17,7 @@ import {
   HelpCircle,
   Code
 } from "lucide-react";
+import StudentQuizPlayer from './StudentQuizPlayer';
 
 export default function LessonPlayer({
   lecture,
@@ -73,6 +74,8 @@ export default function LessonPlayer({
       setActiveTab("in_class");
     } else if (lecture?.type === "post_class") {
       setActiveTab("homework");
+    } else if (lecture?.type === "quiz") {
+      setActiveTab("quiz");
     } else {
       setActiveTab("overview");
     }
@@ -291,8 +294,9 @@ export default function LessonPlayer({
   if (!lecture) return <div className="text-white p-5">Chưa có bài học nào được chọn</div>;
 
   return (
-    <div className="flex flex-col bg-slate-900 border border-slate-800 rounded-xl overflow-hidden shadow-lg h-full">
+    <div className={`flex flex-col rounded-xl overflow-hidden shadow-lg h-full ${lecture.type === 'quiz' ? 'bg-white border-gray-200' : 'bg-slate-900 border-slate-800'}`}>
       {/* Video Viewport Port / Simulated Frame Player */}
+      {lecture.type !== 'quiz' && (
       <div className="relative bg-black aspect-video flex-shrink-0 flex flex-col justify-between items-center group overflow-hidden">
         {lecture.videoUrl ? (
           <div className="w-full h-full relative">
@@ -381,10 +385,25 @@ export default function LessonPlayer({
           </div>
         )}
       </div>
+      )}
 
       {/* Udemy-like Tabs Navigation links */}
+      {lecture.type !== 'quiz' && (
       <div className="bg-slate-900 border-b border-slate-800 px-4 overflow-x-auto flex items-center whitespace-nowrap scrollbar-none">
-        {lecture.type === "pre_class" && (
+        {lecture.type === "quiz" && (
+            <button
+              onClick={() => setActiveTab("quiz")}
+              className={`pt-3.5 pb-2.5 px-4 font-bold text-xs transition border-b-2 flex items-center gap-1.5 cursor-pointer ${
+                activeTab === "quiz"
+                  ? "text-emerald-400 border-emerald-500"
+                  : "text-slate-400 hover:text-white border-transparent"
+              }`}
+            >
+              ❓ Trắc nghiệm nhanh
+            </button>
+        )}
+        
+        {(lecture.type === "pre_class" || lecture.type === "video" || lecture.type === "pdf") && (
           <>
             <button
               onClick={() => setActiveTab("overview")}
@@ -396,23 +415,6 @@ export default function LessonPlayer({
             >
               📖 Tài liệu tự học
             </button>
-            {lecture.quiz && (
-              <button
-                onClick={() => setActiveTab("quiz")}
-                className={`pt-3.5 pb-2.5 px-4 font-bold text-xs transition border-b-2 flex items-center gap-1.5 cursor-pointer ${
-                  activeTab === "quiz"
-                    ? "text-emerald-400 border-emerald-500"
-                    : "text-slate-400 hover:text-white border-transparent"
-                }`}
-              >
-                ❓ Trắc nghiệm nhanh
-                {quizScores[lecture.id] !== undefined && (
-                  <span className="text-[9px] bg-emerald-600 text-white rounded-full px-1.5 py-0.2">
-                    {quizScores[lecture.id]}%
-                  </span>
-                )}
-              </button>
-            )}
           </>
         )}
 
@@ -470,9 +472,10 @@ export default function LessonPlayer({
           🗒️ Tập ghi chú ({currentLectureNotes.length})
         </button>
       </div>
+      )}
 
-      {/* Tab Panels content details viewport */}
-      <div className="flex-1 overflow-y-auto p-5 bg-slate-955 text-slate-100 min-h-[300px]">
+      {/* Content Area for Tabs / Quiz */}
+      <div className={`flex-1 overflow-y-auto custom-scrollbar p-5 min-h-[300px] ${lecture.type === 'quiz' ? 'bg-white text-gray-800' : 'bg-slate-955 text-slate-100'}`}>
         {/* TAB 1: OVERVIEW & READING MATERIALS */}
         {activeTab === "overview" && lecture.type === "pre_class" && (
           <div className="space-y-6">
@@ -581,126 +584,13 @@ export default function LessonPlayer({
         )}
 
         {/* TAB 2: INTERACTIVE PRE-CLASS QUIZ */}
-        {activeTab === "quiz" && lecture.type === "pre_class" && lecture.quiz && (
-          <div className="space-y-6">
-            <div className="border-b border-zinc-800 pb-3">
-              <h4 className="text-sm font-bold text-amber-500 flex items-center gap-1.5">
-                <HelpCircle size={16} /> Bài tập trắc nghiệm tự kiểm tra nhanh (Pre-class Quiz)
-              </h4>
-              <p className="text-xs text-slate-400 mt-1">
-                Lớp học đảo ngược cần em làm trắc nghiệm này để đảm bảo đã nắm vững khái niệm lý thuyết chính trước khi thảo luận trực tiếp trên lớp. Đạt trên 50% để mở khóa bài học!
-              </p>
-            </div>
-
-            <div className="space-y-5">
-              {lecture.quiz.map((q, idx) => {
-                const selectedOption = selectedAnswers[q.id];
-                const isCorrect = selectedOption === q.correctAnswer;
-
-                return (
-                  <div key={q.id} className="bg-slate-900 border border-slate-800 rounded-xl p-4 space-y-3">
-                    <span className="text-[10px] font-bold text-emerald-400 uppercase tracking-widest block">Câu hỏi {idx + 1}</span>
-                    <h5 className="font-bold text-sm text-white leading-relaxed">{q.question}</h5>
-
-                    <div className="grid grid-cols-1 gap-2.5 mt-2">
-                      {q.options.map((option, oIdx) => {
-                        const isChosen = selectedOption === oIdx;
-                        let optionStyle = "border-slate-800 bg-slate-950/60 hover:bg-slate-905 text-slate-300";
-
-                        if (isChosen) {
-                          optionStyle = "border-emerald-600 bg-emerald-950/25 text-emerald-250 font-semibold";
-                        }
-
-                        if (quizSubmitted) {
-                          if (oIdx === q.correctAnswer) {
-                            optionStyle = "border-green-600 bg-green-950/30 text-green-200 font-bold";
-                          } else if (isChosen && !isCorrect) {
-                            optionStyle = "border-red-600 bg-red-950/35 text-red-100 line-through";
-                          }
-                        }
-
-                        return (
-                          <button
-                            key={oIdx}
-                            disabled={quizSubmitted}
-                            onClick={() => handleSelectAnswer(q.id, oIdx)}
-                            className={`w-full text-left p-3 rounded-lg border text-xs transition duration-200 flex items-start gap-2 focus:outline-none cursor-pointer ${optionStyle}`}
-                          >
-                            <span className="font-bold font-mono text-xs text-emerald-400 mt-0.5 shrink-0">
-                              {String.fromCharCode(65 + oIdx)}.
-                            </span>
-                            <span>{option}</span>
-                          </button>
-                        );
-                      })}
-                    </div>
-
-                    {quizSubmitted && (
-                      <div className="mt-3 p-3 bg-slate-950 border border-slate-800 rounded-lg text-xs space-y-2">
-                        <div className="flex items-center gap-1.5 font-bold">
-                          {isCorrect ? (
-                            <span className="text-green-500 flex items-center gap-1">
-                              <CheckCircle size={14} /> Trả lời chính xác!
-                            </span>
-                          ) : (
-                            <span className="text-red-400 flex items-center gap-1">
-                              <XCircle size={14} /> Chưa chính xác!
-                            </span>
-                          )}
-                        </div>
-                        <p className="text-slate-400 leading-relaxed italic">{q.explanation}</p>
-                      </div>
-                    )}
-                  </div>
-                );
-              })}
-            </div>
-
-            {/* Quiz Action Control */}
-            <div className="flex items-center justify-between border-t border-slate-800 pt-5">
-              {!quizSubmitted ? (
-                <>
-                  <span className="text-xs text-slate-400 italic">
-                    {Object.keys(selectedAnswers).length < lecture.quiz.length
-                      ? `Vui lòng hoàn thành ${lecture.quiz.length - Object.keys(selectedAnswers).length} câu còn lại.`
-                      : "Trắc nghiệm đã sẵn sàng, hãy nhấn Nộp bài."}
-                  </span>
-                  <button
-                    onClick={handleQuizSubmit}
-                    disabled={Object.keys(selectedAnswers).length < lecture.quiz.length}
-                    className="bg-emerald-700 hover:bg-emerald-800 disabled:opacity-50 text-white font-bold text-xs px-5 py-2.5 rounded-lg shadow-md transition disabled:cursor-not-allowed cursor-pointer"
-                  >
-                    Nộp bài đánh giá
-                  </button>
-                </>
-              ) : (
-                <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between w-full gap-4">
-                  <div>
-                    <span className="text-xs text-slate-400 block">Kết quả thi:</span>
-                    <span className="text-lg font-bold text-white">
-                      Điểm thi đạt:{" "}
-                      <span className={quizResult?.passed ? "text-green-500" : "text-red-400"}>
-                        {quizResult?.score}%
-                      </span>
-                    </span>
-                    <span className="text-xs text-slate-400 block italic mt-1">
-                      {quizResult?.passed ? "🎉 Đạt tiêu chuẩn! Em đã sẵn sàng lên lớp học thảo luận trực tiếp." : "⚠️ Điểm số dưới trung bình. Em hãy bấm lật lại tài liệu để học kỹ và thi lại nhé!"}
-                    </span>
-                  </div>
-                  <button
-                    onClick={() => {
-                      setSelectedAnswers({});
-                      setQuizSubmitted(false);
-                      setQuizResult(null);
-                    }}
-                    className="bg-slate-850 text-emerald-400 font-bold text-xs px-4 py-2 rounded-lg border border-slate-700 hover:bg-slate-750 transition cursor-pointer"
-                  >
-                    Làm bài trắc nghiệm lại
-                  </button>
-                </div>
-              )}
-            </div>
-          </div>
+        {((activeTab === "quiz" && lecture.type !== "quiz") || lecture.type === "quiz") && (
+          <StudentQuizPlayer
+              quizId={lecture.fileUrl || lecture.url || lecture.id} 
+              triggerNotification={triggerNotification}
+              addPoints={addPoints}
+              onToggleComplete={onToggleComplete}
+          />
         )}
 
         {/* TAB 3: IN_CLASS COLLABORATION ACTIVITIES */}

@@ -1093,7 +1093,24 @@ export default function DashbroadStudent() {
                 {/* Classwork tab content */}
                 {activeCourseTab === "classwork" && (
                   <div className="bg-white border border-gray-200 rounded-2xl p-6 shadow-2xs">
-                    <StudentRoadmap cls={selectedCourse} onBack={() => setActiveCourseTab("stream")} />
+                    <StudentRoadmap 
+                        cls={selectedCourse} 
+                        onBack={() => setActiveCourseTab("stream")} 
+                        onSelectMaterial={(material, chapterId) => {
+                            const lecture = {
+                                id: material.id,
+                                title: material.title,
+                                type: material.type || material.materialType || 'video',
+                                url: material.fileUrl,
+                                description: material.description,
+                                // Tương thích với LessonPlayer
+                                urlType: material.fileUrl?.includes('youtube') ? 'youtube' : 'local'
+                            };
+                            setActiveLecture(lecture);
+                            setActiveSectionId(chapterId);
+                            setCurrentView("lecture");
+                        }}
+                    />
                   </div>
                 )}
 

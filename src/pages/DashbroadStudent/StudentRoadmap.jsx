@@ -532,7 +532,7 @@ function StudentMaterialPreview({ material, onBack, onToggleComplete, togglingId
     );
 }
 
-function RoadmapScreen({ cls, onBack }) {
+function RoadmapScreen({ cls, onBack, onSelectMaterial }) {
     const [chapters, setChapters] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState('');
@@ -889,35 +889,68 @@ function RoadmapScreen({ cls, onBack }) {
                                                         <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexShrink: 0 }}>
                                                             {material.fileUrl && material.fileUrl !== '#' && (
                                                                 <>
-                                                                    <button
-                                                                        onClick={(e) => { e.preventDefault(); setPreviewMaterial(material); }}
-                                                                        style={{
-                                                                            display: 'inline-flex', alignItems: 'center', gap: 5, fontSize: '0.75rem',
-                                                                            fontWeight: 600, color: '#0f766e', background: '#f0fdf4',
-                                                                            border: '1px solid #bfe5dc', padding: '6px 12px', borderRadius: 8,
-                                                                            textDecoration: 'none', transition: 'all 0.15s', cursor: 'pointer'
-                                                                        }}
-                                                                        onMouseEnter={e => e.currentTarget.style.background = '#e6f4ea'}
-                                                                        onMouseLeave={e => e.currentTarget.style.background = '#f0fdf4'}
-                                                                    >
-                                                                        <ExternalLink size={12} /> Xem trước
-                                                                    </button>
-                                                                    <a
-                                                                        href={material.fileUrl}
-                                                                        download
-                                                                        target="_blank"
-                                                                        rel="noopener noreferrer"
-                                                                        style={{
-                                                                            display: 'inline-flex', alignItems: 'center', gap: 5, fontSize: '0.75rem',
-                                                                            fontWeight: 600, color: '#0f766e', background: '#e6f4ea',
-                                                                            border: '1px solid #a3cfbb', padding: '6px 12px', borderRadius: 8,
-                                                                            textDecoration: 'none', transition: 'all 0.15s'
-                                                                        }}
-                                                                        onMouseEnter={e => e.currentTarget.style.background = '#d1e7dd'}
-                                                                        onMouseLeave={e => e.currentTarget.style.background = '#e6f4ea'}
-                                                                    >
-                                                                        <Play size={12} /> Tải xuống
-                                                                    </a>
+                                                                    {/* Xử lý riêng cho Quiz: Chỉ có nút Làm bài */}
+                                                                    {(material.type === 'quiz' || material.materialType === 'quiz') ? (
+                                                                        <button
+                                                                            onClick={(e) => {
+                                                                                e.preventDefault();
+                                                                                if (onSelectMaterial) {
+                                                                                    onSelectMaterial(material, ch.chapterName);
+                                                                                } else {
+                                                                                    setPreviewMaterial(material);
+                                                                                }
+                                                                            }}
+                                                                            style={{
+                                                                                display: 'inline-flex', alignItems: 'center', gap: 5, fontSize: '0.75rem',
+                                                                                fontWeight: 600, color: '#fff', background: '#0f766e',
+                                                                                border: 'none', padding: '6px 12px', borderRadius: 8,
+                                                                                textDecoration: 'none', transition: 'all 0.15s', cursor: 'pointer'
+                                                                            }}
+                                                                            onMouseEnter={e => e.currentTarget.style.background = '#0d5953'}
+                                                                            onMouseLeave={e => e.currentTarget.style.background = '#0f766e'}
+                                                                        >
+                                                                            <Play size={12} /> Làm bài
+                                                                        </button>
+                                                                    ) : (
+                                                                        <>
+                                                                            <button
+                                                                                onClick={(e) => {
+                                                                                    e.preventDefault();
+                                                                                    if (onSelectMaterial) {
+                                                                                        onSelectMaterial(material, ch.chapterName);
+                                                                                    } else {
+                                                                                        setPreviewMaterial(material);
+                                                                                    }
+                                                                                }}
+                                                                                style={{
+                                                                                    display: 'inline-flex', alignItems: 'center', gap: 5, fontSize: '0.75rem',
+                                                                                    fontWeight: 600, color: '#fff', background: '#0f766e',
+                                                                                    border: 'none', padding: '6px 12px', borderRadius: 8,
+                                                                                    textDecoration: 'none', transition: 'all 0.15s', cursor: 'pointer'
+                                                                                }}
+                                                                                onMouseEnter={e => e.currentTarget.style.background = '#0d5953'}
+                                                                                onMouseLeave={e => e.currentTarget.style.background = '#0f766e'}
+                                                                            >
+                                                                                <ExternalLink size={12} /> Vào học
+                                                                            </button>
+                                                                            <a
+                                                                                href={material.fileUrl}
+                                                                                download
+                                                                                target="_blank"
+                                                                                rel="noopener noreferrer"
+                                                                                style={{
+                                                                                    display: 'inline-flex', alignItems: 'center', gap: 5, fontSize: '0.75rem',
+                                                                                    fontWeight: 600, color: '#0f766e', background: '#e6f4ea',
+                                                                                    border: '1px solid #a3cfbb', padding: '6px 12px', borderRadius: 8,
+                                                                                    textDecoration: 'none', transition: 'all 0.15s'
+                                                                                }}
+                                                                                onMouseEnter={e => e.currentTarget.style.background = '#d1e7dd'}
+                                                                                onMouseLeave={e => e.currentTarget.style.background = '#e6f4ea'}
+                                                                            >
+                                                                                <Play size={12} /> Tải xuống
+                                                                            </a>
+                                                                        </>
+                                                                    )}
                                                                 </>
                                                             )}
                                                         </div>
@@ -1050,14 +1083,14 @@ function RoadmapScreen({ cls, onBack }) {
 
 // ─── Root Component ─────────────────────────────────────────────────────────────
 
-export default function StudentRoadmap({ cls, onBack }) {
+export default function StudentRoadmap({ cls, onBack, onSelectMaterial }) {
     const [selectedClassState, setSelectedClassState] = useState(null);
 
     const activeClass = cls || selectedClassState;
     const handleBack = onBack || (() => setSelectedClassState(null));
 
     if (activeClass) {
-        return <RoadmapScreen cls={activeClass} onBack={handleBack} />;
+        return <RoadmapScreen cls={activeClass} onBack={handleBack} onSelectMaterial={onSelectMaterial} />;
     }
 
     return <ClassListScreen onSelectClass={setSelectedClassState} />;
