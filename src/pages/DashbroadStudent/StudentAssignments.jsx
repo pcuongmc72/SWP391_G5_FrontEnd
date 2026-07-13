@@ -224,6 +224,14 @@ function SubmissionForm({ assignment, classId, onSuccess, onCancel }) {
 
     const handleSubmit = async (e) => {
         e.preventDefault();
+
+        // Kiểm tra quá hạn trước khi submit
+        const isOverdue = new Date(assignment.dueDate).setHours(23, 59, 59, 999) < new Date();
+        if (isOverdue) {
+            setError('Không thể nộp bài. Hạn nộp đã kết thúc.');
+            return;
+        }
+
         if (!fileName.trim()) {
             setError('Vui lòng chọn tệp hoặc nhập nội dung nộp bài.');
             return;
@@ -442,6 +450,9 @@ function AssignmentCard({ assignment, classId, onUpdated, onPreviewFile }) {
     // Trích xuất link tham khảo tự động trong phần mô tả
     const extractedUrls = extractUrls(meta.desc);
 
+    // Kiểm tra đã quá hạn nộp bài chưa
+    const isOverdue = new Date(assignment.dueDate).setHours(23, 59, 59, 999) < new Date();
+
     const handleSubmitSuccess = (updatedSubmission) => {
         setShowForm(false);
         onUpdated(assignment.id, updatedSubmission);
@@ -628,35 +639,57 @@ function AssignmentCard({ assignment, classId, onUpdated, onPreviewFile }) {
 
                     {/* Submission form or toggle button */}
                     {mySubmission?.status !== 'GRADED' && (
-                        <>
-                            {showForm ? (
-                                <div>
-                                    <div style={{ fontSize: '0.75rem', fontWeight: 700, color: '#374151', textTransform: 'uppercase', marginBottom: 12, letterSpacing: '0.05em' }}>
-                                        {mySubmission ? 'Cập nhật bài nộp' : 'Nộp bài'}
+                        isOverdue ? (
+                            <div style={{
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: 10,
+                                padding: '12px 16px',
+                                background: '#fef2f2',
+                                border: '1px solid #fca5a5',
+                                borderRadius: 10,
+                                color: '#b91c1c',
+                                fontSize: '0.8125rem',
+                                fontWeight: 600
+                            }}>
+                                <AlertTriangle size={16} color="#b91c1c" />
+                                <span>
+                                    {mySubmission 
+                                        ? "Đã quá hạn nộp. Bạn không thể cập nhật hoặc nộp lại bài." 
+                                        : "Đã quá hạn nộp bài. Hệ thống không tiếp nhận thêm bài nộp mới."}
+                                </span>
+                            </div>
+                        ) : (
+                            <>
+                                {showForm ? (
+                                    <div>
+                                        <div style={{ fontSize: '0.75rem', fontWeight: 700, color: '#374151', textTransform: 'uppercase', marginBottom: 12, letterSpacing: '0.05em' }}>
+                                            {mySubmission ? 'Cập nhật bài nộp' : 'Nộp bài'}
+                                        </div>
+                                        <SubmissionForm
+                                            assignment={assignment}
+                                            classId={classId}
+                                            onSuccess={handleSubmitSuccess}
+                                            onCancel={() => setShowForm(false)}
+                                        />
                                     </div>
-                                    <SubmissionForm
-                                        assignment={assignment}
-                                        classId={classId}
-                                        onSuccess={handleSubmitSuccess}
-                                        onCancel={() => setShowForm(false)}
-                                    />
-                                </div>
-                            ) : (
-                                <button
-                                    onClick={() => setShowForm(true)}
-                                    style={{
-                                        alignSelf: 'flex-start', display: 'flex', alignItems: 'center', gap: 8,
-                                        padding: '9px 18px', background: '#0f766e', border: 'none', borderRadius: 9,
-                                        fontSize: '0.8125rem', fontWeight: 700, color: '#fff', cursor: 'pointer', transition: 'background 0.15s'
-                                    }}
-                                    onMouseEnter={e => e.currentTarget.style.background = '#115e59'}
-                                    onMouseLeave={e => e.currentTarget.style.background = '#0f766e'}
-                                >
-                                    <Upload size={14} />
-                                    {mySubmission ? 'Nộp lại bài' : 'Nộp bài tập'}
-                                </button>
-                            )}
-                        </>
+                                ) : (
+                                    <button
+                                        onClick={() => setShowForm(true)}
+                                        style={{
+                                            alignSelf: 'flex-start', display: 'flex', alignItems: 'center', gap: 8,
+                                            padding: '9px 18px', background: '#0f766e', border: 'none', borderRadius: 9,
+                                            fontSize: '0.8125rem', fontWeight: 700, color: '#fff', cursor: 'pointer', transition: 'background 0.15s'
+                                        }}
+                                        onMouseEnter={e => e.currentTarget.style.background = '#115e59'}
+                                        onMouseLeave={e => e.currentTarget.style.background = '#0f766e'}
+                                    >
+                                        <Upload size={14} />
+                                        {mySubmission ? 'Nộp lại bài' : 'Nộp bài tập'}
+                                    </button>
+                                )}
+                            </>
+                        )
                     )}
                 </div>
             )}
@@ -704,10 +737,30 @@ export default function StudentAssignments({ cls }) {
         fetch();
     }, [cls?.id, refreshKey]);
 
+    // Trạng thái hiển thị thông báo thành công (toast)
+    const [toast, setToast] = useState(null);
+
+    const showToast = (message, subtext = '') => {
+        setToast({ message, subtext });
+        setTimeout(() => {
+            setToast(null);
+        }, 4000);
+    };
+
     const handleAssignmentUpdated = useCallback((assignmentId, updatedSubmission) => {
+        // Cập nhật giao diện lập tức
         setAssignments(prev => prev.map(a =>
             a.id === assignmentId ? { ...a, mySubmission: updatedSubmission } : a
         ));
+
+        // Chuẩn bị thông tin hiển thị trên Toast
+        const timeText = updatedSubmission?.submittedAt 
+            ? `Thời gian nộp: ${updatedSubmission.submittedAt}` 
+            : '';
+        showToast('Assignment submitted successfully.', timeText);
+
+        // Kích hoạt re-fetch dữ liệu & số liệu thống kê mới từ server
+        setRefreshKey(p => p + 1);
     }, []);
 
     // Stats
@@ -795,6 +848,37 @@ export default function StudentAssignments({ cls }) {
                 fileUrl={previewUrl}
                 fileName={previewName}
             />
+
+            {/* Success toast notification */}
+            {toast && (
+                <div style={{
+                    position: 'fixed',
+                    bottom: 24,
+                    right: 24,
+                    backgroundColor: '#0f766e',
+                    color: '#fff',
+                    padding: '12px 20px',
+                    borderRadius: 12,
+                    boxShadow: '0 10px 15px -3px rgba(0,0,0,0.1), 0 4px 6px -2px rgba(0,0,0,0.05)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 10,
+                    zIndex: 999999,
+                    fontSize: '0.875rem',
+                    fontWeight: 600,
+                    animation: 'slide-in 0.3s ease-out'
+                }}>
+                    <CheckCircle2 size={18} color="#fff" />
+                    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start' }}>
+                        <span>{toast.message}</span>
+                        {toast.subtext && (
+                            <span style={{ fontSize: '0.75rem', fontWeight: 400, opacity: 0.85, marginTop: 2 }}>
+                                {toast.subtext}
+                            </span>
+                        )}
+                    </div>
+                </div>
+            )}
         </div>
     );
 }

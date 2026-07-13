@@ -344,6 +344,27 @@ function ClassCard({ cls, bannerColor, selectedSemester, onSelectCourse }) {
           </span>
         </div>
 
+        {/* Middle row: Class Code badge */}
+        {cls.id && (
+          <div style={{ marginTop: "4px", position: "relative", zIndex: 1 }}>
+            <span style={{
+              display: "inline-flex",
+              alignItems: "center",
+              background: "rgba(255,255,255,0.18)",
+              border: "1px solid rgba(255,255,255,0.25)",
+              borderRadius: "6px",
+              padding: "3px 10px",
+              fontSize: "11px",
+              fontWeight: "750",
+              color: "#ffffff",
+              textShadow: "0 1px 2px rgba(0,0,0,0.1)",
+              letterSpacing: "0.02em"
+            }}>
+              Lớp: {cls.id}
+            </span>
+          </div>
+        )}
+
         {/* Bottom row: lecturer name */}
         <div style={{ position: "relative", zIndex: 1 }}>
           <p style={{ fontSize: "12px", fontWeight: 600, color: "rgba(255,255,255,0.85)", margin: 0, display: "flex", alignItems: "center", gap: "5px" }}>
