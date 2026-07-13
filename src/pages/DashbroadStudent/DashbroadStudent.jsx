@@ -35,6 +35,7 @@ import StudentAssignments from './StudentAssignments';
 import StudentGrades from './StudentGrades';
 import SharedBlogForum from '../../components/SharedBlogForum/SharedBlogForum';
 import ChangePasswordModal from '../../components/ChangePasswordModal/ChangePasswordModal';
+import StudentFeedback from './StudentFeedback';
 
 const INITIAL_PROGRESS = {
   completedLectures: ["l-1-1"],
@@ -898,6 +899,16 @@ export default function DashbroadStudent() {
                         <Users size={14} className={activeCourseTab === "people" ? "text-emerald-600" : ""} />
                         <span>Thành viên (People)</span>
                       </button>
+
+                      <button
+                        onClick={() => setActiveCourseTab("qa")}
+                        className={`flex items-center gap-2 px-4 py-1.5 rounded-full text-xs font-bold transition-all duration-300 ease-in-out shrink-0 cursor-pointer ${activeCourseTab === "qa"
+                          ? "bg-emerald-50 text-emerald-700 shadow-2xs border border-emerald-200/50 scale-102"
+                          : "text-gray-500 hover:text-gray-800 hover:bg-gray-50 hover:scale-101"
+                          }`}
+                      >
+                        <span>Hỏi đáp</span>
+                      </button>
                     </div>
                   </div>
 
@@ -918,6 +929,13 @@ export default function DashbroadStudent() {
                     </button>
                   </div>
                 </div>
+
+                {/* QA tab content */}
+                {activeCourseTab === "qa" && (
+                  <div className="bg-white border border-gray-200 rounded-2xl p-6 shadow-2xs animate-fade-in">
+                    <StudentFeedback cls={selectedCourse} />
+                  </div>
+                )}
 
                 {/* Stream tab content */}
                 {activeCourseTab === "stream" && (

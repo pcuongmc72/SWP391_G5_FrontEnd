@@ -1655,7 +1655,7 @@ export default function MaterialsDashboard() {
                       </span>
                       <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
                         {/* Zoom controls — only for image preview */}
-                        {editMaterialForm.fileName.match(/\.(jpeg|jpg|gif|png|webp)$/i) && (
+                        {editMaterialForm.type !== 'video' && editMaterialForm.inputType !== 'quiz' && (
                           <>
                             <button
                               type="button"

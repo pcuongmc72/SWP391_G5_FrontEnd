@@ -25,7 +25,7 @@ const SIDEBAR_ITEMS = [
   { id: 'classList',   label: 'Danh sách lớp học',   icon: Users, path: '/dashboard/lecturer/classes-list' },
   { id: 'assignments', label: 'Bài tập & Đồ án',     icon: Upload, path: '/dashboard/lecturer/assignments' },
   { id: 'grading',    label: 'Chấm điểm nộp bài',   icon: CheckSquare, path: '/dashboard/lecturer/grading' },
-  { id: 'feedback',   label: 'Phản hồi hỗ trợ',     icon: MessageSquare, path: '/dashboard/lecturer/feedback' },
+  { id: 'feedback',   label: 'Hỏi đáp & Hỗ trợ',     icon: MessageSquare, path: '/dashboard/lecturer/feedback' },
   { id: 'progress',   label: 'Tiến độ học viên',     icon: TrendingUp, path: '/dashboard/lecturer/progress' },
   { id: 'promotion',  label: 'Thăng cấp học thuật',  icon: Award, path: '/dashboard/lecturer/promotion' },
   { id: 'blog',       label: 'Blog & Diễn đàn',     icon: MessageSquare, path: '/dashboard/lecturer/blog' },
