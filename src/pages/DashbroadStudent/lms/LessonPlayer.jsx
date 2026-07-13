@@ -6,7 +6,7 @@ import {
   BookOpen,
   Paperclip,
   Download,
-  Send,
+
   Lightbulb,
   CheckCircle,
   XCircle,
@@ -48,11 +48,7 @@ export default function LessonPlayer({
   // Homework writing state
   const [homeworkCode, setHomeworkCode] = useState("");
 
-  // Chat message state with AI Tutor
-  const [chatHistory, setChatHistory] = useState({});
-  const [currentMessage, setCurrentMessage] = useState("");
-  const [aiIsLoading, setAiIsLoading] = useState(false);
-  const chatBottomRef = useRef(null);
+
 
   // Playback parameters
   const [playbackSpeed, setPlaybackSpeed] = useState("1.0x");
@@ -81,21 +77,7 @@ export default function LessonPlayer({
     }
   }, [lecture]);
 
-  // Scroll chat to bottom when messages are added
-  useEffect(() => {
-    if (activeTab === "ai_tutor") {
-      chatBottomRef.current?.scrollIntoView({ behavior: "smooth" });
-    }
-  }, [chatHistory, activeTab]);
 
-  const activeChatList = chatHistory[lecture?.id] || [
-    {
-      id: "welcome",
-      role: "model",
-      text: `👋 Thầy chào em! Thầy là Trợ lý AI đặc biệt của bài học này. Em cần thầy hướng dẫn chuẩn bị bài viết, tóm tắt lý thuyết, giải thích mã nguồn hay đưa ra gợi ý làm các bài tập trắc nghiệm?`,
-      timestamp: new Date()
-    }
-  ];
 
   const handleVideoPlayToggle = () => {
     if (videoRef.current) {
@@ -108,111 +90,7 @@ export default function LessonPlayer({
     }
   };
 
-  // Chat request with Gemini backend
-  const handleSendChatMessage = async (overrideText) => {
-    const textToSend = overrideText || currentMessage;
-    if (!textToSend.trim() || aiIsLoading) return;
 
-    // Add user message to history
-    const userMsg = {
-      id: `u-${Date.now()}`,
-      role: "user",
-      text: textToSend,
-      timestamp: new Date()
-    };
-
-    const updatedHistoryOfLecture = [...activeChatList, userMsg];
-    setChatHistory((p) => ({ ...p, [lecture.id]: updatedHistoryOfLecture }));
-    if (!overrideText) setCurrentMessage("");
-    setAiIsLoading(true);
-
-    try {
-      // Gather relevant lesson context to feed to Gemini
-      let lessonContext = `Bài học: "${lecture.title}" (Tuần tương ứng). `;
-      if (lecture.readings) {
-        lessonContext += `Tài liệu đọc: "${lecture.readings.title}". Nội dung lý thuyết: "${lecture.readings.content.substring(0, 450)}...". `;
-      }
-      if (lecture.inClassExercise) {
-        lessonContext += `Bài tập trên lớp: Chủ đề: "${lecture.inClassExercise.topic}". Lời khuyên thảo luận: "${lecture.inClassExercise.collaborationGuide}". `;
-      }
-      if (lecture.postClassHomework) {
-        lessonContext += `Bài tập về nhà: Đố vui: "${lecture.postClassHomework.challengeTitle}". Hướng dẫn học sinh: "${lecture.postClassHomework.instructions}". `;
-      }
-
-      // API request to server.ts backend
-      const response = await fetch("/api/gemini/chat", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json"
-        },
-        body: JSON.stringify({
-          message: textToSend,
-          history: updatedHistoryOfLecture.slice(1, -1).map((m) => ({
-            role: m.role,
-            text: m.text
-          })),
-          lessonContext
-        })
-      });
-
-      if (!response.ok) {
-        throw new Error("Lỗi API kết nối tới server.");
-      }
-
-      const resData = await response.json();
-      const aiMsg = {
-        id: `ai-${Date.now()}`,
-        role: "model",
-        text: resData.text,
-        timestamp: new Date()
-      };
-
-      setChatHistory((p) => ({
-        ...p,
-        [lecture.id]: [...updatedHistoryOfLecture, aiMsg]
-      }));
-      addPoints(10); // Reward active AI prompting!
-    } catch (error) {
-      console.error("AI Assistant response error", error);
-      const errorMsg = {
-        id: `err-${Date.now()}`,
-        role: "model",
-        text: `⚠️ **Không thể kết nối đến Trợ Lý AI**: ${error.message || "Đã xảy ra sự cố kết nối."}\n\nHọc viên thân mến, Gemini AI Server cần được cài đặt và kích hoạt ở backend để sử dụng chức năng này.`,
-        timestamp: new Date()
-      };
-      setChatHistory((p) => ({
-        ...p,
-        [lecture.id]: [...updatedHistoryOfLecture, errorMsg]
-      }));
-    } finally {
-      setAiIsLoading(false);
-    }
-  };
-
-  // Instant pre-class query helpers
-  const handleQuickAiPrompt = (promptType) => {
-    let text = "";
-    if (promptType === "summarize") {
-      text = "Hãy tóm tắt giúp em bài học này thành 5 gạch đầu dòng ngắn gọn và dễ nhớ nhất.";
-    } else if (promptType === "quiz_me") {
-      text = "Tạo cho em 1 câu hỏi tương tác ngắn dạng tình huống thực tế dựa trên bài học này kèm giải thích để em ôn luyên.";
-    } else {
-      text = "Nêu ra 1 khái niệm mang tính thử thách nhất trong bài học này và giải thích nó bằng ví dụ cuộc sống trực quan.";
-    }
-    setActiveTab("ai_tutor");
-    setTimeout(() => {
-      handleSendChatMessage(text);
-    }, 100);
-  };
-
-  // Highlighted reading analysis trigger
-  const handleTriggerReadingAiAnalysis = (selectedParagraph) => {
-    setActiveTab("ai_tutor");
-    const customPrompt = `Hãy giải thích chi tiết, đơn giản hóa và lấy ví dụ minh họa thực tế cho đoạn tài liệu học này của em:\n\n"${selectedParagraph}"`;
-    setTimeout(() => {
-      handleSendChatMessage(customPrompt);
-    }, 100);
-  };
 
   // Handle quiz question option select
   const handleSelectAnswer = (questionId, optionIndex) => {
@@ -450,16 +328,6 @@ export default function LessonPlayer({
         )}
 
         {/* Universal support tabs */}
-        <button
-          onClick={() => setActiveTab("ai_tutor")}
-          className={`pt-3.5 pb-2.5 px-4 font-bold text-xs transition border-b-2 flex items-center gap-1.5 cursor-pointer ${
-            activeTab === "ai_tutor"
-              ? "text-emerald-400 border-emerald-500"
-              : "text-slate-400 hover:text-white border-transparent"
-          }`}
-        >
-          <Sparkles size={13} className="text-emerald-400 animate-pulse fill-emerald-950" /> ASK AI Study Tutor
-        </button>
 
         <button
           onClick={() => setActiveTab("notes")}
@@ -479,33 +347,7 @@ export default function LessonPlayer({
         {/* TAB 1: OVERVIEW & READING MATERIALS */}
         {activeTab === "overview" && lecture.type === "pre_class" && (
           <div className="space-y-6">
-            {/* Quick AI Trigger Bar */}
-            <div className="bg-slate-900/80 border border-slate-800 rounded-lg p-3 flex flex-wrap items-center justify-between gap-3 shadow-md">
-              <div className="flex items-center gap-2">
-                <Sparkles size={16} className="text-emerald-400 shrink-0" />
-                <span className="text-xs font-semibold text-slate-200">Em muốn Trợ lý AI thực hiện nhanh việc gì?</span>
-              </div>
-              <div className="flex gap-2 flex-wrap">
-                <button
-                  onClick={() => handleQuickAiPrompt("summarize")}
-                  className="bg-emerald-950/60 text-emerald-300 hover:bg-emerald-900/60 border border-emerald-800 text-[10px] font-bold px-3 py-1.5 rounded transition cursor-pointer"
-                >
-                  📝 Tóm tắt bài này
-                </button>
-                <button
-                  onClick={() => handleQuickAiPrompt("quiz_me")}
-                  className="bg-emerald-950/60 text-emerald-300 hover:bg-emerald-900/60 border border-emerald-800 text-[10px] font-bold px-3 py-1.5 rounded transition cursor-pointer"
-                >
-                  ⚡ Đố nhanh em
-                </button>
-                <button
-                  onClick={() => handleQuickAiPrompt("explain_difficult")}
-                  className="bg-emerald-950/60 text-emerald-300 hover:bg-emerald-900/60 border border-emerald-800 text-[10px] font-bold px-3 py-1.5 rounded transition cursor-pointer"
-                >
-                  🔥 Giải nghĩa từ khó
-                </button>
-              </div>
-            </div>
+
 
             {/* Reading Material */}
             {lecture.readings && (
@@ -520,15 +362,7 @@ export default function LessonPlayer({
                   <h5 className="font-bold text-white text-sm">{lecture.readings.title}</h5>
                   <p className="text-slate-300 antialiased">{lecture.readings.content}</p>
 
-                  <div className="mt-4 pt-3 border-t border-slate-800/80 flex items-center justify-between">
-                    <span className="text-xs text-slate-400 font-medium italic">Gặp từ ngữ thuật ngữ khó nắm bắt?</span>
-                    <button
-                      onClick={() => handleTriggerReadingAiAnalysis(lecture.readings.content)}
-                      className="bg-emerald-800 text-white font-bold text-[10px] px-3 py-1.5 rounded hover:bg-emerald-700 transition flex items-center gap-1 cursor-pointer"
-                    >
-                      <Sparkles size={11} /> AI Giải Thích Toàn Bộ Trích Đoạn
-                    </button>
-                  </div>
+
                 </div>
 
                 {/* Key Points highlight list */}
@@ -634,26 +468,7 @@ export default function LessonPlayer({
               </div>
             </div>
 
-            {/* Quick Discussion Prompt generator */}
-            <div className="border-t border-slate-800 pt-5 space-y-3">
-              <div className="flex items-start justify-between">
-                <div>
-                  <span className="text-xs font-bold text-slate-200 block">Đội của em đang bế tắc thuật toán hoặc cần bổ sung góc nhìn?</span>
-                  <p className="text-[11px] text-slate-400">Yêu cầu Gemini AI gợi mở hướng làm bài tập nhóm nãy ngay không làm hộ.</p>
-                </div>
-                <button
-                  onClick={() => {
-                    setActiveTab("ai_tutor");
-                    setTimeout(() => {
-                      handleSendChatMessage(`Đội em đang thảo luận chủ đề bài tập trên lớp: "${lecture.inClassExercise.topic}". Hãy gợi ý 3 câu hỏi gợi mở, sâu rộng để thảo luận và nâng cao Critical Thinking, không viết thẳng code giải.`);
-                    }, 100);
-                  }}
-                  className="bg-emerald-800 text-white font-bold text-[10px] px-3 py-1.5 rounded hover:bg-emerald-700 transition flex items-center gap-1 shrink-0 cursor-pointer"
-                >
-                  <Sparkles size={11} /> AI Gợi Ý Thảo Luận
-                </button>
-              </div>
-            </div>
+
           </div>
         )}
 
@@ -683,17 +498,7 @@ export default function LessonPlayer({
                   <span className="text-xs font-bold text-slate-400 uppercase tracking-widest flex items-center gap-1">
                     💻 Khu vực viết code / Bài giải:
                   </span>
-                  <button
-                    onClick={() => {
-                      setActiveTab("ai_tutor");
-                      setTimeout(() => {
-                        handleSendChatMessage(`Hãy phân tích lỗi sai và đưa ra cấu trúc sườn thuật toán (starter code) hỗ trợ em giải đề bài sau:\n"${lecture.postClassHomework.instructions}"`);
-                      }, 100);
-                    }}
-                    className="text-emerald-400 hover:text-white hover:underline text-[10px] font-semibold flex items-center gap-1 cursor-pointer"
-                  >
-                    <Sparkles size={11} className="text-emerald-400" /> Nhờ AI gợi ý sườn giải thuật
-                  </button>
+
                 </div>
                 <div className="border border-slate-800 rounded-lg overflow-hidden bg-slate-950 text-left">
                   <div className="bg-slate-900 border-b border-slate-850 px-3.5 py-1.5 flex items-center justify-between">
@@ -733,99 +538,7 @@ export default function LessonPlayer({
           </div>
         )}
 
-        {/* TAB 5: AI TUTOR MESSAGE BOARD */}
-        {activeTab === "ai_tutor" && (
-          <div className="space-y-4 flex flex-col h-full justify-between min-h-[350px]">
-            <div className="border-b border-zinc-800 pb-2 text-left">
-              <h4 className="text-sm font-bold text-emerald-400 flex items-center gap-1.5">
-                <Sparkles size={16} className="text-emerald-400 fill-emerald-950 animate-pulse" /> Trợ lý tự học AI Tutor (Gemini AI)
-              </h4>
-              <p className="text-[11px] text-slate-400 mt-0.5 leading-snug">
-                Hỏi đáp mọi thắc mắc học liệu, slides bài viết, đố vui hay đề ra lộ trình tự học Flipped. Trợ lý AI có bối cảnh bài học hiện tại để phục vụ chuẩn xác nhất.
-              </p>
-            </div>
 
-            <div className="bg-slate-900 border border-slate-800 p-2.5 rounded-lg flex items-center justify-between text-xs text-left">
-              <span className="text-zinc-400">Bối cảnh gửi AI: <span className="text-white font-medium">{lecture.title}</span></span>
-              <span className="text-[9px] bg-emerald-900 text-emerald-250 border border-emerald-800 uppercase px-1.5 py-0.5 rounded font-bold">
-                Mô-đun: {lecture.type?.toUpperCase()}
-              </span>
-            </div>
-
-            {/* Message History Scroller */}
-            <div className="flex-1 overflow-y-auto space-y-3 pr-1 max-h-[300px] border border-slate-850 rounded-lg p-3 bg-slate-900/10 custom-scrollbar text-left">
-              {activeChatList.map((m) => (
-                <div
-                  key={m.id}
-                  className={`flex gap-2.5 max-w-[85%] ${
-                    m.role === "user" ? "ml-auto flex-row-reverse" : "mr-auto"
-                  }`}
-                >
-                  <div
-                    className={`w-7 h-7 rounded-sm flex items-center justify-center shrink-0 font-bold text-xs ${
-                      m.role === "user"
-                        ? "bg-slate-750 text-white"
-                        : "bg-emerald-900 text-emerald-200 border border-emerald-800"
-                    }`}
-                  >
-                    {m.role === "user" ? "Me" : "🤖"}
-                  </div>
-
-                  <div
-                    className={`p-3 rounded-lg text-xs leading-relaxed whitespace-pre-wrap select-text ${
-                      m.role === "user"
-                        ? "bg-emerald-700 text-white rounded-tr-none"
-                        : "bg-slate-900 text-slate-200 rounded-tl-none border border-slate-800"
-                    }`}
-                  >
-                    {m.text}
-                  </div>
-                </div>
-              ))}
-
-              {/* Loading indicator */}
-              {aiIsLoading && (
-                <div className="flex gap-2.5 mr-auto max-w-[85%] items-center animate-pulse">
-                  <div className="w-7 h-7 rounded-sm bg-emerald-950 border border-emerald-900 flex items-center justify-center font-bold text-xs text-emerald-300">
-                    🤖
-                  </div>
-                  <div className="bg-slate-900 border border-slate-800 p-3 rounded-lg text-xs text-emerald-300 flex items-center gap-2">
-                    <Clock size={12} className="animate-spin text-emerald-450" />
-                    <span>Trợ lý AI đang nghiên cứu tài liệu tự học và soạn câu trả lời...</span>
-                  </div>
-                </div>
-              )}
-
-              <div ref={chatBottomRef} />
-            </div>
-
-            {/* Message inputs row */}
-            <div className="flex gap-2 mt-2">
-              <input
-                type="text"
-                value={currentMessage}
-                onChange={(e) => setCurrentMessage(e.target.value)}
-                onKeyDown={(e) => {
-                  if (e.key === "Enter" && !e.shiftKey) {
-                    e.preventDefault();
-                    handleSendChatMessage();
-                  }
-                }}
-                disabled={aiIsLoading}
-                placeholder="Hỏi thầy bất kỳ thắc mắc bài học nào: 'Explain closures', 'Tóm tắt bài này'..."
-                className="flex-1 bg-slate-900 border border-slate-800 hover:border-zinc-700 rounded-lg px-3.5 py-2.5 text-xs text-white placeholder:text-gray-500 focus:outline-none focus:border-emerald-600 transition disabled:opacity-60 text-left"
-              />
-              <button
-                onClick={() => handleSendChatMessage()}
-                disabled={aiIsLoading || !currentMessage.trim()}
-                className="bg-emerald-800 hover:bg-emerald-700 disabled:opacity-40 text-white font-bold p-2.5 rounded-lg transition shrink-0 cursor-pointer flex items-center justify-center disabled:cursor-not-allowed"
-                title="Gửi câu hỏi"
-              >
-                <Send size={15} />
-              </button>
-            </div>
-          </div>
-        )}
 
         {/* TAB 6: STUDENT NOTES LIST & DRAFTING */}
         {activeTab === "notes" && (

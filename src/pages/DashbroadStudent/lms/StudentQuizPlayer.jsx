@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { getQuizDetailsForStudent, startQuizAttempt, submitQuizAttempt, getStudentQuizAttempts } from '../../../services/studentService';
 import { HelpCircle, Clock, CheckCircle, XCircle, AlertCircle, Play, Star } from 'lucide-react';
 
@@ -22,11 +22,19 @@ export default function StudentQuizPlayer({ quizId, triggerNotification, addPoin
     // Custom confirm modal state
     const [showSubmitConfirm, setShowSubmitConfirm] = useState(false);
 
+    // Ref to always hold the latest handleSubmit (avoids stale closure in timer)
+    const handleSubmitRef = useRef(null);
+
     useEffect(() => {
         if (quizId) {
             loadQuizData();
         }
     }, [quizId]);
+
+    // Keep ref in sync with latest handleSubmit
+    useEffect(() => {
+        handleSubmitRef.current = handleSubmit;
+    });
 
     useEffect(() => {
         let timer;
@@ -35,7 +43,7 @@ export default function StudentQuizPlayer({ quizId, triggerNotification, addPoin
                 setTimeLeft(prev => {
                     if (prev <= 1) {
                         clearInterval(timer);
-                        handleSubmit();
+                        handleSubmitRef.current?.();
                         return 0;
                     }
                     return prev - 1;
@@ -43,7 +51,7 @@ export default function StudentQuizPlayer({ quizId, triggerNotification, addPoin
             }, 1000);
         }
         return () => clearInterval(timer);
-    }, [currentAttempt, timeLeft]);
+    }, [currentAttempt]);
 
     const loadQuizData = async () => {
         try {
