@@ -21,27 +21,27 @@ import ClassListDashboard from './ClassListDashboard';
 import SharedBlogForum from '../../components/SharedBlogForum/SharedBlogForum';
 
 const SIDEBAR_ITEMS = [
-  { id: 'materials',   label: 'Tài liệu học tập',    icon: BookOpen, path: '/dashboard/lecturer/materials' },
-  { id: 'classList',   label: 'Danh sách lớp học',   icon: Users, path: '/dashboard/lecturer/classes-list' },
-  { id: 'assignments', label: 'Bài tập & Đồ án',     icon: Upload, path: '/dashboard/lecturer/assignments' },
-  { id: 'grading',    label: 'Chấm điểm nộp bài',   icon: CheckSquare, path: '/dashboard/lecturer/grading' },
-  { id: 'feedback',   label: 'Hỏi đáp & Hỗ trợ',     icon: MessageSquare, path: '/dashboard/lecturer/feedback' },
-  { id: 'progress',   label: 'Tiến độ học viên',     icon: TrendingUp, path: '/dashboard/lecturer/progress' },
-  { id: 'promotion',  label: 'Thăng cấp học thuật',  icon: Award, path: '/dashboard/lecturer/promotion' },
-  { id: 'blog',       label: 'Blog & Diễn đàn',     icon: MessageSquare, path: '/dashboard/lecturer/blog' },
+  { id: 'materials', label: 'Tài liệu học tập', icon: BookOpen, path: '/dashboard/lecturer/materials' },
+  { id: 'classList', label: 'Danh sách lớp học', icon: Users, path: '/dashboard/lecturer/classes-list' },
+  { id: 'assignments', label: 'Bài tập', icon: Upload, path: '/dashboard/lecturer/assignments' },
+  { id: 'grading', label: 'Chấm điểm nộp bài', icon: CheckSquare, path: '/dashboard/lecturer/grading' },
+  { id: 'feedback', label: 'Hỏi đáp & Hỗ trợ', icon: MessageSquare, path: '/dashboard/lecturer/feedback' },
+  { id: 'progress', label: 'Tiến độ học viên', icon: TrendingUp, path: '/dashboard/lecturer/progress' },
+  { id: 'promotion', label: 'Thăng cấp học thuật', icon: Award, path: '/dashboard/lecturer/promotion' },
+  { id: 'blog', label: 'Blog & Diễn đàn', icon: MessageSquare, path: '/dashboard/lecturer/blog' },
 ];
 
 /* ─── Profile Modal ─────────────────────────────────── */
 function ProfileModal({ user, onClose }) {
-  const [isEditing, setIsEditing]   = useState(false);
-  const [saving, setSaving]         = useState(false);
-  const [success, setSuccess]       = useState('');
-  const [form, setForm]             = useState({
+  const [isEditing, setIsEditing] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [success, setSuccess] = useState('');
+  const [form, setForm] = useState({
     fullName: user?.fullName || user?.name || '',
-    email:    user?.email || '',
-    phone:    user?.phone || '',
-    address:  user?.address || '',
-    bio:      user?.bio || '',
+    email: user?.email || '',
+    phone: user?.phone || '',
+    address: user?.address || '',
+    bio: user?.bio || '',
   });
 
   const handleSave = async (e) => {
@@ -56,7 +56,7 @@ function ProfileModal({ user, onClose }) {
         address: form.address,
         bio: form.bio
       });
-      
+
       const updatedUser = apiResponse.data || apiResponse;
       // Cập nhật thông tin trong localStorage và State
       const updated = { ...user, ...updatedUser };
@@ -106,19 +106,19 @@ function ProfileModal({ user, onClose }) {
                 </div>
                 <div className={styles.infoGrid}>
                   <div className={styles.infoCard}>
-                    <div className={styles.infoLabel}><Mail size={11} style={{display:'inline',marginRight:4}}/>Email</div>
+                    <div className={styles.infoLabel}><Mail size={11} style={{ display: 'inline', marginRight: 4 }} />Email</div>
                     <div className={styles.infoValue}>{user?.email || '—'}</div>
                   </div>
                   <div className={styles.infoCard}>
-                    <div className={styles.infoLabel}><Phone size={11} style={{display:'inline',marginRight:4}}/>Điện thoại</div>
+                    <div className={styles.infoLabel}><Phone size={11} style={{ display: 'inline', marginRight: 4 }} />Điện thoại</div>
                     <div className={styles.infoValue}>{user?.phone || '—'}</div>
                   </div>
                   <div className={styles.infoCard}>
-                    <div className={styles.infoLabel}><MapPin size={11} style={{display:'inline',marginRight:4}}/>Địa chỉ</div>
+                    <div className={styles.infoLabel}><MapPin size={11} style={{ display: 'inline', marginRight: 4 }} />Địa chỉ</div>
                     <div className={styles.infoValue}>{user?.address || '—'}</div>
                   </div>
                   <div className={styles.infoCard}>
-                    <div className={styles.infoLabel}><Briefcase size={11} style={{display:'inline',marginRight:4}}/>Vai trò</div>
+                    <div className={styles.infoLabel}><Briefcase size={11} style={{ display: 'inline', marginRight: 4 }} />Vai trò</div>
                     <div className={styles.infoValue}>Lecturer</div>
                   </div>
                 </div>
@@ -215,15 +215,15 @@ function ProfileModal({ user, onClose }) {
 }
 
 function ChangePasswordSection() {
-  const [open, setOpen]   = useState(false);
-  const [form, setForm]   = useState({ current: '', next: '', confirm: '' });
-  const [msg, setMsg]     = useState('');
+  const [open, setOpen] = useState(false);
+  const [form, setForm] = useState({ current: '', next: '', confirm: '' });
+  const [msg, setMsg] = useState('');
   const [saving, setSaving] = useState(false);
 
   const handleChange = async (e) => {
     e.preventDefault();
     if (form.next !== form.confirm) { setMsg('Mật khẩu xác nhận không khớp.'); return; }
-    if (form.next.length < 6)       { setMsg('Mật khẩu mới phải ít nhất 6 ký tự.'); return; }
+    if (form.next.length < 6) { setMsg('Mật khẩu mới phải ít nhất 6 ký tự.'); return; }
     setSaving(true);
     setMsg('');
     try {
@@ -283,18 +283,18 @@ function ChangePasswordSection() {
 function LecturerLayoutInner() {
   const navigate = useNavigate();
   const location = useLocation();
-  const user     = getStoredUser();
+  const user = getStoredUser();
   const {
     activeSubTab, setActiveSubTab,
-    searchQuery,  setSearchQuery,
+    searchQuery, setSearchQuery,
     feedbacks,
     classrooms, selectedClassId, setSelectedClassId, classesLoading
   } = useLecturerWorkspace();
 
-  const [dropdownOpen,  setDropdownOpen]  = useState(false);
+  const [dropdownOpen, setDropdownOpen] = useState(false);
   const [classDropdownOpen, setClassDropdownOpen] = useState(false);
-  const [profileOpen,   setProfileOpen]   = useState(false);
-  
+  const [profileOpen, setProfileOpen] = useState(false);
+
   const dropdownRef = useRef(null);
   const classDropdownRef = useRef(null);
 
@@ -318,7 +318,7 @@ function LecturerLayoutInner() {
 
   const handleLogout = () => {
     logout();
-    navigate('/', { replace: true });
+    navigate('/login', { replace: true });
   };
 
   const openProfile = () => {

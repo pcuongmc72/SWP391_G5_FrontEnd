@@ -191,21 +191,6 @@ function SidebarNavItem({ icon, label, isActive, onClick, title, collapsed }) {
 
 // ────────────────────────────────────────────────────────────────
 //  SidebarRail — Three-State Google Classroom Navigation Rail
-//
-//  State 1 — Collapsed (default)
-//    • width: 72px  • icons only, centered  • tooltip on hover
-//
-//  State 2 — Hover-Expanded
-//    • when mouse enters → auto-expand to 240px  • labels visible
-//    • when mouse leaves → collapse back to 72px
-//
-//  State 3 — Pinned
-//    • hamburger button clicked → always expanded at 240px
-//    • clicking again → back to hover/collapsed behavior
-//
-//  isPinned: driven by existing sidebarOpen state (no new state added)
-//  isHovered: local to this component
-//  isExpanded = isPinned || isHovered
 // ────────────────────────────────────────────────────────────────
 function SidebarRail({ isPinned, selectedCourse, location, setSelectedCourse, navigate }) {
   const [isHovered, setIsHovered] = React.useState(false);
@@ -357,7 +342,6 @@ export default function DashbroadStudent() {
   const [selectedCourse, setSelectedCourse] = useState(null);
   const [currentView, setCurrentView] = useState("overview"); // "overview" | "player"
   const [activeCourseTab, setActiveCourseTab] = useState("stream"); // "stream" | "classwork" | "people"
-  const [sidebarOpen, setSidebarOpen] = useState(true); // Sidebar toggle state
   const [changePasswordOpen, setChangePasswordOpen] = useState(false);
 
   // Announcements State
@@ -365,7 +349,10 @@ export default function DashbroadStudent() {
   const [announcementTitle, setAnnouncementTitle] = useState("");
   const [isExpandingPublisher, setIsExpandingPublisher] = useState(false);
   const [commentInputs, setCommentInputs] = useState({});
-  const [blogForDetail, setBlogForDetail] = useState(null);
+  const [showHomeworkModal, setShowHomeworkModal] = useState(false);
+
+  const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [rightTab, setRightTab] = useState("qa");
 
   // Study progress state
   const [progress, setProgress] = useState(() => {
@@ -553,7 +540,7 @@ export default function DashbroadStudent() {
 
   const handleLogout = () => {
     logout();
-    window.location.replace('/');
+    window.location.replace('/login');
   };
 
   const addPoints = (amount) => {
@@ -1231,9 +1218,9 @@ export default function DashbroadStudent() {
               </div>
             ) : (
               /* Selected Course Live Lecture Player Screen */
-              <div className="flex-1 grid grid-cols-1 lg:grid-cols-3 gap-6 items-stretch w-full min-h-[500px]">
+              <div className="flex-1 grid grid-cols-1 lg:grid-cols-[1.5fr_1fr] gap-6 items-stretch w-full min-h-[500px]">
                 {/* Left Main player pane */}
-                <div className="lg:col-span-2 flex flex-col h-full gap-4">
+                <div className="flex flex-col h-full gap-4">
                   {/* Back navigation button row */}
                   <div className="flex items-center justify-between bg-white border border-gray-200 px-4 py-2.5 rounded-xl shadow-2xs">
                     <button
@@ -1281,19 +1268,45 @@ export default function DashbroadStudent() {
                 </div>
 
                 {/* Right Course Outline Sidebar navigation */}
-                <div className="h-[600px] lg:h-auto bg-white border border-gray-200 rounded-xl overflow-hidden shadow-sm">
-                  {syllabus && syllabus.length > 0 && activeLecture && (
-                    <SidebarSyllabus
-                      sections={syllabus}
-                      activeLectureId={activeLecture.id}
-                      completedLectures={progress.completedLectures}
-                      onLectureSelect={(lecture, sectionId) => {
-                        setActiveLecture(lecture);
-                        setActiveSectionId(sectionId);
-                      }}
-                      onToggleComplete={handleToggleComplete}
-                    />
-                  )}
+                <div className="flex flex-col gap-4 lg:h-[calc(100vh-140px)]">
+                  {/* Tabs */}
+                  <div className="flex bg-white border border-gray-200 rounded-xl p-1 shadow-sm shrink-0">
+                    <button
+                      onClick={() => setRightTab("qa")}
+                      className={`flex-1 py-2 text-sm font-bold rounded-lg transition-colors cursor-pointer ${rightTab === "qa" ? "bg-emerald-50 text-emerald-700" : "text-gray-500 hover:bg-gray-50"}`}
+                    >
+                      💬 Thảo luận
+                    </button>
+                    <button
+                      onClick={() => setRightTab("syllabus")}
+                      className={`flex-1 py-2 text-sm font-bold rounded-lg transition-colors cursor-pointer ${rightTab === "syllabus" ? "bg-emerald-50 text-emerald-700" : "text-gray-500 hover:bg-gray-50"}`}
+                    >
+                      📑 Nội dung bài học
+                    </button>
+                  </div>
+
+                  <div className="bg-white border border-gray-200 rounded-xl overflow-hidden shadow-sm flex-1 flex flex-col">
+                    <div className="flex-1 overflow-y-auto custom-scrollbar p-0">
+                      {rightTab === "syllabus" ? (
+                        syllabus && syllabus.length > 0 && activeLecture ? (
+                          <SidebarSyllabus
+                            sections={syllabus}
+                            activeLectureId={activeLecture.id}
+                            completedLectures={progress.completedLectures}
+                            onLectureSelect={(lecture, sectionId) => {
+                              setActiveLecture(lecture);
+                              setActiveSectionId(sectionId);
+                            }}
+                            onToggleComplete={handleToggleComplete}
+                          />
+                        ) : null
+                      ) : (
+                        <div className="h-full bg-gray-50/30">
+                          <StudentFeedback cls={selectedCourse} activeLecture={activeLecture} />
+                        </div>
+                      )}
+                    </div>
+                  </div>
                 </div>
               </div>
             )
