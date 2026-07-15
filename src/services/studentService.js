@@ -99,4 +99,64 @@ export const uploadFile = async (file) => {
     };
 };
 
+/**
+ * Lấy chi tiết đề thi cho sinh viên
+ */
+export const getQuizDetailsForStudent = async (quizId) => {
+    const response = await api.get(`/api/Student/quizzes/${quizId}`);
+    return response.data;
+};
 
+/**
+ * Bắt đầu làm bài
+ */
+export const startQuizAttempt = async (quizId) => {
+    const response = await api.post(`/api/Student/quizzes/${quizId}/attempts`);
+    return response.data;
+};
+
+/**
+ * Nộp bài thi
+ */
+export const submitQuizAttempt = async (quizId, attemptId, payload) => {
+    const response = await api.post(`/api/Student/quizzes/${quizId}/attempts/${attemptId}/submit`, payload);
+    return response.data;
+};
+
+/**
+ * Xem lịch sử làm bài
+ */
+export const getStudentQuizAttempts = async (quizId) => {
+    const response = await api.get(`/api/Student/quizzes/${quizId}/attempts`);
+    return response.data;
+};
+
+/**
+ * Lấy danh sách câu hỏi / feedback trong một lớp học
+ * GET /api/student-classes/{classId}/feedbacks
+ */
+export const getStudentFeedbacks = async (classId) => {
+    const response = await api.get(`/api/student-classes/${classId}/feedbacks`);
+    return response.data;
+};
+
+/**
+ * Tạo một câu hỏi mới trong lớp
+ * POST /api/student-classes/{classId}/feedbacks
+ */
+export const createStudentFeedback = async (classId, payload) => {
+    const response = await api.post(`/api/student-classes/${classId}/feedbacks`, payload);
+    return response.data;
+};
+
+/**
+ * Trợ giảng trả lời câu hỏi
+ * PUT /api/student-classes/{classId}/feedbacks/{feedbackId}/respond
+ */
+export const respondFeedbackAsAssistant = async (classId, feedbackId, payload) => {
+    const response = await api.put(
+        `/api/student-classes/${classId}/feedbacks/${feedbackId}/respond`,
+        payload
+    );
+    return response.data;
+};
