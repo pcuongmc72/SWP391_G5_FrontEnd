@@ -2,12 +2,10 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import {
   Home,
-  Calendar,
   ClipboardCheck,
   GraduationCap,
   Settings,
   ArrowLeft,
-  FolderOpen,
   MessageSquare,
   MoreVertical,
   Send,
@@ -873,22 +871,7 @@ export default function DashbroadStudent() {
                     </div>
                   </div>
 
-                  <div className="flex items-center gap-1.5 shrink-0 py-2.5">
-                    <button
-                      onClick={() => triggerNotification("📅 Đã liên kết và đồng bộ thời khóa biểu lớp với Google Calendar của bạn.", "info")}
-                      className="p-2 text-gray-400 hover:text-gray-850 hover:bg-gray-100 rounded-full transition cursor-pointer"
-                      title="Lịch học tập lớp"
-                    >
-                      <Calendar size={18} />
-                    </button>
-                    <button
-                      onClick={() => triggerNotification("📁 Đang chuyển hướng đến thư mục học liệu dùng chung trên Google Drive.", "info")}
-                      className="p-2 text-gray-400 hover:text-gray-850 hover:bg-gray-100 rounded-full transition cursor-pointer"
-                      title="Thư mục Google Drive của lớp"
-                    >
-                      <FolderOpen size={18} />
-                    </button>
-                  </div>
+
                 </div>
 
                 {/* QA tab content */}
