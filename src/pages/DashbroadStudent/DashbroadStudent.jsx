@@ -3,7 +3,6 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import {
   Home,
   ClipboardCheck,
-  GraduationCap,
   Settings,
   ArrowLeft,
   MessageSquare,
@@ -15,7 +14,6 @@ import {
   CircleAlert,
   BookOpen,
   ClipboardList,
-  Award,
   Users
 } from 'lucide-react';
 
@@ -31,7 +29,7 @@ import LessonPlayer from './lms/LessonPlayer';
 import SidebarSyllabus from './lms/SidebarSyllabus';
 import StudentRoadmap from './StudentRoadmap';
 import StudentAssignments from './StudentAssignments';
-import StudentGrades from './StudentGrades';
+
 import SharedBlogForum from '../../components/SharedBlogForum/SharedBlogForum';
 import ChangePasswordModal from '../../components/ChangePasswordModal/ChangePasswordModal';
 import StudentFeedback from './StudentFeedback';
@@ -258,15 +256,7 @@ function SidebarRail({ isPinned, selectedCourse, location, setSelectedCourse, na
           collapsed={collapsed}
         />
 
-        {/* 2. Học kỳ hiện tại */}
-        <SidebarNavItem
-          icon={<GraduationCap size={20} />}
-          label="Học kỳ hiện tại"
-          isActive={false}
-          onClick={() => { setSelectedCourse(null); navigate('/dashboard/student'); }}
-          title="Khóa đào tạo"
-          collapsed={collapsed}
-        />
+
 
         {/* 3. Blog & Diễn đàn */}
         <SidebarNavItem
@@ -837,16 +827,7 @@ export default function DashbroadStudent() {
                         <span>Bài tập</span>
                       </button>
 
-                      <button
-                        onClick={() => setActiveCourseTab("grades")}
-                        className={`flex items-center gap-2 px-4 py-1.5 rounded-full text-xs font-bold transition-all duration-300 ease-in-out shrink-0 cursor-pointer ${activeCourseTab === "grades"
-                          ? "bg-emerald-50 text-emerald-700 shadow-2xs border border-emerald-200/50 scale-102"
-                          : "text-gray-500 hover:text-gray-800 hover:bg-gray-50 hover:scale-101"
-                          }`}
-                      >
-                        <Award size={14} className={activeCourseTab === "grades" ? "text-emerald-600" : ""} />
-                        <span>Điểm &amp; Nhận xét</span>
-                      </button>
+
 
                       <button
                         onClick={() => setActiveCourseTab("people")}
@@ -1083,12 +1064,7 @@ export default function DashbroadStudent() {
                   </div>
                 )}
 
-                {/* Grades & Feedback tab content */}
-                {activeCourseTab === "grades" && (
-                  <div className="bg-white border border-gray-200 rounded-2xl p-6 shadow-2xs">
-                    <StudentGrades cls={selectedCourse} />
-                  </div>
-                )}
+
 
                 {/* People tab content */}
                 {activeCourseTab === "people" && (
