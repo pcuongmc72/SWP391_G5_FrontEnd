@@ -82,6 +82,14 @@ function extractUrls(text) {
 // ─── Material Preview Modal Component ───────────────────────────────────────────
 
 function MaterialPreviewModal({ isOpen, onClose, fileUrl, fileName }) {
+    const previewRef = useRef(null);
+
+    useEffect(() => {
+        if (isOpen && previewRef.current) {
+            previewRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+    }, [isOpen]);
+
     if (!isOpen || !fileUrl) return null;
 
     const isImage = /\.(jpeg|jpg|gif|png|webp)($|\?)/i.test(fileUrl);
@@ -100,6 +108,8 @@ function MaterialPreviewModal({ isOpen, onClose, fileUrl, fileName }) {
 
     return (
         <div 
+            id="material-preview-modal"
+            ref={previewRef}
             onClick={onClose}
             style={{
                 position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
@@ -179,6 +189,14 @@ function SubmissionForm({ assignment, classId, onSuccess, onCancel }) {
     const [studentNotes, setStudentNotes] = useState(assignment.mySubmission?.studentNotes || '');
     const [submitting, setSubmitting] = useState(false);
     const [error, setError] = useState('');
+    const [showConfirmModal, setShowConfirmModal] = useState(false);
+    const formRef = useRef(null);
+
+    useEffect(() => {
+        if (formRef.current) {
+            formRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+    }, []);
 
     // State cho drag-and-drop upload
     const [inputType, setInputType] = useState('file'); // 'file' | 'text'
@@ -222,20 +240,8 @@ function SubmissionForm({ assignment, classId, onSuccess, onCancel }) {
         setAttachedFileMeta(null);
     };
 
-    const handleSubmit = async (e) => {
-        e.preventDefault();
-
-        // Kiểm tra quá hạn trước khi submit
-        const isOverdue = new Date(assignment.dueDate).setHours(23, 59, 59, 999) < new Date();
-        if (isOverdue) {
-            setError('Không thể nộp bài. Hạn nộp đã kết thúc.');
-            return;
-        }
-
-        if (!fileName.trim()) {
-            setError('Vui lòng chọn tệp hoặc nhập nội dung nộp bài.');
-            return;
-        }
+    const executeSubmit = async () => {
+        setShowConfirmModal(false);
         setSubmitting(true);
         setError('');
         try {
@@ -255,6 +261,24 @@ function SubmissionForm({ assignment, classId, onSuccess, onCancel }) {
         }
     };
 
+    const handleSubmit = async (e) => {
+        e.preventDefault();
+
+        // Kiểm tra quá hạn trước khi submit
+        const isOverdue = new Date(assignment.dueDate).setHours(23, 59, 59, 999) < new Date();
+        if (isOverdue) {
+            setError('Không thể nộp bài. Hạn nộp đã kết thúc.');
+            return;
+        }
+
+        if (!fileName.trim()) {
+            setError('Vui lòng chọn tệp hoặc nhập nội dung nộp bài.');
+            return;
+        }
+
+        setShowConfirmModal(true);
+    };
+
     if (isAlreadyGraded) {
         return (
             <div style={{ padding: '16px', background: '#f0fdf4', border: '1px solid #86efac', borderRadius: '12px', color: '#166534', fontSize: '0.875rem', fontWeight: 600 }}>
@@ -264,7 +288,7 @@ function SubmissionForm({ assignment, classId, onSuccess, onCancel }) {
     }
 
     return (
-        <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+        <form id={`submission-form-${assignment.id}`} ref={formRef} onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
             {/* Bộ chọn phương thức nộp */}
             <div style={{ display: 'flex', gap: 16, marginBottom: 2 }}>
                 <label style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: '0.8125rem', fontWeight: 600, cursor: 'pointer', color: inputType === 'file' ? '#0f766e' : '#6b7280' }}>
@@ -430,6 +454,45 @@ function SubmissionForm({ assignment, classId, onSuccess, onCancel }) {
                     {assignment.mySubmission ? 'Cập nhật bài nộp' : 'Nộp bài'}
                 </button>
             </div>
+            {showConfirmModal && (
+                <div style={{
+                    position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
+                    backgroundColor: 'rgba(15, 23, 42, 0.65)', backdropFilter: 'blur(4px)',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    zIndex: 999999, padding: 16
+                }}>
+                    <div style={{
+                        backgroundColor: '#fff', borderRadius: 14, padding: 24,
+                        width: '100%', maxWidth: 400, boxShadow: '0 20px 25px -5px rgba(0,0,0,0.1), 0 10px 10px -5px rgba(0,0,0,0.04)',
+                        display: 'flex', flexDirection: 'column', gap: 18, border: '1px solid #e5e7eb'
+                    }}>
+                        <h4 style={{ margin: 0, fontSize: '0.9375rem', fontWeight: 800, color: '#111827' }}>Xác nhận nộp bài</h4>
+                        <p style={{ margin: 0, fontSize: '0.875rem', color: '#4b5563', lineHeight: 1.5 }}>
+                            Bạn có chắc chắn muốn nộp bài tập này không?
+                        </p>
+                        <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end', marginTop: 4 }}>
+                            <button
+                                type="button"
+                                onClick={() => setShowConfirmModal(false)}
+                                style={{ padding: '8px 16px', background: '#f3f4f6', border: 'none', borderRadius: 8, fontSize: '0.8125rem', fontWeight: 600, color: '#374151', cursor: 'pointer', transition: 'background 0.15s' }}
+                                onMouseEnter={e => e.currentTarget.style.background = '#e5e7eb'}
+                                onMouseLeave={e => e.currentTarget.style.background = '#f3f4f6'}
+                            >
+                                Hủy
+                            </button>
+                            <button
+                                type="button"
+                                onClick={executeSubmit}
+                                style={{ padding: '8px 18px', background: '#0f766e', border: 'none', borderRadius: 8, fontSize: '0.8125rem', fontWeight: 700, color: '#fff', cursor: 'pointer', transition: 'background 0.15s' }}
+                                onMouseEnter={e => e.currentTarget.style.background = '#115e59'}
+                                onMouseLeave={e => e.currentTarget.style.background = '#0f766e'}
+                            >
+                                Xác nhận
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
         </form>
     );
 }
@@ -480,7 +543,13 @@ function AssignmentCard({ assignment, classId, onUpdated, onPreviewFile }) {
                         </h3>
                         <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px 14px', fontSize: '0.75rem', color: '#6b7280' }}>
                             <span>Hạn nộp: <strong style={{ color: '#374151' }}>{formatDate(assignment.dueDate)}</strong></span>
-                            <span>Điểm tối đa: <strong style={{ color: '#374151' }}>{parseFloat(assignment.maxPoints).toFixed(1)}</strong></span>
+                            <span>
+                                {mySubmission && mySubmission.status === 'GRADED' && mySubmission.grade != null ? (
+                                    <>Điểm: <strong style={{ color: '#374151' }}>{parseFloat(mySubmission.grade).toFixed(1)}/{parseFloat(assignment.maxPoints).toFixed(1)}</strong></>
+                                ) : (
+                                    <strong style={{ color: '#6b7280' }}>Chưa có điểm</strong>
+                                )}
+                            </span>
                             <span style={{
                                 background: status.bg, color: status.color, border: `1px solid ${status.border}`,
                                 borderRadius: 999, padding: '2px 8px', fontWeight: 700, fontSize: '0.7rem'
@@ -675,7 +744,16 @@ function AssignmentCard({ assignment, classId, onUpdated, onPreviewFile }) {
                                     </div>
                                 ) : (
                                     <button
-                                        onClick={() => setShowForm(true)}
+                                        onClick={() => {
+                                            if (showForm) {
+                                                const formElement = document.getElementById(`submission-form-${assignment.id}`);
+                                                if (formElement) {
+                                                    formElement.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                                                }
+                                            } else {
+                                                setShowForm(true);
+                                            }
+                                        }}
                                         style={{
                                             alignSelf: 'flex-start', display: 'flex', alignItems: 'center', gap: 8,
                                             padding: '9px 18px', background: '#0f766e', border: 'none', borderRadius: 9,
@@ -711,6 +789,13 @@ export default function StudentAssignments({ cls }) {
     const [previewName, setPreviewName] = useState('');
 
     const handlePreviewFile = (url, name) => {
+        if (previewOpen && previewUrl === url) {
+            const modalElement = document.getElementById('material-preview-modal');
+            if (modalElement) {
+                modalElement.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            }
+            return;
+        }
         setPreviewUrl(url);
         setPreviewName(name);
         setPreviewOpen(true);
@@ -757,7 +842,7 @@ export default function StudentAssignments({ cls }) {
         const timeText = updatedSubmission?.submittedAt 
             ? `Thời gian nộp: ${updatedSubmission.submittedAt}` 
             : '';
-        showToast('Assignment submitted successfully.', timeText);
+        showToast('Nộp bài tập thành công!', timeText);
 
         // Kích hoạt re-fetch dữ liệu & số liệu thống kê mới từ server
         setRefreshKey(p => p + 1);
