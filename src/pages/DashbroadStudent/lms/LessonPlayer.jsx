@@ -36,6 +36,30 @@ function VideoPlayer({ src, lectureId }) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
 
+  // Check YouTube
+  const isYouTube = src?.includes('youtube.com') || src?.includes('youtu.be');
+  const getYouTubeId = (url) => {
+    if (!url) return null;
+    const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|\&v=)([^#\&\?]*).*/;
+    const match = url.match(regExp);
+    return (match && match[2].length === 11) ? match[2] : null;
+  };
+
+  if (isYouTube) {
+    const ytId = getYouTubeId(src);
+    return (
+      <div className="relative w-full h-full bg-black">
+        <iframe
+          src={`https://www.youtube.com/embed/${ytId}?rel=0`}
+          title="YouTube video player"
+          className="w-full h-full border-0"
+          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+          allowFullScreen
+        ></iframe>
+      </div>
+    );
+  }
+
   useEffect(() => {
     setLoading(true);
     setError(false);
@@ -335,7 +359,11 @@ export default function LessonPlayer({
   }
 
   // ── Media area ──
-  const fileUrl = lecture.url || lecture.videoUrl;
+  let fileUrl = lecture.url || lecture.videoUrl;
+  if (fileUrl && fileUrl.startsWith('#file:') && (fileUrl.substring(6).startsWith('http') || fileUrl.substring(6).startsWith('/'))) {
+      fileUrl = fileUrl.substring(6);
+  }
+
   const renderMedia = () => {
     if (lecture.type === "quiz") return null;
     if (lecture.type === "in_class") return <InClassPlaceholder lecture={lecture} onOpenTab={() => setActiveTab("in_class")} />;

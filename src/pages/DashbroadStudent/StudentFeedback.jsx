@@ -283,7 +283,7 @@ export default function StudentFeedback({ cls, activeLecture }) {
 
             {/* ── Filter tabs + Search ── */}
             <div className="bg-white rounded-2xl border border-gray-200 shadow-sm px-4 py-3 flex flex-col sm:flex-row gap-3 items-center">
-                <div className="flex bg-gray-100 p-1 rounded-xl gap-1 flex-shrink-0">
+                <div className="flex bg-gray-100 p-1 rounded-xl gap-1 flex-shrink-0 w-full sm:w-auto overflow-x-auto scrollbar-none">
                     {[
                         { key: 'ALL', label: 'Tất cả' },
                         { key: 'MY', label: 'Của tôi' },
@@ -293,7 +293,7 @@ export default function StudentFeedback({ cls, activeLecture }) {
                         <button
                             key={tab.key}
                             onClick={() => setFilterMode(tab.key)}
-                            className={`px-3 py-1.5 text-xs font-bold rounded-lg whitespace-nowrap transition-all cursor-pointer ${
+                            className={`px-4 py-1.5 text-xs font-bold rounded-lg whitespace-nowrap transition-all cursor-pointer ${
                                 filterMode === tab.key
                                     ? 'bg-white text-emerald-700 shadow-sm'
                                     : 'text-gray-500 hover:text-gray-700'
@@ -303,10 +303,10 @@ export default function StudentFeedback({ cls, activeLecture }) {
                         </button>
                     ))}
                 </div>
-                <div className="relative flex-1 w-full">
+                <div className="relative flex-1 w-full sm:w-auto">
                     <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
                     <input
-                        className="w-full text-xs pl-8 pr-4 py-2 rounded-xl border border-gray-200 focus:outline-none focus:border-emerald-500 bg-gray-50 transition"
+                        className="w-full text-xs pl-8 pr-4 py-2.5 rounded-xl border border-gray-200 focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-200 bg-gray-50 transition"
                         placeholder="Tìm kiếm câu hỏi, người hỏi..."
                         value={searchQuery}
                         onChange={(e) => setSearchQuery(e.target.value)}
@@ -368,8 +368,8 @@ export default function StudentFeedback({ cls, activeLecture }) {
                                                 {f.createdAt ? new Date(f.createdAt).toLocaleString('vi-VN') : ''}
                                             </span>
                                             {materialLabel && (
-                                                <span className="inline-flex items-center gap-1 text-[10px] font-bold bg-blue-50 text-blue-600 px-2 py-0.5 rounded-full border border-blue-100">
-                                                    🏷️ {materialLabel}
+                                                <span className="inline-flex items-center gap-1 text-[10px] font-bold bg-blue-50 text-blue-600 px-2 py-0.5 rounded-full border border-blue-100 max-w-[200px] sm:max-w-[300px] truncate" title={materialLabel}>
+                                                    🏷️ <span className="truncate">{materialLabel}</span>
                                                 </span>
                                             )}
                                         </div>
@@ -388,10 +388,10 @@ export default function StudentFeedback({ cls, activeLecture }) {
 
                             {/* ── Lecturer Reply (like a comment) ── */}
                             {isAnswered && f.response && (
-                                <div className="px-4 py-3 bg-emerald-50/60">
+                                <div className="px-4 py-4 bg-emerald-50/40 border-l-4 border-emerald-400 mt-2 mx-4 mb-4 rounded-r-2xl">
                                     <div className="flex items-start gap-3">
                                         {/* Lecturer avatar */}
-                                        <div className="w-8 h-8 rounded-full bg-blue-600 text-white font-bold text-xs flex items-center justify-center shrink-0">
+                                        <div className="w-8 h-8 rounded-full bg-emerald-600 text-white font-bold text-xs flex items-center justify-center shrink-0 shadow-sm">
                                             {getInitial(f.answeredByName || 'GV')}
                                         </div>
                                         <div className="flex-1">
@@ -470,10 +470,10 @@ export default function StudentFeedback({ cls, activeLecture }) {
                                     ) : (
                                         <button
                                             onClick={() => { setReplyingTo(f.id); setReplyText(isAnswered ? f.response : ''); setIsEditingReply(isAnswered); }}
-                                            className="text-xs font-bold text-purple-600 hover:text-purple-700 flex items-center gap-1.5 cursor-pointer transition-colors"
+                                            className="text-xs font-bold bg-purple-50 hover:bg-purple-100 text-purple-700 px-4 py-2 rounded-xl flex items-center gap-1.5 cursor-pointer transition-colors border border-purple-100 shadow-sm"
                                         >
                                             <MessageSquare size={14} />
-                                            {isAnswered ? 'Trợ giảng: Sửa / Bổ sung câu trả lời' : 'Trợ giảng: Giải đáp câu hỏi này'}
+                                            {isAnswered ? 'Sửa / Bổ sung câu trả lời (Quyền Trợ Giảng)' : 'Giải đáp câu hỏi này (Quyền Trợ Giảng)'}
                                         </button>
                                     )}
                                 </div>
