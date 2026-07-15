@@ -45,11 +45,13 @@ export default function CourseDirectory({
   selectedSemester,
   setSelectedSemester,
   searchTerm,
-  setSearchTerm
+  setSearchTerm,
+  terms
 }) {
   const activeCount = classes.length;
   const currentUser = getUser();
   const studentName = currentUser?.fullName || currentUser?.email || 'Học viên';
+  const matchedTerm = terms?.find(t => t.id === selectedSemester);
 
   return (
     <div id="course-directory-root" style={{ display: "flex", flexDirection: "column", gap: "20px", paddingBottom: "12px" }}>
@@ -92,7 +94,7 @@ export default function CourseDirectory({
               background: "rgba(255,255,255,0.14)", border: "1px solid rgba(255,255,255,0.2)",
               borderRadius: "999px", padding: "5px 14px", fontSize: "12px", fontWeight: 700, color: "#ffffff"
             }}>
-              <Calendar size={13} /> Kỳ {selectedSemester} {selectedYear}
+              <Calendar size={13} /> {matchedTerm ? matchedTerm.name : (selectedSemester + ' ' + selectedYear)}
             </span>
           </div>
         </div>
@@ -196,9 +198,12 @@ export default function CourseDirectory({
               onFocus={e => { e.target.style.borderColor = tokens.primary; e.target.style.boxShadow = "0 0 0 3px rgba(15,118,110,0.1)"; }}
               onBlur={e => { e.target.style.borderColor = "#E5E7EB"; e.target.style.boxShadow = "0 1px 4px rgba(0,0,0,0.04)"; }}
             >
-              <option value="Spring">Kỳ Xuân (Spring)</option>
-              <option value="Summer">Kỳ Hè (Summer)</option>
-              <option value="Fall">Kỳ Thu (Fall)</option>
+              {terms
+                ?.filter(t => t.startDate && t.startDate.split('-')[0] === selectedYear)
+                .map(t => (
+                  <option key={t.id} value={t.id}>{t.name}</option>
+                ))
+              }
             </select>
             <Layers size={13} style={{ position: "absolute", right: 12, top: "50%", transform: "translateY(-50%)", color: "#9CA3AF", pointerEvents: "none" }} />
           </div>
@@ -258,6 +263,7 @@ export default function CourseDirectory({
                 bannerColor={bannerColor}
                 selectedSemester={selectedSemester}
                 onSelectCourse={onSelectCourse}
+                matchedTermCode={matchedTerm?.termCode}
               />
             );
           })}
@@ -270,7 +276,7 @@ export default function CourseDirectory({
 // ─────────────────────────────────────────────────────────────
 // ClassCard — extracted for clean hover state management
 // ─────────────────────────────────────────────────────────────
-function ClassCard({ cls, bannerColor, selectedSemester, onSelectCourse }) {
+function ClassCard({ cls, bannerColor, selectedSemester, onSelectCourse, matchedTermCode }) {
   const [hovered, setHovered] = React.useState(false);
 
   return (
@@ -340,9 +346,30 @@ function ClassCard({ cls, bannerColor, selectedSemester, onSelectCourse }) {
             padding: "3px 10px",
             flexShrink: 0,
           }}>
-            {selectedSemester}
+            {cls.termCode || matchedTermCode || 'N/A'}
           </span>
         </div>
+
+        {/* Middle row: Class Code badge */}
+        {cls.id && (
+          <div style={{ marginTop: "4px", position: "relative", zIndex: 1 }}>
+            <span style={{
+              display: "inline-flex",
+              alignItems: "center",
+              background: "rgba(255,255,255,0.18)",
+              border: "1px solid rgba(255,255,255,0.25)",
+              borderRadius: "6px",
+              padding: "3px 10px",
+              fontSize: "11px",
+              fontWeight: "750",
+              color: "#ffffff",
+              textShadow: "0 1px 2px rgba(0,0,0,0.1)",
+              letterSpacing: "0.02em"
+            }}>
+              Lớp: {cls.id}
+            </span>
+          </div>
+        )}
 
         {/* Bottom row: lecturer name */}
         <div style={{ position: "relative", zIndex: 1 }}>

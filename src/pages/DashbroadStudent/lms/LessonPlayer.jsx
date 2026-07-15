@@ -1,11 +1,11 @@
-import React, { useState, useEffect, useRef, useMemo, useCallback } from "react";
+import React, { useState, useEffect, useRef, useMemo } from "react";
 import {
   Play,
-  Pause,
   FileText,
   BookOpen,
   Paperclip,
   Download,
+  Lightbulb,
   Code,
   Users,
   ChevronRight,
@@ -272,7 +272,7 @@ export default function LessonPlayer({
   const [homeworkCode, setHomeworkCode] = useState("");
   const [fadeKey, setFadeKey] = useState(0); // trigger fade-in on lecture change
 
-  // ── Sync on lecture change ──
+  // ── Sync on lecture change (unified) ──
   useEffect(() => {
     setHomeworkCode(lecture?.postClassHomework?.starterCode || "");
     setFadeKey((k) => k + 1);
@@ -295,34 +295,6 @@ export default function LessonPlayer({
     if (lecture.readings || (lecture.attachments?.length > 0)) tabs.push({ id: "overview", label: "📖 Tài liệu" });
     return tabs;
   }, [lecture]);
-
-  // ── Quiz logic ──
-  const [selectedAnswers, setSelectedAnswers] = useState({});
-  const [quizSubmitted, setQuizSubmitted] = useState(false);
-  const [quizResult, setQuizResult] = useState(null);
-
-  const handleSelectAnswer = (questionId, optionIndex) => {
-    if (quizSubmitted) return;
-    setSelectedAnswers((prev) => ({ ...prev, [questionId]: optionIndex }));
-  };
-
-  const handleQuizSubmit = () => {
-    if (!lecture?.quiz?.length) return;
-    let correct = 0;
-    lecture.quiz.forEach((q) => { if (selectedAnswers[q.id] === q.correctAnswer) correct++; });
-    const percent = Math.round((correct / lecture.quiz.length) * 100);
-    const passed = percent >= 50;
-    setQuizResult({ score: percent, passed });
-    setQuizSubmitted(true);
-    onSubmitQuizScore(percent);
-    if (passed) {
-      addPoints(100);
-      triggerNotification(`🎉 Hoàn thành! Tỉ lệ ${percent}%. +100 XP`, "success");
-      if (!completedLectures.includes(lecture.id)) onToggleComplete();
-    } else {
-      triggerNotification(`⚠️ Chỉ đạt ${percent}%. Hãy ôn lại và thử lại!`, "info");
-    }
-  };
 
   // ── Homework logic ──
   const handleHomeworkSubmit = () => {
@@ -410,12 +382,7 @@ export default function LessonPlayer({
         </div>
       )}
 
-      {/* Media viewport */}
-      {!isQuiz && (
-        <div className="relative bg-black aspect-video flex-shrink-0 overflow-hidden">
-          {renderMedia()}
-        </div>
-      )}
+
 
       {/* Tab navigation */}
       {availableTabs.length > 0 && (
@@ -454,29 +421,34 @@ export default function LessonPlayer({
         {/* Overview / Reading materials */}
         {activeTab === "overview" && (
           <div className="space-y-6">
+
+
+            {/* Reading Material */}
             {lecture.readings && (
               <div className="space-y-3">
                 <div className="flex items-center gap-2 border-b border-gray-200 pb-2">
                   <BookOpen size={16} className="text-emerald-400" />
                   <h4 className="text-sm font-bold text-emerald-400">Tài liệu đọc hiểu</h4>
                 </div>
-                <div className="bg-white border border-gray-200 p-4 rounded-xl leading-relaxed text-sm text-gray-600 space-y-3">
-                  <h5 className="font-bold text-gray-900 text-sm">{lecture.readings.title}</h5>
-                  <p className="text-gray-600">{lecture.readings.content}</p>
+                <div className="bg-slate-900/40 border border-slate-800 p-4 rounded-xl leading-relaxed text-sm text-slate-300 space-y-3">
+                  <h5 className="font-bold text-white text-sm">{lecture.readings.title}</h5>
+                  <p className="text-slate-300 antialiased">{lecture.readings.content}</p>
+
+
                 </div>
-                {lecture.readings.keyPoints?.length > 0 && (
-                  <div className="space-y-2 mt-4">
-                    <span className="text-xs font-bold uppercase tracking-wider text-gray-500 block">Trọng tâm cần ghi nhớ:</span>
-                    <div className="grid grid-cols-1 gap-2">
-                      {lecture.readings.keyPoints.map((point, idx) => (
-                        <div key={idx} className="flex items-start gap-2 bg-white p-2.5 rounded border border-gray-200 text-xs">
-                          <span className="text-yellow-500 shrink-0 mt-0.5">💡</span>
-                          <span className="text-gray-600">{point}</span>
-                        </div>
-                      ))}
-                    </div>
+
+                {/* Key Points highlight list */}
+                <div className="space-y-2 mt-4">
+                  <span className="text-xs font-bold uppercase tracking-wider text-slate-400 block">Trọng tâm cần ghi nhớ:</span>
+                  <div className="grid grid-cols-1 gap-2.5">
+                    {lecture.readings.keyPoints.map((point, idx) => (
+                      <div key={idx} className="flex items-start gap-2 bg-slate-900/50 p-2.5 rounded border border-slate-800/60 text-xs">
+                        <Lightbulb className="text-yellow-500 shrink-0 mt-0.5" size={14} />
+                        <span className="text-slate-300">{point}</span>
+                      </div>
+                    ))}
                   </div>
-                )}
+                </div>
               </div>
             )}
 
@@ -580,12 +552,14 @@ export default function LessonPlayer({
                   💻 Khu vực viết code:
                 </span>
               </div>
-              <div className="border border-gray-200 rounded-lg overflow-hidden bg-gray-50">
-                <div className="bg-white border-b border-gray-200 px-3.5 py-1.5 flex items-center justify-between">
-                  <span className="text-[9px] text-gray-400 font-mono">student_submission.js</span>
-                  <button onClick={() => setHomeworkCode(lecture.postClassHomework?.starterCode || "")} className="text-[9px] text-gray-500 hover:text-gray-900 cursor-pointer transition">
-                    Khôi phục sườn bài
-                  </button>
+
+              {/* Text area code workspace simulation */}
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-bold text-slate-400 uppercase tracking-widest flex items-center gap-1">
+                    💻 Khu vực viết code / Bài giải:
+                  </span>
+
                 </div>
                 <textarea
                   value={homeworkCode}
@@ -608,6 +582,10 @@ export default function LessonPlayer({
             </div>
           </div>
         )}
+
+
+
+
       </div>
     </div>
   );

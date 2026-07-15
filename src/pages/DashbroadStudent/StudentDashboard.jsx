@@ -7,7 +7,7 @@ export default function StudentDashboard() {
     const [terms, setTerms] = useState([]);
     const [years, setYears] = useState([]);
     const [selectedYear, setSelectedYear] = useState('');
-    const [selectedSemester, setSelectedSemester] = useState('Spring');
+    const [selectedSemester, setSelectedSemester] = useState('');
     const [searchTerm, setSearchTerm] = useState('');
 
     const [classes, setClasses] = useState([]);
@@ -46,16 +46,14 @@ export default function StudentDashboard() {
 
                     if (currentTerm) {
                         setSelectedYear(currentTerm.startDate.split('-')[0]); // Cắt lấy năm học hiện tại
-                        const nameLower = (currentTerm.name || '').toLowerCase();
-                        const codeLower = (currentTerm.termCode || '').toLowerCase();
-
-                        if (nameLower.includes('spring') || codeLower.includes('sp')) setSelectedSemester('Spring');
-                        else if (nameLower.includes('summer') || codeLower.includes('su')) setSelectedSemester('Summer');
-                        else if (nameLower.includes('fall') || codeLower.includes('fa')) setSelectedSemester('Fall');
-
+                        setSelectedSemester(currentTerm.id);
                     } else if (uniqueYears.length > 0) {
-                        setSelectedYear(uniqueYears[0].toString());
-                        setSelectedSemester('Spring');
+                        const firstYear = uniqueYears[0].toString();
+                        setSelectedYear(firstYear);
+                        const yearTerms = termsData.filter(term => term.startDate && term.startDate.split('-')[0] === firstYear);
+                        if (yearTerms.length > 0) {
+                            setSelectedSemester(yearTerms[0].id);
+                        }
                     }
                 } else {
                     setError('Không tìm thấy học kỳ nào trong hệ thống.');
@@ -69,22 +67,26 @@ export default function StudentDashboard() {
         fetchTerms();
     }, []);
 
-    // 2. Tự động tìm AcademicTermId tương ứng khi thay đổi selectedYear hoặc selectedSemester
+    const matchedTerm = terms.find(t => t.id === selectedSemester);
+
+    // Auto-update selectedSemester when selectedYear changes
     useEffect(() => {
-        if (!selectedYear || !selectedSemester || terms.length === 0) return;
+        if (!selectedYear || terms.length === 0) return;
 
-        const matchedTerm = terms.find(term => {
-            if (!term.startDate) return false;
-            const termYear = term.startDate.split('-')[0];
-            const termNameLower = (term.name || '').toLowerCase();
-            const termCodeLower = (term.termCode || '').toLowerCase();
+        const currentSelectedTerm = terms.find(t => t.id === selectedSemester);
+        const currentSelectedTermYear = currentSelectedTerm?.startDate?.split('-')[0];
 
-            const isSpring = selectedSemester === 'Spring' && (termNameLower.includes('spring') || termCodeLower.includes('sp'));
-            const isSummer = selectedSemester === 'Summer' && (termNameLower.includes('summer') || termCodeLower.includes('su'));
-            const isFall = selectedSemester === 'Fall' && (termNameLower.includes('fall') || termCodeLower.includes('fa'));
+        if (currentSelectedTermYear !== selectedYear) {
+            const yearTerms = terms.filter(t => t.startDate && t.startDate.split('-')[0] === selectedYear);
+            if (yearTerms.length > 0) {
+                setSelectedSemester(yearTerms[0].id);
+            }
+        }
+    }, [selectedYear, terms, selectedSemester]);
 
-            return termYear === selectedYear && (isSpring || isSummer || isFall);
-        });
+    // 2. Tải danh sách lớp học tương ứng khi thay đổi selectedSemester
+    useEffect(() => {
+        if (!selectedSemester || terms.length === 0) return;
 
         const fetchClasses = async () => {
             setLoading(true);
@@ -106,7 +108,7 @@ export default function StudentDashboard() {
         };
 
         fetchClasses();
-    }, [selectedYear, selectedSemester, terms]);
+    }, [selectedSemester, terms, matchedTerm]);
 
     // Xử lý khi nhấn "Vào lớp" hoặc click Card lớp học
     const handleOpenClassDetail = async (cls) => {
@@ -183,9 +185,12 @@ export default function StudentDashboard() {
                             onChange={(e) => setSelectedSemester(e.target.value)}
                             className={styles.filterSelect}
                         >
-                            <option value="Spring">Kỳ Spring</option>
-                            <option value="Summer">Kỳ Summer</option>
-                            <option value="Fall">Kỳ Fall</option>
+                            {terms
+                                ?.filter(t => t.startDate && t.startDate.split('-')[0] === selectedYear)
+                                .map(t => (
+                                    <option key={t.id} value={t.id}>{t.name}</option>
+                                ))
+                            }
                         </select>
                         <ChevronDown size={14} className={styles.filterSelectIcon} />
                     </div>
@@ -244,7 +249,7 @@ export default function StudentDashboard() {
 
                                     <div className={styles.cardBannerTop}>
                                         <h3 className={styles.cardCourseCode}>{cls.courseCode || cls.id}</h3>
-                                        <span className={styles.cardSemesterBadge}>{selectedSemester}</span>
+                                        <span className={styles.cardSemesterBadge}>{cls.termCode || (matchedTerm ? (matchedTerm.termCode || matchedTerm.name) : selectedSemester)}</span>
                                     </div>
 
                                     <div className={styles.cardBannerBottom}>

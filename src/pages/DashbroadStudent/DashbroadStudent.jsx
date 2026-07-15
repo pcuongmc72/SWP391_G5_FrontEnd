@@ -1,22 +1,19 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import {
   Home,
-  Calendar,
   ClipboardCheck,
-  GraduationCap,
   Settings,
   ArrowLeft,
-  FolderOpen,
   MessageSquare,
   MoreVertical,
   Send,
   Loader2,
+  Check,
   CheckCircle2,
   CircleAlert,
   BookOpen,
   ClipboardList,
-  Award,
   Users
 } from 'lucide-react';
 
@@ -32,23 +29,13 @@ import LessonPlayer from './lms/LessonPlayer';
 import SidebarSyllabus from './lms/SidebarSyllabus';
 import StudentRoadmap from './StudentRoadmap';
 import StudentAssignments from './StudentAssignments';
-import StudentGrades from './StudentGrades';
+
 import SharedBlogForum from '../../components/SharedBlogForum/SharedBlogForum';
 import ChangePasswordModal from '../../components/ChangePasswordModal/ChangePasswordModal';
 import StudentFeedback from './StudentFeedback';
 
 const INITIAL_PROGRESS = {
   completedLectures: ["l-1-1"],
-  notes: [
-    {
-      id: "note-init",
-      lectureId: "l-1-1",
-      sectionId: "section-1",
-      timestamp: "20/06/2026 - Lớp học đảo ngược",
-      content: "Nhớ đọc kỹ tài liệu trước khi tới lớp để sẵn sàng thảo luận nhóm và bứt phá điểm số phản biện!",
-      lectureTitle: "✨ [Trước lớp] Tìm hiểu mô hình Flipped Classroom & Cách tự học hiệu quả"
-    }
-  ],
   streak: 3,
   points: 150,
   badges: ["pre-class-champ"],
@@ -269,15 +256,7 @@ function SidebarRail({ isPinned, selectedCourse, location, setSelectedCourse, na
           collapsed={collapsed}
         />
 
-        {/* 2. Học kỳ hiện tại */}
-        <SidebarNavItem
-          icon={<GraduationCap size={20} />}
-          label="Học kỳ hiện tại"
-          isActive={false}
-          onClick={() => { setSelectedCourse(null); navigate('/dashboard/student'); }}
-          title="Khóa đào tạo"
-          collapsed={collapsed}
-        />
+
 
         {/* 3. Blog & Diễn đàn */}
         <SidebarNavItem
@@ -322,7 +301,7 @@ export default function DashbroadStudent() {
   const [terms, setTerms] = useState([]);
   const [years, setYears] = useState([]);
   const [selectedYear, setSelectedYear] = useState('');
-  const [selectedSemester, setSelectedSemester] = useState('Spring');
+  const [selectedSemester, setSelectedSemester] = useState('');
   const [classes, setClasses] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -350,6 +329,7 @@ export default function DashbroadStudent() {
   const [isExpandingPublisher, setIsExpandingPublisher] = useState(false);
   const [commentInputs, setCommentInputs] = useState({});
   const [showHomeworkModal, setShowHomeworkModal] = useState(false);
+  const [blogForDetail, setBlogForDetail] = useState(null);
 
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [rightTab, setRightTab] = useState("qa");
@@ -411,15 +391,14 @@ export default function DashbroadStudent() {
 
           if (currentTerm) {
             setSelectedYear(currentTerm.startDate.split('-')[0]);
-            const nameLower = currentTerm.name.toLowerCase();
-            const codeLower = (currentTerm.termCode || '').toLowerCase();
-
-            if (nameLower.includes('spring') || codeLower.includes('sp')) setSelectedSemester('Spring');
-            else if (nameLower.includes('summer') || codeLower.includes('su')) setSelectedSemester('Summer');
-            else if (nameLower.includes('fall') || codeLower.includes('fa')) setSelectedSemester('Fall');
+            setSelectedSemester(currentTerm.id);
           } else if (uniqueYears.length > 0) {
-            setSelectedYear(uniqueYears[0]);
-            setSelectedSemester('Spring');
+            const firstYear = uniqueYears[0];
+            setSelectedYear(firstYear);
+            const yearTerms = termsData.filter(term => term.startDate.split('-')[0] === firstYear);
+            if (yearTerms.length > 0) {
+              setSelectedSemester(yearTerms[0].id);
+            }
           }
         } else {
           setError('Không tìm thấy học kỳ nào trong hệ thống.');
@@ -433,21 +412,28 @@ export default function DashbroadStudent() {
     fetchTerms();
   }, []);
 
+  const matchedTerm = useMemo(() => {
+    return terms.find(t => t.id === selectedSemester);
+  }, [terms, selectedSemester]);
+
+  // Auto-update selectedSemester when selectedYear changes
+  useEffect(() => {
+    if (!selectedYear || terms.length === 0) return;
+
+    const currentSelectedTerm = terms.find(t => t.id === selectedSemester);
+    const currentSelectedTermYear = currentSelectedTerm?.startDate?.split('-')[0];
+
+    if (currentSelectedTermYear !== selectedYear) {
+      const yearTerms = terms.filter(t => t.startDate && t.startDate.split('-')[0] === selectedYear);
+      if (yearTerms.length > 0) {
+        setSelectedSemester(yearTerms[0].id);
+      }
+    }
+  }, [selectedYear, terms, selectedSemester]);
+
   // 2. Load classes based on Year & Semester
   useEffect(() => {
-    if (!selectedYear || !selectedSemester || terms.length === 0) return;
-
-    const matchedTerm = terms.find(term => {
-      const termYear = term.startDate.split('-')[0];
-      const termNameLower = term.name.toLowerCase();
-      const termCodeLower = (term.termCode || '').toLowerCase();
-
-      const isSpring = selectedSemester === 'Spring' && (termNameLower.includes('spring') || termCodeLower.includes('sp'));
-      const isSummer = selectedSemester === 'Summer' && (termNameLower.includes('summer') || termCodeLower.includes('su'));
-      const isFall = selectedSemester === 'Fall' && (termNameLower.includes('fall') || termCodeLower.includes('fa'));
-
-      return termYear === selectedYear && (isSpring || isSummer || isFall);
-    });
+    if (!selectedSemester || terms.length === 0) return;
 
     const fetchClasses = async () => {
       setLoading(true);
@@ -469,7 +455,7 @@ export default function DashbroadStudent() {
     };
 
     fetchClasses();
-  }, [selectedYear, selectedSemester, terms]);
+  }, [selectedSemester, terms, matchedTerm]);
 
   // 3. Load classmates when a course is selected
   useEffect(() => {
@@ -570,7 +556,7 @@ export default function DashbroadStudent() {
     });
   };
 
-  const handleToggleComplete = (lectureId) => {
+  const handleToggleComplete = (lectureId, silent = false) => {
     const idToToggle = lectureId || activeLecture?.id;
     if (!idToToggle) return;
 
@@ -580,10 +566,10 @@ export default function DashbroadStudent() {
 
       if (alreadyCompleted) {
         updatedList = prev.completedLectures.filter((id) => id !== idToToggle);
-        triggerNotification("ℹ️ Đã xóa bài giảng khỏi tiến trình hoàn tất.", "info");
+        if (!silent) triggerNotification("ℹ️ Đã xóa bài giảng khỏi tiến trình hoàn tất.", "info");
       } else {
         updatedList = [...prev.completedLectures, idToToggle];
-        triggerNotification("🎉 Tuyệt vời! Đã ghi nhận hoàn thành bài học này. Nhận +50 XP rèn luyện!", "success");
+        if (!silent) triggerNotification("🎉 Tuyệt vời! Đã ghi nhận hoàn thành bài học này. Nhận +50 XP rèn luyện!", "success");
         setTimeout(() => {
           addPoints(50);
         }, 100);
@@ -636,32 +622,7 @@ export default function DashbroadStudent() {
     }
   };
 
-  const handleAddNote = (content) => {
-    if (!activeLecture) return;
-    setProgress((prev) => {
-      const newNote = {
-        id: `note-${Date.now()}`,
-        lectureId: activeLecture.id,
-        sectionId: activeSectionId,
-        timestamp: new Date().toLocaleDateString("vi-VN") + " - Thời điểm: 03:14",
-        content,
-        lectureTitle: activeLecture.title
-      };
 
-      return {
-        ...prev,
-        notes: [newNote, ...prev.notes]
-      };
-    });
-  };
-
-  const handleDeleteNote = (noteId) => {
-    setProgress((prev) => ({
-      ...prev,
-      notes: prev.notes.filter((n) => n.id !== noteId)
-    }));
-    triggerNotification("🗒️ Đã xóa ghi chú cá nhân thành công.", "info");
-  };
 
   const handleSubmitQuizScore = (score) => {
     if (!activeLecture) return;
@@ -742,16 +703,16 @@ export default function DashbroadStudent() {
 
       {/* Visual notification banner */}
       {notification && (
-        <div className={`fixed top-18 right-6 z-[100] max-w-sm rounded-xl p-4 shadow-xl border flex gap-3 items-start animate-bounce ${notification.type === "success"
-          ? "border-emerald-800 bg-emerald-900 text-white"
-          : "border-teal-850 bg-teal-900 text-white"
+        <div className={`fixed bottom-8 right-8 z-[200] max-w-sm rounded-full px-5 py-3 shadow-2xl flex gap-2.5 items-center animate-fade-in ${notification.type === "success"
+          ? "bg-[#064e3b] text-white border border-[#065f46]"
+          : "bg-teal-900 text-white border border-teal-800"
           }`}>
           {notification.type === "success" ? (
-            <CheckCircle2 size={18} className="text-emerald-400 mt-0.5 shrink-0" />
+            <Check size={16} className="text-emerald-400 shrink-0" strokeWidth={3} />
           ) : (
-            <CircleAlert size={18} className="text-teal-300 mt-0.5 shrink-0" />
+            <CircleAlert size={16} className="text-teal-300 shrink-0" />
           )}
-          <p className="text-xs font-semibold leading-relaxed">{notification.message}</p>
+          <p className="text-[14px] font-bold m-0 leading-none">{notification.message}</p>
         </div>
       )}
 
@@ -812,6 +773,7 @@ export default function DashbroadStudent() {
                 setSelectedSemester={setSelectedSemester}
                 searchTerm={searchTerm}
                 setSearchTerm={setSearchTerm}
+                terms={terms}
               />
             )
           ) : (
@@ -865,16 +827,7 @@ export default function DashbroadStudent() {
                         <span>Bài tập</span>
                       </button>
 
-                      <button
-                        onClick={() => setActiveCourseTab("grades")}
-                        className={`flex items-center gap-2 px-4 py-1.5 rounded-full text-xs font-bold transition-all duration-300 ease-in-out shrink-0 cursor-pointer ${activeCourseTab === "grades"
-                          ? "bg-emerald-50 text-emerald-700 shadow-2xs border border-emerald-200/50 scale-102"
-                          : "text-gray-500 hover:text-gray-800 hover:bg-gray-50 hover:scale-101"
-                          }`}
-                      >
-                        <Award size={14} className={activeCourseTab === "grades" ? "text-emerald-600" : ""} />
-                        <span>Điểm &amp; Nhận xét</span>
-                      </button>
+
 
                       <button
                         onClick={() => setActiveCourseTab("people")}
@@ -899,22 +852,7 @@ export default function DashbroadStudent() {
                     </div>
                   </div>
 
-                  <div className="flex items-center gap-1.5 shrink-0 py-2.5">
-                    <button
-                      onClick={() => triggerNotification("📅 Đã liên kết và đồng bộ thời khóa biểu lớp với Google Calendar của bạn.", "info")}
-                      className="p-2 text-gray-400 hover:text-gray-850 hover:bg-gray-100 rounded-full transition cursor-pointer"
-                      title="Lịch học tập lớp"
-                    >
-                      <Calendar size={18} />
-                    </button>
-                    <button
-                      onClick={() => triggerNotification("📁 Đang chuyển hướng đến thư mục học liệu dùng chung trên Google Drive.", "info")}
-                      className="p-2 text-gray-400 hover:text-gray-850 hover:bg-gray-100 rounded-full transition cursor-pointer"
-                      title="Thư mục Google Drive của lớp"
-                    >
-                      <FolderOpen size={18} />
-                    </button>
-                  </div>
+
                 </div>
 
                 {/* QA tab content */}
@@ -945,7 +883,7 @@ export default function DashbroadStudent() {
                           <span className="opacity-60">•</span>
                           <span>Lớp: <strong className="font-bold text-white">{selectedCourse.id}</strong></span>
                           <span className="opacity-60">•</span>
-                          <span>Học kỳ: <strong className="font-bold text-white">{selectedSemester} {selectedYear}</strong></span>
+                           <span>Học kỳ: <strong className="font-bold text-white">{matchedTerm ? (matchedTerm.name || matchedTerm.termCode) : (selectedSemester + ' ' + selectedYear)}</strong></span>
                         </div>
                       </div>
                     </div>
@@ -1126,12 +1064,7 @@ export default function DashbroadStudent() {
                   </div>
                 )}
 
-                {/* Grades & Feedback tab content */}
-                {activeCourseTab === "grades" && (
-                  <div className="bg-white border border-gray-200 rounded-2xl p-6 shadow-2xs">
-                    <StudentGrades cls={selectedCourse} />
-                  </div>
-                )}
+
 
                 {/* People tab content */}
                 {activeCourseTab === "people" && (
@@ -1218,7 +1151,7 @@ export default function DashbroadStudent() {
               </div>
             ) : (
               /* Selected Course Live Lecture Player Screen */
-              <div className="flex-1 grid grid-cols-1 lg:grid-cols-[1.5fr_1fr] gap-6 items-stretch w-full min-h-[500px]">
+              <div className={`flex-1 grid grid-cols-1 gap-6 items-stretch w-full min-h-[500px] ${activeLecture?.type === "quiz" ? "" : "lg:grid-cols-[1.5fr_1fr]"}`}>
                 {/* Left Main player pane */}
                 <div className="flex flex-col h-full gap-4">
                   {/* Back navigation button row */}
@@ -1252,11 +1185,8 @@ export default function DashbroadStudent() {
                         lecture={activeLecture}
                         sectionId={activeSectionId}
                         completedLectures={progress.completedLectures}
-                        notes={progress.notes}
                         quizScores={progress.quizScores}
                         homeworkStatus={progress.homeworkStatus}
-                        onAddNote={handleAddNote}
-                        onDeleteNote={handleDeleteNote}
                         onSubmitQuizScore={handleSubmitQuizScore}
                         onToggleComplete={handleToggleComplete}
                         onSubmitHomework={handleSubmitHomework}
@@ -1268,18 +1198,19 @@ export default function DashbroadStudent() {
                 </div>
 
                 {/* Right Course Outline Sidebar navigation */}
-                <div className="flex flex-col gap-4 lg:h-[calc(100vh-140px)]">
-                  {/* Tabs */}
+                {activeLecture?.type !== "quiz" && (
+                  <div className="flex flex-col gap-4 lg:h-[calc(100vh-140px)]">
+                    {/* Tabs */}
                   <div className="flex bg-white border border-gray-200 rounded-xl p-1 shadow-sm shrink-0">
-                    <button
-                      onClick={() => setRightTab("qa")}
-                      className={`flex-1 py-2 text-sm font-bold rounded-lg transition-colors cursor-pointer ${rightTab === "qa" ? "bg-emerald-50 text-emerald-700" : "text-gray-500 hover:bg-gray-50"}`}
-                    >
-                      💬 Thảo luận
-                    </button>
+                      <button
+                        onClick={() => setRightTab("qa")}
+                        className={`flex-1 py-2 text-sm font-bold rounded-lg transition-colors cursor-pointer ${rightTab === "qa" ? "bg-emerald-50 text-emerald-700" : "text-gray-500 hover:bg-gray-50"}`}
+                      >
+                        💬 Thảo luận
+                      </button>
                     <button
                       onClick={() => setRightTab("syllabus")}
-                      className={`flex-1 py-2 text-sm font-bold rounded-lg transition-colors cursor-pointer ${rightTab === "syllabus" ? "bg-emerald-50 text-emerald-700" : "text-gray-500 hover:bg-gray-50"}`}
+                      className={`flex-1 py-2 text-sm font-bold rounded-lg transition-colors cursor-pointer ${rightTab === "syllabus" || activeLecture?.type === "quiz" ? "bg-emerald-50 text-emerald-700" : "text-gray-500 hover:bg-gray-50"}`}
                     >
                       📑 Nội dung bài học
                     </button>
@@ -1287,7 +1218,7 @@ export default function DashbroadStudent() {
 
                   <div className="bg-white border border-gray-200 rounded-xl overflow-hidden shadow-sm flex-1 flex flex-col">
                     <div className="flex-1 overflow-y-auto custom-scrollbar p-0">
-                      {rightTab === "syllabus" ? (
+                      {rightTab === "syllabus" || activeLecture?.type === "quiz" ? (
                         syllabus && syllabus.length > 0 && activeLecture ? (
                           <SidebarSyllabus
                             sections={syllabus}
@@ -1308,6 +1239,7 @@ export default function DashbroadStudent() {
                     </div>
                   </div>
                 </div>
+                )}
               </div>
             )
           )}

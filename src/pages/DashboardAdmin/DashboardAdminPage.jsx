@@ -295,7 +295,7 @@ function DashboardAdminPage() {
       role: userForm.role,
       status: userForm.status,
       isActive: userForm.status === 'ACTIVE',
-      avatarUrl: userForm.avatarUrl || '',
+      avatarUrl: userForm.avatarUrl || null,
 
       // PascalCase fallback for C# model binders
       Id: cleanId,
@@ -306,7 +306,7 @@ function DashboardAdminPage() {
       Role: userForm.role,
       Status: userForm.status,
       IsActive: userForm.status === 'ACTIVE',
-      AvatarUrl: userForm.avatarUrl || ''
+      AvatarUrl: userForm.avatarUrl || null
     };
 
     // Nếu người dùng nhập mật khẩu thực tế (và khác với ký hiệu đại diện đại diện ••••••••), ta mới gửi lên để lưu
@@ -318,6 +318,12 @@ function DashboardAdminPage() {
 
     try {
       if (editingUser) {
+        // Front-end safety checks against current list: check if email is used by another user
+        if (users.some(u => u.email.trim().toLowerCase() === cleanEmail.toLowerCase() && u.id !== editingUser.id)) {
+          showToast('Email này đã tồn tại!', 'error');
+          return;
+        }
+
         await updateUser(editingUser.id, payload);
 
         // Update local state
@@ -327,6 +333,9 @@ function DashboardAdminPage() {
         // Front-end safety checks against current list
         if (users.some(u => u.id.trim().toLowerCase() === cleanId.toLowerCase())) {
           showToast('Mã định danh (ID) này đã tồn tại trên hệ thống!', 'error'); return;
+        }
+        if (users.some(u => u.email.trim().toLowerCase() === cleanEmail.toLowerCase())) {
+          showToast('Email này đã tồn tại trên hệ thống!', 'error'); return;
         }
 
         const created = await createUser(payload);
@@ -459,8 +468,8 @@ function DashboardAdminPage() {
           <div />
           <div className={styles.topbarRight}>
             <div style={{ position: 'relative' }} ref={dropdownRef}>
-              <div 
-                className={styles.userBadge} 
+              <div
+                className={styles.userBadge}
                 onClick={() => setDropdownOpen(!dropdownOpen)}
               >
                 <div className={styles.avatar} aria-hidden="true">
