@@ -1,5 +1,5 @@
 import { useMemo, useRef, useState } from 'react';
-import { Pencil, Trash2, Plus, Search, Clock, CheckSquare, X, Check, BookOpen, ChevronDown, ChevronRight, ClipboardList, Upload, ExternalLink, Film, FileText, FileSpreadsheet, Paperclip, Eye } from 'lucide-react';
+import { Pencil, Trash2, Plus, Search, Clock, CheckSquare, X, Check, BookOpen, ChevronDown, ChevronRight, ClipboardList, Upload, ExternalLink, Film, FileText, FileSpreadsheet, Paperclip, Eye, ZoomIn, ZoomOut } from 'lucide-react';
 import { useLecturerWorkspace } from '../../context/LecturerWorkspaceContext';
 import styles from './LecturerDashboard.module.css';
 
@@ -17,6 +17,7 @@ export default function AssignmentsDashboard() {
   const [viewingSubmissionsForAsgId, setViewingSubmissionsForAsgId] = useState(null);
   const [subTab, setSubTab] = useState('submitted');
   const [viewingAssignmentDetail, setViewingAssignmentDetail] = useState(null);
+  const [viewDetailZoom, setViewDetailZoom] = useState(1);
   
   const [newAsgForm, setNewAsgForm] = useState({
     title: '',
@@ -472,6 +473,7 @@ export default function AssignmentsDashboard() {
         const hasAttachmentPreview = !!newAsgForm.attachmentUrl;
         const isImage = hasAttachmentPreview && /\.(jpeg|jpg|gif|png|webp)($|\?)/i.test(newAsgForm.attachmentUrl);
         const isVideo = hasAttachmentPreview && /\.(mp4|webm|ogg)($|\?)/i.test(newAsgForm.attachmentUrl);
+        const isZip = hasAttachmentPreview && /\.(zip|rar|7z|gz|tar)($|\?)/i.test(newAsgForm.attachmentName || newAsgForm.attachmentUrl);
         const ytMatch = hasAttachmentPreview && newAsgForm.attachmentUrl.match(/(?:youtu\.be\/|v\/|embed\/|watch\?v=|&v=)([^#&?]{11})/);
         const ytId = ytMatch ? ytMatch[1] : null;
         const isCloudinary = hasAttachmentPreview && newAsgForm.attachmentUrl.includes('cloudinary.com');
@@ -630,7 +632,9 @@ export default function AssignmentsDashboard() {
                             }}
                             style={{ border: `2px dashed ${isAsgDragging ? '#059669' : '#cbd5e1'}`, borderRadius: 10, padding: '14px 16px', cursor: 'pointer', background: isAsgDragging ? '#f0fdf4' : '#f8fafc', textAlign: 'center', transition: 'all 0.2s' }}
                           >
-                            <input ref={asgFileInputRef} type="file" style={{ display: 'none' }} onChange={async (e) => {
+                            <input ref={asgFileInputRef} type="file" style={{ display: 'none' }}
+                              accept="image/*,video/*,.pdf,.doc,.docx,.ppt,.pptx,.xls,.xlsx,.zip,.rar,.7z,.gz,.tar"
+                              onChange={async (e) => {
                               const file = e.target.files[0]; if (!file) return;
                               setIsAsgUploading(true);
                               try {
@@ -747,6 +751,7 @@ export default function AssignmentsDashboard() {
         const hasAttachment = !!meta.attachmentUrl;
         const isImage = hasAttachment && /\.(jpeg|jpg|gif|png|webp)($|\?)/i.test(meta.attachmentUrl);
         const isVideo = hasAttachment && /\.(mp4|webm|ogg)($|\?)/i.test(meta.attachmentUrl);
+        const isZip = hasAttachment && /\.(zip|rar|7z|gz|tar)($|\?)/i.test(meta.attachmentName || meta.attachmentUrl);
         const ytMatch = hasAttachment && meta.attachmentUrl.match(/(?:youtu\.be\/|v\/|embed\/|watch\?v=|&v=)([^#&?]{11})/);
         const ytId = ytMatch ? ytMatch[1] : null;
         const isCloudinary = hasAttachment && meta.attachmentUrl.includes('cloudinary.com');
@@ -759,40 +764,42 @@ export default function AssignmentsDashboard() {
               : meta.attachmentUrl)
           : null;
         return (
-          <div className={styles.modalOverlay} onClick={() => setViewingAssignmentDetail(null)}>
+          <div className={styles.modalOverlay} onClick={() => { setViewingAssignmentDetail(null); setViewDetailZoom(1); }}>
             <div
               className={styles.modal}
               onClick={e => e.stopPropagation()}
-              style={{ maxWidth: 1100, width: '95%', padding: 0, overflow: 'hidden', borderRadius: 16, display: 'flex', flexDirection: 'column', height: '88vh' }}
+              style={{ maxWidth: '96vw', width: '96vw', padding: 0, overflow: 'hidden', borderRadius: 16, display: 'flex', flexDirection: 'column', height: '94vh', maxHeight: '94vh' }}
             >
               {/* Header */}
-              <div style={{ padding: '18px 24px', borderBottom: '1px solid #e2e8f0', background: '#f8fafc', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 12 }}>
-                <div style={{ flex: 1, minWidth: 0 }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
-                    <ClipboardList size={16} color="#059669" />
-                    <span style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', color: '#64748b', letterSpacing: '0.05em' }}>Chi tiết bài tập</span>
+              <div style={{ padding: '14px 24px', borderBottom: '1px solid #e2e8f0', background: '#f8fafc', display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 12, flexShrink: 0 }}>
+                <div style={{ flex: 1, minWidth: 0, display: 'flex', alignItems: 'center', gap: 12 }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                    <ClipboardList size={18} color="#059669" />
+                    <div>
+                      <span style={{ fontSize: 10, fontWeight: 700, textTransform: 'uppercase', color: '#64748b', letterSpacing: '0.05em', display: 'block' }}>Chi tiết bài tập</span>
+                      <h3 style={{ margin: 0, fontSize: 17, fontWeight: 800, color: '#0f172a', lineHeight: 1.2 }}>{asg.title}</h3>
+                    </div>
                   </div>
-                  <h3 style={{ margin: 0, fontSize: 16, fontWeight: 800, color: '#0f172a', lineHeight: 1.3 }}>{asg.title}</h3>
                 </div>
-                <div style={{ display: 'flex', gap: 6, flexShrink: 0, alignItems: 'center' }}>
+                <div style={{ display: 'flex', gap: 8, flexShrink: 0, alignItems: 'center' }}>
                   <button
                     type="button"
                     title="Chỉnh sửa bài tập"
-                    onClick={() => { setViewingAssignmentDetail(null); handleEditAssignmentStart(asg); }}
-                    style={{ display: 'flex', alignItems: 'center', gap: 5, padding: '6px 12px', background: '#f0fdf4', border: '1.5px solid #86efac', borderRadius: 8, cursor: 'pointer', fontSize: 12, fontWeight: 700, color: '#059669' }}
+                    onClick={() => { setViewingAssignmentDetail(null); setViewDetailZoom(1); handleEditAssignmentStart(asg); }}
+                    style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '7px 14px', background: '#f0fdf4', border: '1.5px solid #86efac', borderRadius: 8, cursor: 'pointer', fontSize: 13, fontWeight: 700, color: '#059669' }}
                   >
-                    <Pencil size={13} /> Sửa
+                    <Pencil size={14} /> Sửa
                   </button>
                   <button
                     type="button"
                     title="Xóa bài tập"
-                    onClick={() => { setViewingAssignmentDetail(null); handleDeleteAssignment(asg.id); }}
-                    style={{ display: 'flex', alignItems: 'center', gap: 5, padding: '6px 12px', background: '#fef2f2', border: '1.5px solid #fca5a5', borderRadius: 8, cursor: 'pointer', fontSize: 12, fontWeight: 700, color: '#ef4444' }}
+                    onClick={() => { setViewingAssignmentDetail(null); setViewDetailZoom(1); handleDeleteAssignment(asg.id); }}
+                    style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '7px 14px', background: '#fef2f2', border: '1.5px solid #fca5a5', borderRadius: 8, cursor: 'pointer', fontSize: 13, fontWeight: 700, color: '#ef4444' }}
                   >
-                    <Trash2 size={13} /> Xóa
+                    <Trash2 size={14} /> Xóa
                   </button>
-                  <button type="button" onClick={() => setViewingAssignmentDetail(null)} style={{ background: '#f1f5f9', border: 'none', borderRadius: 8, padding: 7, cursor: 'pointer', display: 'flex', alignItems: 'center' }}>
-                    <X size={16} color="#64748b" />
+                  <button type="button" onClick={() => { setViewingAssignmentDetail(null); setViewDetailZoom(1); }} style={{ background: '#f1f5f9', border: 'none', borderRadius: 8, padding: 8, cursor: 'pointer', display: 'flex', alignItems: 'center' }}>
+                    <X size={18} color="#64748b" />
                   </button>
                 </div>
               </div>
@@ -802,24 +809,80 @@ export default function AssignmentsDashboard() {
 
                 {/* Left: File preview */}
                 {hasAttachment && (
-                  <div style={{ flex: 1.4, background: '#0f172a', display: 'flex', flexDirection: 'column', minWidth: 340, overflow: 'hidden' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '8px 14px', background: 'rgba(0,0,0,0.55)', backdropFilter: 'blur(4px)' }}>
-                      <span style={{ fontSize: 11, color: '#94a3b8', fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: 260 }}>
+                  <div style={{ flex: 1, background: '#0f172a', display: 'flex', flexDirection: 'column', minWidth: 0, overflow: 'hidden' }}>
+                    {/* Preview toolbar */}
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '8px 14px', background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(4px)', flexShrink: 0 }}>
+                      <span style={{ fontSize: 11, color: '#94a3b8', fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: 400 }}>
                         {meta.attachmentName || 'Tài liệu đính kèm'}
                         {meta.attachmentSize && <span style={{ marginLeft: 6, color: '#64748b' }}>({meta.attachmentSize})</span>}
                       </span>
-                      <a href={meta.attachmentUrl} target="_blank" rel="noopener noreferrer" style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 11, color: '#34d399', fontWeight: 700, textDecoration: 'none', background: 'rgba(52,211,153,0.15)', border: '1px solid rgba(52,211,153,0.3)', borderRadius: 6, padding: '4px 10px', whiteSpace: 'nowrap' }}>
-                        <ExternalLink size={12} /> Mở file
-                      </a>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                        {/* Zoom controls — only for images */}
+                        {isImage && (
+                          <>
+                            <button
+                              type="button"
+                              title="Thu nhỏ"
+                              onClick={() => setViewDetailZoom(z => Math.max(0.25, +(z - 0.25).toFixed(2)))}
+                              style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: 28, height: 28, background: 'rgba(255,255,255,0.12)', border: '1px solid rgba(255,255,255,0.2)', borderRadius: 6, cursor: 'pointer', color: '#e2e8f0', flexShrink: 0 }}
+                            >
+                              <ZoomOut size={13} />
+                            </button>
+                            <span style={{ fontSize: 11, color: '#94a3b8', fontWeight: 700, minWidth: 36, textAlign: 'center' }}>
+                              {Math.round(viewDetailZoom * 100)}%
+                            </span>
+                            <button
+                              type="button"
+                              title="Phóng to"
+                              onClick={() => setViewDetailZoom(z => Math.min(5, +(z + 0.25).toFixed(2)))}
+                              style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: 28, height: 28, background: 'rgba(255,255,255,0.12)', border: '1px solid rgba(255,255,255,0.2)', borderRadius: 6, cursor: 'pointer', color: '#e2e8f0', flexShrink: 0 }}
+                            >
+                              <ZoomIn size={13} />
+                            </button>
+                            <button
+                              type="button"
+                              title="Đặt lại zoom"
+                              onClick={() => setViewDetailZoom(1)}
+                              style={{ fontSize: 10, color: '#94a3b8', fontWeight: 700, background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.15)', borderRadius: 6, padding: '4px 8px', cursor: 'pointer', whiteSpace: 'nowrap' }}
+                            >
+                              Reset
+                            </button>
+                            <span style={{ width: 1, height: 16, background: 'rgba(255,255,255,0.2)', margin: '0 2px' }} />
+                          </>
+                        )}
+                        <a href={meta.attachmentUrl} target="_blank" rel="noopener noreferrer" style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 11, color: '#34d399', fontWeight: 700, textDecoration: 'none', background: 'rgba(52,211,153,0.15)', border: '1px solid rgba(52,211,153,0.3)', borderRadius: 6, padding: '5px 10px', whiteSpace: 'nowrap' }}>
+                          <ExternalLink size={12} /> Mở file
+                        </a>
+                      </div>
                     </div>
-                    <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden' }}>
+                    <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'auto' }}>
                       {ytId ? (
                         <iframe width="100%" height="100%" src={`https://www.youtube.com/embed/${ytId}`} title="YouTube" style={{ border: 'none' }} allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowFullScreen />
                       ) : isVideo ? (
                         <video src={meta.attachmentUrl} controls autoPlay style={{ maxWidth: '100%', maxHeight: '100%' }} />
+                      ) : isZip ? (
+                        <div style={{ textAlign: 'center', padding: 40 }}>
+                          <div style={{ fontSize: 64, marginBottom: 16 }}>📦</div>
+                          <p style={{ margin: '0 0 6px', fontSize: 16, fontWeight: 800, color: '#f8fafc' }}>{meta.attachmentName || 'File nén'}</p>
+                          <p style={{ margin: '0 0 20px', fontSize: 13, color: '#94a3b8' }}>File ZIP/RAR không thể xem trực tiếp.<br />Nhấn nút bên dưới để tải về máy.</p>
+                          <a
+                            href={meta.attachmentUrl}
+                            download
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            style={{ display: 'inline-flex', alignItems: 'center', gap: 8, fontSize: 14, fontWeight: 700, color: '#fff', background: 'linear-gradient(135deg, #059669, #34d399)', border: 'none', borderRadius: 10, padding: '12px 24px', textDecoration: 'none', boxShadow: '0 4px 12px rgba(5,150,105,0.4)', cursor: 'pointer' }}
+                          >
+                            ⬇️ Tải file về máy
+                          </a>
+                          {meta.attachmentSize && <p style={{ marginTop: 10, fontSize: 11, color: '#64748b' }}>Dung lượng: {meta.attachmentSize}</p>}
+                        </div>
                       ) : isImage ? (
-                        <div style={{ overflow: 'auto', width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                          <img src={meta.attachmentUrl} style={{ maxWidth: '100%', maxHeight: '100%', objectFit: 'contain' }} alt="Preview" />
+                        <div style={{ overflow: 'auto', width: '100%', height: '100%', display: 'flex', alignItems: viewDetailZoom <= 1 ? 'center' : 'flex-start', justifyContent: viewDetailZoom <= 1 ? 'center' : 'flex-start', padding: viewDetailZoom > 1 ? 16 : 0 }}>
+                          <img
+                            src={meta.attachmentUrl}
+                            style={{ transform: `scale(${viewDetailZoom})`, transformOrigin: 'top left', transition: 'transform 0.2s ease', objectFit: 'contain', display: 'block', flexShrink: 0 }}
+                            alt="Preview"
+                          />
                         </div>
                       ) : meta.attachmentName === 'Liên kết' ? (
                         <div style={{ textAlign: 'center', color: '#94a3b8', padding: 32 }}>
@@ -837,7 +900,7 @@ export default function AssignmentsDashboard() {
                 )}
 
                 {/* Right: Details */}
-                <div style={{ width: hasAttachment ? 420 : '100%', background: '#fff', display: 'flex', flexDirection: 'column', borderLeft: hasAttachment ? '1px solid #e2e8f0' : 'none', overflowY: 'auto' }}>
+                <div style={{ width: hasAttachment ? 440 : '100%', minWidth: hasAttachment ? 440 : undefined, background: '#fff', display: 'flex', flexDirection: 'column', borderLeft: hasAttachment ? '1px solid #e2e8f0' : 'none', overflowY: 'auto', flexShrink: 0 }}>
                   <div style={{ padding: '20px 24px', display: 'flex', flexDirection: 'column', gap: 16 }}>
 
                 {/* Badges row */}

@@ -1394,10 +1394,111 @@
   letter-spacing: 0.04em;
 }
 
+/* ── Feedback 2-column workspace layout ── */
+.feedbackWorkspace {
+  display: grid;
+  grid-template-columns: 320px 1fr;
+  gap: 16px;
+  height: calc(100vh - 240px);
+  min-height: 420px;
+}
+
+.feedbackListPanel {
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding-right: 4px;
+}
+
+.feedbackDetailPanel {
+  background: #fff;
+  border: 1.5px solid #e2e8f0;
+  border-radius: 14px;
+  padding: 20px 24px;
+  overflow-y: auto;
+}
+
+.feedbackItemCard {
+  background: #fff;
+  border: 1.5px solid #e2e8f0;
+  border-radius: 10px;
+  padding: 12px 14px;
+  cursor: pointer;
+  transition: border-color 0.15s, box-shadow 0.15s, background 0.15s;
+  position: relative;
+}
+
+.feedbackItemCard:hover {
+  border-color: #a7f3d0;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+}
+
+.feedbackItemCardActive {
+  border-color: #10b981 !important;
+  box-shadow: 0 0 0 2px rgba(16, 185, 129, 0.15) !important;
+  background: #f0fdf4 !important;
+}
+
+.feedbackItemHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 4px;
+}
+
+.statusPill {
+  font-size: 10px;
+  font-weight: 700;
+  padding: 2px 8px;
+  border-radius: 9999px;
+  text-transform: uppercase;
+}
+
+.statusBadge {
+  font-size: 12px;
+  font-weight: 600;
+  padding: 4px 10px;
+  border-radius: 9999px;
+}
+
+.statusWarning {
+  background-color: #ffedd5;
+  color: #c2410c;
+  border: 1px solid #fed7aa;
+}
+
+.statusSuccess {
+  background-color: #d1fae5;
+  color: #047857;
+  border: 1px solid #a7f3d0;
+}
+
+.feedbackSender {
+  font-size: 13px;
+  font-weight: 700;
+  color: #0f172a;
+}
+
+.feedbackItemTitle {
+  font-size: 13px;
+  font-weight: 600;
+  color: #1e293b;
+  margin: 0 0 4px;
+}
+
+.feedbackItemSnippet {
+  font-size: 12px;
+  color: #64748b;
+  margin: 0 0 6px;
+  line-height: 1.5;
+}
+
 /* ── Feedback detail card ── */
 .feedbackDetailCard {
   background: #f8fafc;
   border: 1.5px solid #94a3b8;
+
   border-radius: 12px;
   padding: 16px;
   margin-bottom: 14px;
