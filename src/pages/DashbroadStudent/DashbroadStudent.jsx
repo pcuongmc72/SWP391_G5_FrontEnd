@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import {
   Home,
@@ -313,7 +313,7 @@ export default function DashbroadStudent() {
   const [terms, setTerms] = useState([]);
   const [years, setYears] = useState([]);
   const [selectedYear, setSelectedYear] = useState('');
-  const [selectedSemester, setSelectedSemester] = useState('Spring');
+  const [selectedSemester, setSelectedSemester] = useState('');
   const [classes, setClasses] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -341,6 +341,7 @@ export default function DashbroadStudent() {
   const [isExpandingPublisher, setIsExpandingPublisher] = useState(false);
   const [commentInputs, setCommentInputs] = useState({});
   const [showHomeworkModal, setShowHomeworkModal] = useState(false);
+  const [blogForDetail, setBlogForDetail] = useState(null);
 
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [rightTab, setRightTab] = useState("qa");
@@ -402,15 +403,14 @@ export default function DashbroadStudent() {
 
           if (currentTerm) {
             setSelectedYear(currentTerm.startDate.split('-')[0]);
-            const nameLower = currentTerm.name.toLowerCase();
-            const codeLower = (currentTerm.termCode || '').toLowerCase();
-
-            if (nameLower.includes('spring') || codeLower.includes('sp')) setSelectedSemester('Spring');
-            else if (nameLower.includes('summer') || codeLower.includes('su')) setSelectedSemester('Summer');
-            else if (nameLower.includes('fall') || codeLower.includes('fa')) setSelectedSemester('Fall');
+            setSelectedSemester(currentTerm.id);
           } else if (uniqueYears.length > 0) {
-            setSelectedYear(uniqueYears[0]);
-            setSelectedSemester('Spring');
+            const firstYear = uniqueYears[0];
+            setSelectedYear(firstYear);
+            const yearTerms = termsData.filter(term => term.startDate.split('-')[0] === firstYear);
+            if (yearTerms.length > 0) {
+              setSelectedSemester(yearTerms[0].id);
+            }
           }
         } else {
           setError('Không tìm thấy học kỳ nào trong hệ thống.');
@@ -424,21 +424,28 @@ export default function DashbroadStudent() {
     fetchTerms();
   }, []);
 
+  const matchedTerm = useMemo(() => {
+    return terms.find(t => t.id === selectedSemester);
+  }, [terms, selectedSemester]);
+
+  // Auto-update selectedSemester when selectedYear changes
+  useEffect(() => {
+    if (!selectedYear || terms.length === 0) return;
+
+    const currentSelectedTerm = terms.find(t => t.id === selectedSemester);
+    const currentSelectedTermYear = currentSelectedTerm?.startDate?.split('-')[0];
+
+    if (currentSelectedTermYear !== selectedYear) {
+      const yearTerms = terms.filter(t => t.startDate && t.startDate.split('-')[0] === selectedYear);
+      if (yearTerms.length > 0) {
+        setSelectedSemester(yearTerms[0].id);
+      }
+    }
+  }, [selectedYear, terms, selectedSemester]);
+
   // 2. Load classes based on Year & Semester
   useEffect(() => {
-    if (!selectedYear || !selectedSemester || terms.length === 0) return;
-
-    const matchedTerm = terms.find(term => {
-      const termYear = term.startDate.split('-')[0];
-      const termNameLower = term.name.toLowerCase();
-      const termCodeLower = (term.termCode || '').toLowerCase();
-
-      const isSpring = selectedSemester === 'Spring' && (termNameLower.includes('spring') || termCodeLower.includes('sp'));
-      const isSummer = selectedSemester === 'Summer' && (termNameLower.includes('summer') || termCodeLower.includes('su'));
-      const isFall = selectedSemester === 'Fall' && (termNameLower.includes('fall') || termCodeLower.includes('fa'));
-
-      return termYear === selectedYear && (isSpring || isSummer || isFall);
-    });
+    if (!selectedSemester || terms.length === 0) return;
 
     const fetchClasses = async () => {
       setLoading(true);
@@ -460,7 +467,7 @@ export default function DashbroadStudent() {
     };
 
     fetchClasses();
-  }, [selectedYear, selectedSemester, terms]);
+  }, [selectedSemester, terms, matchedTerm]);
 
   // 3. Load classmates when a course is selected
   useEffect(() => {
@@ -778,6 +785,7 @@ export default function DashbroadStudent() {
                 setSelectedSemester={setSelectedSemester}
                 searchTerm={searchTerm}
                 setSearchTerm={setSearchTerm}
+                terms={terms}
               />
             )
           ) : (
@@ -911,7 +919,7 @@ export default function DashbroadStudent() {
                           <span className="opacity-60">•</span>
                           <span>Lớp: <strong className="font-bold text-white">{selectedCourse.id}</strong></span>
                           <span className="opacity-60">•</span>
-                          <span>Học kỳ: <strong className="font-bold text-white">{selectedSemester} {selectedYear}</strong></span>
+                           <span>Học kỳ: <strong className="font-bold text-white">{matchedTerm ? (matchedTerm.name || matchedTerm.termCode) : (selectedSemester + ' ' + selectedYear)}</strong></span>
                         </div>
                       </div>
                     </div>

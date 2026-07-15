@@ -79,14 +79,14 @@ function ClassListScreen({ onSelectClass }) {
 
                     if (currentTerm) {
                         setSelectedYear(currentTerm.startDate.split('-')[0]);
-                        const n = currentTerm.name.toLowerCase();
-                        const c = (currentTerm.termCode || '').toLowerCase();
-                        if (n.includes('spring') || c.includes('sp')) setSelectedSemester('Spring');
-                        else if (n.includes('summer') || c.includes('su')) setSelectedSemester('Summer');
-                        else if (n.includes('fall') || c.includes('fa')) setSelectedSemester('Fall');
+                        setSelectedSemester(currentTerm.id);
                     } else if (uniqueYears.length > 0) {
-                        setSelectedYear(uniqueYears[0]);
-                        setSelectedSemester('Spring');
+                        const firstYear = uniqueYears[0];
+                        setSelectedYear(firstYear);
+                        const yearTerms = termsData.filter(term => term.startDate && term.startDate.split('-')[0] === firstYear);
+                        if (yearTerms.length > 0) {
+                            setSelectedSemester(yearTerms[0].id);
+                        }
                     }
                 } else {
                     setError('Không tìm thấy học kỳ nào trong hệ thống.');
@@ -100,19 +100,26 @@ function ClassListScreen({ onSelectClass }) {
         fetchTerms();
     }, []);
 
+    const matchedTerm = terms.find(t => t.id === selectedSemester);
+
+    // Auto-update selectedSemester when selectedYear changes
+    useEffect(() => {
+        if (!selectedYear || terms.length === 0) return;
+
+        const currentSelectedTerm = terms.find(t => t.id === selectedSemester);
+        const currentSelectedTermYear = currentSelectedTerm?.startDate?.split('-')[0];
+
+        if (currentSelectedTermYear !== selectedYear) {
+            const yearTerms = terms.filter(t => t.startDate && t.startDate.split('-')[0] === selectedYear);
+            if (yearTerms.length > 0) {
+                setSelectedSemester(yearTerms[0].id);
+            }
+        }
+    }, [selectedYear, terms, selectedSemester]);
+
     /** Tải danh sách lớp học khi năm học hoặc kỳ học thay đổi. */
     useEffect(() => {
-        if (!selectedYear || !selectedSemester || terms.length === 0) return;
-
-        const matchedTerm = terms.find(t => {
-            const termYear = t.startDate.split('-')[0];
-            const n = t.name.toLowerCase();
-            const c = (t.termCode || '').toLowerCase();
-            const isSpring = selectedSemester === 'Spring' && (n.includes('spring') || c.includes('sp'));
-            const isSummer = selectedSemester === 'Summer' && (n.includes('summer') || c.includes('su'));
-            const isFall   = selectedSemester === 'Fall'   && (n.includes('fall')   || c.includes('fa'));
-            return termYear === selectedYear && (isSpring || isSummer || isFall);
-        });
+        if (!selectedSemester || terms.length === 0) return;
 
         const fetchClasses = async () => {
             setLoading(true);
@@ -131,7 +138,7 @@ function ClassListScreen({ onSelectClass }) {
             }
         };
         fetchClasses();
-    }, [selectedYear, selectedSemester, terms]);
+    }, [selectedSemester, terms, matchedTerm]);
 
     const filtered = classes.filter(cls => {
         const q = searchTerm.toLowerCase();
@@ -203,9 +210,12 @@ function ClassListScreen({ onSelectClass }) {
                             onChange={e => setSelectedSemester(e.target.value)}
                             style={{ padding: '10px 16px', borderRadius: '8px', border: '1px solid #cbd5e1', backgroundColor: '#fff', fontSize: '0.875rem', fontWeight: 600, color: '#334155', outline: 'none', cursor: 'pointer', minWidth: '120px' }}
                         >
-                            <option value="Spring">Kỳ Spring</option>
-                            <option value="Summer">Kỳ Summer</option>
-                            <option value="Fall">Kỳ Fall</option>
+                            {terms
+                                ?.filter(t => t.startDate && t.startDate.split('-')[0] === selectedYear)
+                                .map(t => (
+                                    <option key={t.id} value={t.id}>{t.name}</option>
+                                ))
+                            }
                         </select>
                     </div>
                 </div>
