@@ -17,7 +17,7 @@ export default function StudentQuizPlayer({ quizId, triggerNotification, addPoin
 
     // Pagination state
     const [currentPage, setCurrentPage] = useState(1);
-    const questionsPerPage = 3;
+    const questionsPerPage = 1;
 
     // Custom confirm modal state
     const [showSubmitConfirm, setShowSubmitConfirm] = useState(false);
@@ -97,10 +97,23 @@ export default function StudentQuizPlayer({ quizId, triggerNotification, addPoin
     };
 
     const handleSelectOption = (questionId, optionId) => {
-        setAnswers(prev => ({
-            ...prev,
-            [questionId]: optionId
-        }));
+        setAnswers(prev => {
+            const currentSelected = prev[questionId] || [];
+            let newSelected;
+            if (currentSelected.includes(optionId)) {
+                newSelected = currentSelected.filter(id => id !== optionId);
+            } else {
+                newSelected = [...currentSelected, optionId];
+            }
+            
+            // If the array is empty, we can choose to delete the key so Object.keys(answers) behaves naturally,
+            // or we just filter it out later. Let's keep it clean.
+            const newAnswers = { ...prev, [questionId]: newSelected };
+            if (newSelected.length === 0) {
+                delete newAnswers[questionId];
+            }
+            return newAnswers;
+        });
     };
 
     const toggleStar = (questionId) => {
@@ -116,20 +129,22 @@ export default function StudentQuizPlayer({ quizId, triggerNotification, addPoin
         try {
             setLoading(true);
             const payload = {
-                answers: Object.entries(answers).map(([qId, oId]) => ({
-                    questionId: qId,
-                    selectedOptionId: oId
-                }))
+                answers: Object.entries(answers).flatMap(([qId, oIds]) => 
+                    oIds.map(oId => ({
+                        questionId: qId,
+                        selectedOptionId: oId
+                    }))
+                )
             };
             
             const res = await submitQuizAttempt(quizId, currentAttempt.id, payload);
             if (res.success) {
                 const score = res.data.totalScore;
-                triggerNotification(`Nộp bài thành công! Điểm của bạn: ${score}`, 'success');
+                triggerNotification(`Bạn đã hoàn thành bài thi`, 'success');
                 addPoints(score > 5 ? 50 : 10);
                 setCurrentAttempt(null);
                 loadQuizData(); // Reload history
-                onToggleComplete(); // Mark material completed
+                onToggleComplete(null, true); // Mark material completed without duplicate toast
             }
         } catch (err) {
             triggerNotification(err.response?.data?.message || 'Không thể nộp bài', 'error');
@@ -209,13 +224,13 @@ export default function StudentQuizPlayer({ quizId, triggerNotification, addPoin
                             <div className="grid grid-cols-5 gap-2 mb-4">
                                 {quizData.questions?.map((q, idx) => {
                                     const qPage = Math.ceil((idx + 1) / questionsPerPage);
-                                    const isAnswered = answers[q.id] !== undefined;
+                                    const isAnswered = answers[q.id] && answers[q.id].length > 0;
                                     const isStarred = starred[q.id];
                                     const isCurrentPage = currentPage === qPage;
                                     
                                     let bgClass = 'bg-gray-50 text-gray-600 border-gray-200 hover:bg-gray-100';
                                     if (isStarred) {
-                                        bgClass = 'bg-amber-100 text-amber-800 border-amber-300';
+                                        bgClass = 'bg-yellow-400 text-yellow-900 border-yellow-500 shadow-sm';
                                     } else if (isAnswered) {
                                         bgClass = 'bg-emerald-100 text-emerald-800 border-emerald-300';
                                     }
@@ -239,14 +254,14 @@ export default function StudentQuizPlayer({ quizId, triggerNotification, addPoin
                                         disabled={currentPage === 1}
                                         className="flex-1 bg-gray-100 border border-gray-200 hover:bg-gray-200 text-gray-700 font-bold py-2 px-2 rounded transition cursor-pointer disabled:opacity-50 text-xs text-center"
                                     >
-                                        Trang trước
+                                        Câu trước
                                     </button>
                                     <button
                                         onClick={() => setCurrentPage(p => Math.min(Math.ceil((quizData.questions?.length || 0) / questionsPerPage), p + 1))}
                                         disabled={currentPage >= Math.ceil((quizData.questions?.length || 0) / questionsPerPage)}
                                         className="flex-1 bg-gray-100 border border-gray-200 hover:bg-gray-200 text-gray-700 font-bold py-2 px-2 rounded transition cursor-pointer disabled:opacity-50 text-xs text-center"
                                     >
-                                        Trang sau
+                                        Câu sau
                                     </button>
                                 </div>
                                 <span className="text-center text-gray-500 text-xs font-semibold">
@@ -283,22 +298,23 @@ export default function StudentQuizPlayer({ quizId, triggerNotification, addPoin
                                             className="text-gray-400 hover:text-amber-500 transition cursor-pointer"
                                             title="Đánh dấu câu hỏi này"
                                         >
-                                            <Star size={18} className={starred[q.id] ? "text-amber-500 fill-amber-500" : ""} />
+                                            <Star size={18} style={starred[q.id] ? { color: '#eab308', fill: '#eab308' } : {}} className={starred[q.id] ? "text-yellow-500 fill-yellow-500" : ""} />
                                         </button>
                                     </div>
                                     <h5 className="font-bold text-sm text-gray-800">{q.questionText}</h5>
                                     
                                     <div className="grid grid-cols-1 gap-2 mt-3">
-                                        {q.options?.map(opt => (
+                                        {q.options?.map((opt, optIdx) => (
                                             <button
                                                 key={opt.id}
                                                 onClick={() => handleSelectOption(q.id, opt.id)}
-                                                className={`w-full text-left p-3 rounded-lg border text-sm transition focus:outline-none cursor-pointer
-                                                    ${answers[q.id] === opt.id 
+                                                className={`w-full text-left p-3 rounded-lg border text-sm transition focus:outline-none cursor-pointer flex gap-3
+                                                    ${answers[q.id]?.includes(opt.id) 
                                                         ? 'border-emerald-500 bg-emerald-50 text-emerald-800' 
                                                         : 'border-gray-200 bg-white text-gray-700 hover:bg-gray-50'}`}
                                             >
-                                                {opt.optionText}
+                                                <span className="font-bold">{String.fromCharCode(65 + optIdx)}.</span>
+                                                <span>{opt.optionText}</span>
                                             </button>
                                         ))}
                                     </div>
@@ -321,7 +337,7 @@ export default function StudentQuizPlayer({ quizId, triggerNotification, addPoin
                             <h3 className="text-lg font-bold text-gray-800">Xác nhận nộp bài</h3>
                         </div>
                         <p className="text-sm text-gray-600 mb-6 pl-11">
-                            Bạn có chắc chắn muốn nộp bài? Bạn sẽ không thể thay đổi đáp án sau khi nộp.
+                            Bạn có chắc chắn muốn nộp bài? Bạn đã hoàn thành {Object.keys(answers).length} / {quizData.questions?.length || 0} câu hỏi.
                         </p>
                         <div className="flex gap-3 justify-end">
                             <button 

@@ -12,6 +12,7 @@ import {
   MoreVertical,
   Send,
   Loader2,
+  Check,
   CheckCircle2,
   CircleAlert,
   BookOpen,
@@ -560,7 +561,7 @@ export default function DashbroadStudent() {
     });
   };
 
-  const handleToggleComplete = (lectureId) => {
+  const handleToggleComplete = (lectureId, silent = false) => {
     const idToToggle = lectureId || activeLecture?.id;
     if (!idToToggle) return;
 
@@ -570,10 +571,10 @@ export default function DashbroadStudent() {
 
       if (alreadyCompleted) {
         updatedList = prev.completedLectures.filter((id) => id !== idToToggle);
-        triggerNotification("ℹ️ Đã xóa bài giảng khỏi tiến trình hoàn tất.", "info");
+        if (!silent) triggerNotification("ℹ️ Đã xóa bài giảng khỏi tiến trình hoàn tất.", "info");
       } else {
         updatedList = [...prev.completedLectures, idToToggle];
-        triggerNotification("🎉 Tuyệt vời! Đã ghi nhận hoàn thành bài học này. Nhận +50 XP rèn luyện!", "success");
+        if (!silent) triggerNotification("🎉 Tuyệt vời! Đã ghi nhận hoàn thành bài học này. Nhận +50 XP rèn luyện!", "success");
         setTimeout(() => {
           addPoints(50);
         }, 100);
@@ -707,16 +708,16 @@ export default function DashbroadStudent() {
 
       {/* Visual notification banner */}
       {notification && (
-        <div className={`fixed top-18 right-6 z-[100] max-w-sm rounded-xl p-4 shadow-xl border flex gap-3 items-start animate-bounce ${notification.type === "success"
-          ? "border-emerald-800 bg-emerald-900 text-white"
-          : "border-teal-850 bg-teal-900 text-white"
+        <div className={`fixed bottom-8 right-8 z-[200] max-w-sm rounded-full px-5 py-3 shadow-2xl flex gap-2.5 items-center animate-fade-in ${notification.type === "success"
+          ? "bg-[#064e3b] text-white border border-[#065f46]"
+          : "bg-teal-900 text-white border border-teal-800"
           }`}>
           {notification.type === "success" ? (
-            <CheckCircle2 size={18} className="text-emerald-400 mt-0.5 shrink-0" />
+            <Check size={16} className="text-emerald-400 shrink-0" strokeWidth={3} />
           ) : (
-            <CircleAlert size={18} className="text-teal-300 mt-0.5 shrink-0" />
+            <CircleAlert size={16} className="text-teal-300 shrink-0" />
           )}
-          <p className="text-xs font-semibold leading-relaxed">{notification.message}</p>
+          <p className="text-[14px] font-bold m-0 leading-none">{notification.message}</p>
         </div>
       )}
 
@@ -1183,7 +1184,7 @@ export default function DashbroadStudent() {
               </div>
             ) : (
               /* Selected Course Live Lecture Player Screen */
-              <div className="flex-1 grid grid-cols-1 lg:grid-cols-[1.5fr_1fr] gap-6 items-stretch w-full min-h-[500px]">
+              <div className={`flex-1 grid grid-cols-1 gap-6 items-stretch w-full min-h-[500px] ${activeLecture?.type === "quiz" ? "" : "lg:grid-cols-[1.5fr_1fr]"}`}>
                 {/* Left Main player pane */}
                 <div className="flex flex-col h-full gap-4">
                   {/* Back navigation button row */}
@@ -1230,18 +1231,19 @@ export default function DashbroadStudent() {
                 </div>
 
                 {/* Right Course Outline Sidebar navigation */}
-                <div className="flex flex-col gap-4 lg:h-[calc(100vh-140px)]">
-                  {/* Tabs */}
+                {activeLecture?.type !== "quiz" && (
+                  <div className="flex flex-col gap-4 lg:h-[calc(100vh-140px)]">
+                    {/* Tabs */}
                   <div className="flex bg-white border border-gray-200 rounded-xl p-1 shadow-sm shrink-0">
-                    <button
-                      onClick={() => setRightTab("qa")}
-                      className={`flex-1 py-2 text-sm font-bold rounded-lg transition-colors cursor-pointer ${rightTab === "qa" ? "bg-emerald-50 text-emerald-700" : "text-gray-500 hover:bg-gray-50"}`}
-                    >
-                      💬 Thảo luận
-                    </button>
+                      <button
+                        onClick={() => setRightTab("qa")}
+                        className={`flex-1 py-2 text-sm font-bold rounded-lg transition-colors cursor-pointer ${rightTab === "qa" ? "bg-emerald-50 text-emerald-700" : "text-gray-500 hover:bg-gray-50"}`}
+                      >
+                        💬 Thảo luận
+                      </button>
                     <button
                       onClick={() => setRightTab("syllabus")}
-                      className={`flex-1 py-2 text-sm font-bold rounded-lg transition-colors cursor-pointer ${rightTab === "syllabus" ? "bg-emerald-50 text-emerald-700" : "text-gray-500 hover:bg-gray-50"}`}
+                      className={`flex-1 py-2 text-sm font-bold rounded-lg transition-colors cursor-pointer ${rightTab === "syllabus" || activeLecture?.type === "quiz" ? "bg-emerald-50 text-emerald-700" : "text-gray-500 hover:bg-gray-50"}`}
                     >
                       📑 Nội dung bài học
                     </button>
@@ -1249,7 +1251,7 @@ export default function DashbroadStudent() {
 
                   <div className="bg-white border border-gray-200 rounded-xl overflow-hidden shadow-sm flex-1 flex flex-col">
                     <div className="flex-1 overflow-y-auto custom-scrollbar p-0">
-                      {rightTab === "syllabus" ? (
+                      {rightTab === "syllabus" || activeLecture?.type === "quiz" ? (
                         syllabus && syllabus.length > 0 && activeLecture ? (
                           <SidebarSyllabus
                             sections={syllabus}
@@ -1270,6 +1272,7 @@ export default function DashbroadStudent() {
                     </div>
                   </div>
                 </div>
+                )}
               </div>
             )
           )}
