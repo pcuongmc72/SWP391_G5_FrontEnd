@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import {
   Upload, Plus, CheckSquare, Film, FileText, FileSpreadsheet, ImageIcon, Paperclip, Pencil,
   Search, ChevronDown, ChevronRight, BookOpen, X, MessageSquare, Check, Trash2, Clock, Award, Users, CheckCircle, ExternalLink,
-  ZoomIn, ZoomOut
+  ZoomIn, ZoomOut, Maximize, Edit3
 } from 'lucide-react';
 import { useLecturerWorkspace } from '../../context/LecturerWorkspaceContext';
 import styles from './LecturerDashboard.module.css';
@@ -163,6 +163,9 @@ export default function MaterialsDashboard() {
   const [isUploading, setIsUploading] = useState(false);
   const [isAddMaterialModalOpen, setIsAddMaterialModalOpen] = useState(false);
   const [expandedChapters, setExpandedChapters] = useState({});
+  const [renamingChapter, setRenamingChapter] = useState(null);
+  const [newChapterName, setNewChapterName] = useState('');
+  const [isRenaming, setIsRenaming] = useState(false);
   const [filterType, setFilterType] = useState('all'); // all | video | pdf | document | quiz
   const [hasSubmitAttempted, setHasSubmitAttempted] = useState(false);
 
@@ -1080,6 +1083,36 @@ export default function MaterialsDashboard() {
     );
   };
 
+  
+  const handleRenameChapter = async (oldName) => {
+    if (!newChapterName.trim()) return;
+    setIsRenaming(true);
+    try {
+      const list = groupedByChapter[oldName] || [];
+      const firstMat = list[0];
+      const subjectPart = extractSubjectName(firstMat?.chapter || '');
+      const newCompound = `${subjectPart} ÷ ${newChapterName.trim()}`;
+      
+      await Promise.all(list.map(m => api.updateMaterial(m.id, {
+        title: m.title,
+        description: m.description,
+        type: m.type,
+        url: m.url,
+        fileSize: m.fileSize,
+        lesson: m.lesson,
+        chapter: newCompound 
+      })));
+      
+      showToast('Đã đổi tên chương thành công!');
+      setRenamingChapter(null);
+      fetchMaterials();
+    } catch (e) {
+      showToast(e.message || 'Lỗi khi đổi tên chương', 'error');
+    } finally {
+      setIsRenaming(false);
+    }
+  };
+
   const toggleChapter = (chKey) => {
     setExpandedChapters(prev => ({
       ...prev,
@@ -1227,7 +1260,30 @@ export default function MaterialsDashboard() {
                         <div className={styles.chapterHeaderLeft}>
                           <span className={styles.chapterIndex}>{chIdx + 1}</span>
                           <BookOpen size={14} color="#059669" />
-                          <span className={styles.chapterTitle}>{chName}</span>
+                          {renamingChapter === chName ? (
+                            <div style={{ display: 'flex', alignItems: 'center', gap: 6 }} onClick={e => e.stopPropagation()}>
+                              <input 
+                                autoFocus
+                                value={newChapterName} 
+                                onChange={e => setNewChapterName(e.target.value)}
+                                style={{ padding: '4px 8px', borderRadius: 4, border: '1px solid #cbd5e1', outline: 'none', width: '200px' }}
+                                onKeyDown={e => { if (e.key === 'Enter') handleRenameChapter(chName); else if (e.key === 'Escape') setRenamingChapter(null); }}
+                              />
+                              <button onClick={() => handleRenameChapter(chName)} disabled={isRenaming} style={{ background: '#10b981', color: 'white', border: 'none', borderRadius: 4, padding: '4px 8px', cursor: 'pointer' }}><Check size={14} /></button>
+                              <button onClick={() => setRenamingChapter(null)} disabled={isRenaming} style={{ background: '#ef4444', color: 'white', border: 'none', borderRadius: 4, padding: '4px 8px', cursor: 'pointer' }}><X size={14} /></button>
+                            </div>
+                          ) : (
+                            <span className={styles.chapterTitle}>{chName}</span>
+                          )}
+                          {renamingChapter !== chName && (
+                            <button 
+                              onClick={(e) => { e.stopPropagation(); setRenamingChapter(chName); setNewChapterName(chName); }}
+                              style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#94a3b8', display: 'flex', alignItems: 'center', padding: 4 }}
+                              title="Đổi tên chương"
+                            >
+                              <Edit3 size={14} />
+                            </button>
+                          )}
                           <span className={styles.materialsCount}>{list.length} bài học</span>
                         </div>
                         <ChevronRight
@@ -1655,7 +1711,7 @@ export default function MaterialsDashboard() {
                       </span>
                       <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
                         {/* Zoom controls — only for image preview */}
-                        {editMaterialForm.fileName.match(/\.(jpeg|jpg|gif|png|webp)$/i) && (
+                        {editMaterialForm.type !== 'video' && editMaterialForm.inputType !== 'quiz' && (
                           <>
                             <button
                               type="button"
@@ -1675,7 +1731,24 @@ export default function MaterialsDashboard() {
                               style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: 28, height: 28, background: 'rgba(255,255,255,0.12)', border: '1px solid rgba(255,255,255,0.2)', borderRadius: 6, cursor: 'pointer', color: '#e2e8f0', flexShrink: 0 }}
                             >
                               <ZoomIn size={13} />
-                            </button>
+                              </button>
+                              <button
+                                type="button"
+                                title="Toàn màn hình"
+                                onClick={() => {
+                                  const el = document.getElementById('document-preview-container');
+                                  if (el) {
+                                    if (document.fullscreenElement) {
+                                      document.exitFullscreen();
+                                    } else {
+                                      el.requestFullscreen();
+                                    }
+                                  }
+                                }}
+                                style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: 28, height: 28, background: 'rgba(255,255,255,0.12)', border: '1px solid rgba(255,255,255,0.2)', borderRadius: 6, cursor: 'pointer', color: '#e2e8f0', flexShrink: 0, marginLeft: 4 }}
+                              >
+                                <Maximize size={13} />
+                              </button>
                             <span style={{ width: 1, height: 16, background: 'rgba(255,255,255,0.2)', margin: '0 4px' }} />
                           </>
                         )}
