@@ -1,7 +1,6 @@
-import React, { useState, useEffect, useRef, useMemo, useCallback } from "react";
+import React, { useState, useEffect, useRef, useMemo } from "react";
 import {
   Play,
-  Pause,
   FileText,
   BookOpen,
   Paperclip,
@@ -249,7 +248,7 @@ export default function LessonPlayer({
   const [homeworkCode, setHomeworkCode] = useState("");
   const [fadeKey, setFadeKey] = useState(0); // trigger fade-in on lecture change
 
-  // ── Sync on lecture change ──
+  // ── Sync on lecture change (unified) ──
   useEffect(() => {
     setHomeworkCode(lecture?.postClassHomework?.starterCode || "");
     setFadeKey((k) => k + 1);
@@ -272,82 +271,6 @@ export default function LessonPlayer({
     if (lecture.readings || (lecture.attachments?.length > 0)) tabs.push({ id: "overview", label: "📖 Tài liệu" });
     return tabs;
   }, [lecture]);
-
-  // ── Quiz logic ──
-  const [selectedAnswers, setSelectedAnswers] = useState({});
-  const [quizSubmitted, setQuizSubmitted] = useState(false);
-  const [quizResult, setQuizResult] = useState(null);
-
-  // Homework writing state
-  const [homeworkCode, setHomeworkCode] = useState("");
-
-
-
-  // Playback parameters
-  const [playbackSpeed, setPlaybackSpeed] = useState("1.0x");
-  const [isVideoPlaying, setIsVideoPlaying] = useState(false);
-  const videoRef = useRef(null);
-
-  // Sync state variables whenever parent changes lecture
-  useEffect(() => {
-    // Reset local states for new lecture
-    setNewNoteText("");
-    setSelectedAnswers({});
-    setQuizSubmitted(false);
-    setQuizResult(null);
-    setHomeworkCode(lecture?.postClassHomework?.starterCode || "");
-    setIsVideoPlaying(false);
-
-    // Switch active tab appropriately if lecture doesn't possess quiz or other elements
-    if (lecture?.type === "in_class") {
-      setActiveTab("in_class");
-    } else if (lecture?.type === "post_class") {
-      setActiveTab("homework");
-    } else if (lecture?.type === "quiz") {
-      setActiveTab("quiz");
-    } else {
-      setActiveTab("overview");
-    }
-  }, [lecture]);
-
-
-
-  const handleVideoPlayToggle = () => {
-    if (videoRef.current) {
-      if (isVideoPlaying) {
-        videoRef.current.pause();
-      } else {
-        videoRef.current.play();
-      }
-      setIsVideoPlaying(!isVideoPlaying);
-    }
-  };
-
-
-
-  // Handle quiz question option select
-  const handleSelectAnswer = (questionId, optionIndex) => {
-    if (quizSubmitted) return;
-    setSelectedAnswers((prev) => ({ ...prev, [questionId]: optionIndex }));
-  };
-
-  const handleQuizSubmit = () => {
-    if (!lecture?.quiz?.length) return;
-    let correct = 0;
-    lecture.quiz.forEach((q) => { if (selectedAnswers[q.id] === q.correctAnswer) correct++; });
-    const percent = Math.round((correct / lecture.quiz.length) * 100);
-    const passed = percent >= 50;
-    setQuizResult({ score: percent, passed });
-    setQuizSubmitted(true);
-    onSubmitQuizScore(percent);
-    if (passed) {
-      addPoints(100);
-      triggerNotification(`🎉 Hoàn thành! Tỉ lệ ${percent}%. +100 XP`, "success");
-      if (!completedLectures.includes(lecture.id)) onToggleComplete();
-    } else {
-      triggerNotification(`⚠️ Chỉ đạt ${percent}%. Hãy ôn lại và thử lại!`, "info");
-    }
-  };
 
   // ── Homework logic ──
   const handleHomeworkSubmit = () => {
@@ -431,71 +354,7 @@ export default function LessonPlayer({
         </div>
       )}
 
-      {/* Udemy-like Tabs Navigation links */}
-      {lecture.type !== 'quiz' && (
-      <div className="bg-slate-900 border-b border-slate-800 px-4 overflow-x-auto flex items-center whitespace-nowrap scrollbar-none">
-        {lecture.type === "quiz" && (
-            <button
-              onClick={() => setActiveTab("quiz")}
-              className={`pt-3.5 pb-2.5 px-4 font-bold text-xs transition border-b-2 flex items-center gap-1.5 cursor-pointer ${
-                activeTab === "quiz"
-                  ? "text-emerald-400 border-emerald-500"
-                  : "text-slate-400 hover:text-white border-transparent"
-              }`}
-            >
-              ❓ Trắc nghiệm nhanh
-            </button>
-        )}
-        
-        {(lecture.type === "pre_class" || lecture.type === "video" || lecture.type === "pdf") && (
-          <>
-            <button
-              onClick={() => setActiveTab("overview")}
-              className={`pt-3.5 pb-2.5 px-4 font-bold text-xs transition border-b-2 cursor-pointer ${
-                activeTab === "overview"
-                  ? "text-emerald-400 border-emerald-500"
-                  : "text-slate-400 hover:text-white border-transparent"
-              }`}
-            >
-              📖 Tài liệu tự học
-            </button>
-          </>
-        )}
 
-        {lecture.type === "in_class" && (
-          <button
-            onClick={() => setActiveTab("in_class")}
-            className={`pt-3.5 pb-2.5 px-4 font-bold text-xs transition border-b-2 flex items-center gap-1.5 cursor-pointer ${
-              activeTab === "in_class"
-                ? "text-emerald-400 border-emerald-500"
-                : "text-slate-400 hover:text-white border-transparent"
-            }`}
-          >
-            👥 Thảo luận & Thực hành trên lớp
-          </button>
-        )}
-
-        {lecture.type === "post_class" && (
-          <button
-            onClick={() => setActiveTab("homework")}
-            className={`pt-3.5 pb-2.5 px-4 font-bold text-xs transition border-b-2 flex items-center gap-1.5 cursor-pointer ${
-              activeTab === "homework"
-                ? "text-emerald-400 border-emerald-500"
-                : "text-slate-400 hover:text-white border-transparent"
-            }`}
-          >
-            📝 Thử thách sau lớp
-            {homeworkStatus[lecture.id] === "submitted" && (
-              <span className="text-[9px] bg-emerald-600 text-white rounded px-1.5 py-0.2 font-bold uppercase tracking-wider">
-                Đã nộp
-              </span>
-            )}
-          </button>
-        )}
-
-
-      </div>
-      )}
 
       {/* Tab navigation */}
       {availableTabs.length > 0 && (
@@ -639,10 +498,8 @@ export default function LessonPlayer({
                     ))}
                   </div>
                 </div>
-              </div>
+              )}
             </div>
-
-
           </div>
         )}
 

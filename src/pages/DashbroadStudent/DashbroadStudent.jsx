@@ -39,16 +39,6 @@ import StudentFeedback from './StudentFeedback';
 
 const INITIAL_PROGRESS = {
   completedLectures: ["l-1-1"],
-  notes: [
-    {
-      id: "note-init",
-      lectureId: "l-1-1",
-      sectionId: "section-1",
-      timestamp: "20/06/2026 - Lớp học đảo ngược",
-      content: "Nhớ đọc kỹ tài liệu trước khi tới lớp để sẵn sàng thảo luận nhóm và bứt phá điểm số phản biện!",
-      lectureTitle: "✨ [Trước lớp] Tìm hiểu mô hình Flipped Classroom & Cách tự học hiệu quả"
-    }
-  ],
   streak: 3,
   points: 150,
   badges: ["pre-class-champ"],
@@ -636,32 +626,7 @@ export default function DashbroadStudent() {
     }
   };
 
-  const handleAddNote = (content) => {
-    if (!activeLecture) return;
-    setProgress((prev) => {
-      const newNote = {
-        id: `note-${Date.now()}`,
-        lectureId: activeLecture.id,
-        sectionId: activeSectionId,
-        timestamp: new Date().toLocaleDateString("vi-VN") + " - Thời điểm: 03:14",
-        content,
-        lectureTitle: activeLecture.title
-      };
 
-      return {
-        ...prev,
-        notes: [newNote, ...prev.notes]
-      };
-    });
-  };
-
-  const handleDeleteNote = (noteId) => {
-    setProgress((prev) => ({
-      ...prev,
-      notes: prev.notes.filter((n) => n.id !== noteId)
-    }));
-    triggerNotification("🗒️ Đã xóa ghi chú cá nhân thành công.", "info");
-  };
 
   const handleSubmitQuizScore = (score) => {
     if (!activeLecture) return;
@@ -1252,11 +1217,8 @@ export default function DashbroadStudent() {
                         lecture={activeLecture}
                         sectionId={activeSectionId}
                         completedLectures={progress.completedLectures}
-                        notes={progress.notes}
                         quizScores={progress.quizScores}
                         homeworkStatus={progress.homeworkStatus}
-                        onAddNote={handleAddNote}
-                        onDeleteNote={handleDeleteNote}
                         onSubmitQuizScore={handleSubmitQuizScore}
                         onToggleComplete={handleToggleComplete}
                         onSubmitHomework={handleSubmitHomework}
