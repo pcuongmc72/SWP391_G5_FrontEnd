@@ -116,13 +116,7 @@ export default function FeedbackDashboard() {
   return (
     <div className="relative pb-12 h-full">
 
-      {/* ── Toast ─────────────────────────── */}
-      {toast && (
-        <div className={`fixed top-5 right-5 z-50 flex items-center gap-2 px-4 py-3 rounded-xl shadow-lg text-sm font-bold transition-all
-          ${toast.type === 'error' ? 'bg-red-50 text-red-700 border border-red-200' : 'bg-emerald-50 text-emerald-700 border border-emerald-200'}`}>
-          <Check size={15} /> {toast.msg}
-        </div>
-      )}
+
 
       {/* ── Page header ───────────────────── */}
       <div className="mb-4">
@@ -325,6 +319,13 @@ export default function FeedbackDashboard() {
           )}
         </div>
       </div>
+      {/* TOAST NOTIFICATION */}
+      {toast && (
+        <div style={{ zIndex: 9999 }} className={`fixed bottom-5 right-5 flex items-center gap-2 px-5 py-3 rounded-xl shadow-xl transition-all border ${toast.type === 'error' ? 'bg-rose-50 border-rose-200 text-rose-800' : 'bg-emerald-50 border-emerald-200 text-emerald-800'}`}>
+          {toast.type === 'error' ? <X size={18} className="text-rose-600" /> : <Check size={18} className="text-emerald-600" />}
+          <span className="text-sm font-semibold">{toast.msg || toast.message}</span>
+        </div>
+      )}
     </div>
   );
 }

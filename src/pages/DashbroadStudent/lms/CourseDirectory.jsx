@@ -76,7 +76,7 @@ export default function CourseDirectory({
 
         <div style={{ position: "relative", zIndex: 1 }}>
           <h2 style={{ fontSize: "22px", fontWeight: 800, color: "#ffffff", margin: "0 0 12px", lineHeight: 1.2 }}>
-            Welcome back, {studentName} 👋
+            Welcome back, {studentName}
           </h2>
           <p style={{ fontSize: "11px", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.12em", color: "rgba(255,255,255,0.75)", marginBottom: "4px", margin: "0 0 4px" }}>
             Ready to continue your learning today?
@@ -240,7 +240,6 @@ export default function CourseDirectory({
           alignItems: "center",
           gap: "12px",
         }}>
-          <div style={{ fontSize: "48px", lineHeight: 1, opacity: 0.6 }}>🎒</div>
           <p style={{ fontSize: "16px", fontWeight: 700, color: "#374151", margin: 0 }}>
             Không tìm thấy lớp học nào
           </p>

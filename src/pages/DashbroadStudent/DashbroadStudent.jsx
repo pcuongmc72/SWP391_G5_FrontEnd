@@ -332,7 +332,7 @@ export default function DashbroadStudent() {
   const [blogForDetail, setBlogForDetail] = useState(null);
 
   const [sidebarOpen, setSidebarOpen] = useState(false);
-  const [rightTab, setRightTab] = useState("qa");
+  const [rightTab, setRightTab] = useState("syllabus");
 
   // Study progress state
   const [progress, setProgress] = useState(() => {
@@ -742,11 +742,7 @@ export default function DashbroadStudent() {
         {/* ── Right workspace core content frame ── */}
         <main style={{ flex: 1, overflowY: 'auto', background: '#F7F9FC', display: 'flex', flexDirection: 'column', gap: '0' }}>
 
-          {error && (
-            <div className="bg-red-50 border border-red-200 text-red-700 text-xs rounded-xl p-4 text-left">
-              <strong>Lỗi tải dữ liệu:</strong> {error}
-            </div>
-          )}
+
 
           {location.pathname === "/dashboard/student/blog" ? (
             <div className="animate-fade-in">
@@ -1202,17 +1198,17 @@ export default function DashbroadStudent() {
                   <div className="flex flex-col gap-4 lg:h-[calc(100vh-140px)]">
                     {/* Tabs */}
                   <div className="flex bg-white border border-gray-200 rounded-xl p-1 shadow-sm shrink-0">
-                      <button
-                        onClick={() => setRightTab("qa")}
-                        className={`flex-1 py-2 text-sm font-bold rounded-lg transition-colors cursor-pointer ${rightTab === "qa" ? "bg-emerald-50 text-emerald-700" : "text-gray-500 hover:bg-gray-50"}`}
-                      >
-                        💬 Thảo luận
-                      </button>
                     <button
                       onClick={() => setRightTab("syllabus")}
                       className={`flex-1 py-2 text-sm font-bold rounded-lg transition-colors cursor-pointer ${rightTab === "syllabus" || activeLecture?.type === "quiz" ? "bg-emerald-50 text-emerald-700" : "text-gray-500 hover:bg-gray-50"}`}
                     >
-                      📑 Nội dung bài học
+                      Nội dung bài học
+                    </button>
+                    <button
+                      onClick={() => setRightTab("qa")}
+                      className={`flex-1 py-2 text-sm font-bold rounded-lg transition-colors cursor-pointer ${rightTab === "qa" ? "bg-emerald-50 text-emerald-700" : "text-gray-500 hover:bg-gray-50"}`}
+                    >
+                      💬 Thảo luận
                     </button>
                   </div>
 

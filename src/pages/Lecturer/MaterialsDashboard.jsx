@@ -1266,8 +1266,16 @@ export default function MaterialsDashboard() {
               className={styles.btnEmerald}
               style={{ width: 'auto', padding: '8px 16px', display: 'flex', alignItems: 'center', gap: 6, margin: 0 }}
               onClick={() => {
+                if (!selectedClassId || selectedClassId === 'all') {
+                  showToast('Vui lòng chọn một lớp học cụ thể trước khi đăng tải học liệu!', 'error');
+                  return;
+                }
                 const activeClass = classrooms?.find(c => c.id === selectedClassId);
                 const activeClassName = activeClass ? (activeClass.courseCode || activeClass.id) : '';
+                if (!activeClassName || activeClassName.trim() === '') {
+                  showToast('Lớp học này chưa được gán môn học xác định. Vui lòng kiểm tra lại!', 'error');
+                  return;
+                }
                 setNewMaterialForm(prev => ({ ...prev, subject: activeClassName }));
                 setIsAddMaterialModalOpen(true);
               }}
@@ -2285,6 +2293,14 @@ export default function MaterialsDashboard() {
               </button>
             </div>
           </div>
+        </div>
+      )}
+
+      {/* TOAST NOTIFICATION */}
+      {toast && (
+        <div style={{ zIndex: 9999 }} className={`fixed bottom-5 right-5 flex items-center gap-2 px-5 py-3 rounded-xl shadow-xl transition-all border ${toast.type === 'error' ? 'bg-rose-50 border-rose-200 text-rose-800' : 'bg-emerald-50 border-emerald-200 text-emerald-800'}`}>
+          {toast.type === 'error' ? <X size={18} className="text-rose-600" /> : <Check size={18} className="text-emerald-600" />}
+          <span className="text-sm font-semibold">{toast.message}</span>
         </div>
       )}
     </div>
