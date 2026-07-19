@@ -9,11 +9,11 @@ export default function AssignmentsDashboard() {
   } = useLecturerWorkspace();
 
   const [toast, setToast] = useState(null);
-  
+
   // Workspace State
   const [workspaceMode, setWorkspaceMode] = useState('idle'); // 'idle' | 'view' | 'create' | 'edit'
   const [activeAssignmentId, setActiveAssignmentId] = useState(null);
-  
+
   const [newAsgForm, setNewAsgForm] = useState({
     title: '',
     description: '',
@@ -27,7 +27,7 @@ export default function AssignmentsDashboard() {
     inputType: 'file', // 'file' | 'link'
     linkUrl: '',
   });
-  
+
   const [isAsgUploading, setIsAsgUploading] = useState(false);
   const [isAsgDragging, setIsAsgDragging] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -208,7 +208,7 @@ export default function AssignmentsDashboard() {
 
   const handleSaveAssignment = async (e) => {
     e.preventDefault();
-    
+
     // VALIDATIONS
     if (!newAsgForm.title?.trim()) {
       showToast('Vui lòng nhập tiêu đề bài tập.', 'error');
@@ -281,16 +281,16 @@ export default function AssignmentsDashboard() {
     setIsAsgUploading(true);
     try {
       const result = await api.uploadFile(file);
-      setNewAsgForm(prev => ({ 
-        ...prev, 
-        attachmentUrl: result.url, 
-        attachmentName: file.name, 
-        attachmentSize: `${(result.size / (1024*1024)).toFixed(1)} MB` 
+      setNewAsgForm(prev => ({
+        ...prev,
+        attachmentUrl: result.url,
+        attachmentName: file.name,
+        attachmentSize: `${(result.size / (1024 * 1024)).toFixed(1)} MB`
       }));
       showToast('Đã tải tệp lên thành công!');
-    } catch { 
-      showToast('Tải tệp thất bại.', 'error'); 
-    } finally { 
+    } catch {
+      showToast('Tải tệp thất bại.', 'error');
+    } finally {
       setIsAsgUploading(false);
       if (e.target.value) e.target.value = '';
     }
@@ -321,7 +321,7 @@ export default function AssignmentsDashboard() {
     const ytMatch = url.match(/(?:youtu\.be\/|v\/|embed\/|watch\?v=|&v=)([^#&?]{11})/);
     const isCloudinary = url.includes('cloudinary.com');
     const isDocType = /\.(pptx?|docx?|xlsx?)($|\?)/i.test(url);
-    
+
     let src = url;
     if (isCloudinary && !isDocType && !isImage && !isVideo && !isZip) {
       src = url.replace('/upload/', '/upload/fl_attachment:false/').split('?')[0] + '.pdf';
@@ -341,14 +341,14 @@ export default function AssignmentsDashboard() {
       <div className="flex-1 bg-[#0f172a] flex flex-col min-w-[340px] overflow-hidden border-b lg:border-b-0 lg:border-r border-gray-200">
         <div className="flex items-center justify-between px-4 py-2 bg-black/60 backdrop-blur-sm z-10 shrink-0">
           <span className="text-xs font-bold text-gray-300 flex items-center gap-2 truncate pr-4">
-            <FileText size={14} /> 
+            <FileText size={14} />
             <span className="truncate">{attachmentName || 'Tài liệu đính kèm'}</span>
           </span>
           <a href={attachmentUrl} target="_blank" rel="noopener noreferrer" className="text-[11px] bg-white/10 hover:bg-white/20 text-white px-3 py-1.5 rounded-full text-decoration-none flex items-center gap-1.5 transition whitespace-nowrap shrink-0 font-medium">
             <ExternalLink size={12} /> Mở tab mới / Tải
           </a>
         </div>
-        
+
         <div className="flex-1 flex items-center justify-center overflow-auto relative">
           {p.ytId ? (
             <iframe width="100%" height="100%" src={`https://www.youtube.com/embed/${p.ytId}`} title="YouTube" className="border-none" allowFullScreen />
@@ -396,10 +396,10 @@ export default function AssignmentsDashboard() {
 
       {/* ── 2-COLUMN LAYOUT ───────────────────────── */}
       <div className="flex gap-4" style={{ height: 'calc(100vh - 160px)', minHeight: 500 }}>
-        
+
         {/* LEFT COLUMN: LIST */}
         <div className="w-[320px] lg:w-[380px] xl:w-[420px] bg-white rounded-2xl border border-gray-200 shadow-sm flex flex-col overflow-hidden shrink-0">
-          
+
           <div className="p-4 border-b border-gray-100 flex flex-col gap-3 shrink-0">
             <button
               onClick={handleOpenCreate}
@@ -407,12 +407,12 @@ export default function AssignmentsDashboard() {
             >
               <Plus size={16} /> Soạn bài tập mới
             </button>
-            
+
             <div className="flex bg-gray-100 p-1 rounded-xl gap-1">
               {[
-                { key: 'all',      label: 'Tất cả' },
-                { key: 'active',   label: 'Đang mở' },
-                { key: 'overdue',  label: 'Quá hạn' },
+                { key: 'all', label: 'Tất cả' },
+                { key: 'active', label: 'Đang mở' },
+                { key: 'overdue', label: 'Quá hạn' },
               ].map(tab => (
                 <button
                   key={tab.key}
@@ -424,7 +424,7 @@ export default function AssignmentsDashboard() {
                 </button>
               ))}
             </div>
-            
+
             <div className="relative w-full">
               <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
               <input
@@ -446,7 +446,7 @@ export default function AssignmentsDashboard() {
               const meta = parseAssignmentDesc(asg.description);
               const timeInfo = calculateTimeRemaining(asg.dueDate);
               const isActive = activeAssignmentId === asg.id;
-              
+
               return (
                 <div
                   key={asg.id}
@@ -454,15 +454,15 @@ export default function AssignmentsDashboard() {
                   className={`p-3.5 rounded-xl cursor-pointer border transition-all ${isActive ? 'bg-emerald-50 border-emerald-300 shadow-sm' : 'bg-white border-gray-100 hover:border-emerald-200 hover:shadow-sm'}`}
                 >
                   <h4 className={`text-sm font-bold truncate mb-1.5 ${isActive ? 'text-emerald-900' : 'text-gray-800'}`}>{asg.title}</h4>
-                  
+
                   {meta.linkedTitle && (
                     <div className="inline-flex items-center gap-1 text-[10px] font-bold bg-blue-50 text-blue-700 px-2 py-0.5 rounded-md mb-2 border border-blue-100">
-                      <BookOpen size={10} /> {meta.linkedTitle.length > 35 ? meta.linkedTitle.substring(0,35)+'...' : meta.linkedTitle}
+                      <BookOpen size={10} /> {meta.linkedTitle.length > 35 ? meta.linkedTitle.substring(0, 35) + '...' : meta.linkedTitle}
                     </div>
                   )}
 
                   <p className="text-[12px] text-gray-500 line-clamp-2 leading-relaxed mb-3">{meta.desc || 'Không có mô tả.'}</p>
-                  
+
                   <div className="flex items-center justify-between mt-auto">
                     <span className="text-[10px] font-extrabold text-emerald-600 bg-emerald-100/50 px-2 py-0.5 rounded-full uppercase">
                       Max: {asg.maxPoints}đ
@@ -479,7 +479,7 @@ export default function AssignmentsDashboard() {
 
         {/* RIGHT COLUMN: WORKSPACE */}
         <div className="flex-1 bg-white rounded-2xl border border-gray-200 shadow-sm flex flex-col overflow-hidden relative">
-          
+
           {workspaceMode === 'idle' ? (
             <div className="flex-1 flex flex-col items-center justify-center text-gray-400 bg-gray-50/50">
               <div className="w-24 h-24 bg-white rounded-full flex items-center justify-center shadow-sm border border-gray-100 mb-5">
@@ -507,7 +507,7 @@ export default function AssignmentsDashboard() {
 
               <div className="flex flex-col lg:flex-row flex-1 overflow-hidden">
                 {activeAsgDetails.meta.attachmentUrl && renderPreviewBox(activeAsgDetails.meta.attachmentUrl, activeAsgDetails.meta.attachmentName)}
-                
+
                 <div className="flex-1 overflow-y-auto p-6 bg-gray-50/30">
                   <div className="max-w-3xl space-y-6">
                     <div>
@@ -525,7 +525,7 @@ export default function AssignmentsDashboard() {
                           </span>
                         )}
                       </div>
-                      
+
                       <div className="bg-white p-5 rounded-2xl border border-gray-100 shadow-sm text-[15px] text-gray-800 leading-relaxed whitespace-pre-wrap">
                         {activeAsgDetails.meta.desc || 'Không có mô tả chi tiết.'}
                       </div>
@@ -579,10 +579,10 @@ export default function AssignmentsDashboard() {
 
               <form onSubmit={handleSaveAssignment} className="flex flex-col lg:flex-row flex-1 overflow-hidden">
                 {newAsgForm.attachmentUrl && renderPreviewBox(newAsgForm.attachmentUrl, newAsgForm.attachmentName)}
-                
+
                 <div className="flex-1 overflow-y-auto bg-white flex flex-col">
                   <div className="p-6 space-y-6 max-w-3xl mx-auto w-full flex-1">
-                    
+
                     <div className="space-y-1.5">
                       <label className="text-xs font-bold text-gray-700">Tiêu đề bài tập <span className="text-red-500">*</span></label>
                       <input
@@ -621,7 +621,7 @@ export default function AssignmentsDashboard() {
                           <input type="radio" name="inputType" value="link" checked={newAsgForm.inputType === 'link'} onChange={() => setNewAsgForm({ ...newAsgForm, inputType: 'link', attachmentUrl: '', attachmentName: '', attachmentSize: '' })} className="accent-emerald-600" /> Gắn link liên kết
                         </label>
                       </div>
-                      
+
                       {newAsgForm.inputType === 'link' ? (
                         <input
                           className="w-full p-3 text-sm rounded-xl border border-gray-300 focus:outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-200 transition"

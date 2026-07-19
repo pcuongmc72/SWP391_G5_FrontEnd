@@ -1,5 +1,5 @@
 import { useMemo, useState, useEffect, useCallback } from 'react';
-import { Check, X, CheckSquare, FileText, Pencil, Loader2, Search, BookOpen, CheckCircle2 } from 'lucide-react';
+import { Check, X, CheckSquare, FileText, Pencil, Loader2, Search, BookOpen, CheckCircle2, PanelLeftClose, PanelLeftOpen } from 'lucide-react';
 import { useLecturerWorkspace } from '../../context/LecturerWorkspaceContext';
 
 const truncateText = (text, maxLength = 60) => {
@@ -34,6 +34,7 @@ export default function GradingDashboard() {
   // Selection state
   const [activeAsgId, setActiveAsgId] = useState('');
   const [gradingSubmissionId, setGradingSubmissionId] = useState(null);
+  const [isSidebarOpen, setIsSidebarOpen] = useState(true);
   
   // Filter state
   const [materialFilter, setMaterialFilter] = useState('all');
@@ -329,7 +330,8 @@ export default function GradingDashboard() {
       <div className="flex gap-4" style={{ height: 'calc(100vh - 160px)', minHeight: 500 }}>
         
         {/* LEFT COLUMN: LIST OF SUBMISSIONS */}
-        <div className="w-[300px] lg:w-[340px] xl:w-[380px] bg-white rounded-2xl border border-gray-200 shadow-sm flex flex-col overflow-hidden shrink-0">
+        {isSidebarOpen && (
+          <div className="w-[300px] lg:w-[340px] xl:w-[380px] bg-white rounded-2xl border border-gray-200 shadow-sm flex flex-col overflow-hidden shrink-0">
           
           <div className="p-3 border-b border-gray-100 bg-gray-50 shrink-0 flex flex-col gap-2">
             <div className="flex items-center justify-between mb-1">
@@ -430,6 +432,7 @@ export default function GradingDashboard() {
             })}
           </div>
         </div>
+        )}
 
         {/* RIGHT COLUMN: PREVIEW & GRADING FORM */}
         <div className="flex-1 bg-white rounded-2xl border border-gray-200 shadow-sm flex flex-col overflow-hidden relative">
@@ -439,12 +442,21 @@ export default function GradingDashboard() {
               {/* Left inner: File Preview */}
               <div className="flex-[1.4] bg-[#0f172a] flex flex-col min-w-[340px] overflow-hidden border-b lg:border-b-0 lg:border-r border-gray-200">
                 <div className="flex items-center justify-between px-4 py-2 bg-black/60 backdrop-blur-sm z-10 shrink-0">
-                  <span className="text-xs font-bold text-gray-300 flex items-center gap-2 truncate pr-4">
-                    <FileText size={14} /> 
-                    {gradingSubmission.fileName ? (
-                      <span className="truncate">{gradingSubmission.fileName.startsWith('http') ? 'Tài liệu học viên nộp' : gradingSubmission.fileName}</span>
-                    ) : 'Không có tệp đính kèm'}
-                  </span>
+                  <div className="flex items-center gap-3 pr-4 overflow-hidden">
+                    <button 
+                      onClick={() => setIsSidebarOpen(!isSidebarOpen)}
+                      className="p-1 hover:bg-white/20 rounded-md text-gray-300 hover:text-white transition-colors shrink-0"
+                      title={isSidebarOpen ? "Thu gọn danh sách" : "Mở rộng danh sách"}
+                    >
+                      {isSidebarOpen ? <PanelLeftClose size={18} /> : <PanelLeftOpen size={18} />}
+                    </button>
+                    <span className="text-xs font-bold text-gray-300 flex items-center gap-2 truncate">
+                      <FileText size={14} className="shrink-0" /> 
+                      {gradingSubmission.fileName ? (
+                        <span className="truncate">{gradingSubmission.fileName.startsWith('http') ? 'Tài liệu học viên nộp' : gradingSubmission.fileName}</span>
+                      ) : 'Không có tệp đính kèm'}
+                    </span>
+                  </div>
                   {fileUrl && (
                     <a href={fileUrl} target="_blank" rel="noopener noreferrer" className="text-[11px] bg-white/10 hover:bg-white/20 text-white px-3 py-1.5 rounded-full text-decoration-none flex items-center gap-1.5 transition whitespace-nowrap shrink-0 font-medium">
                       Mở tab mới / Tải
