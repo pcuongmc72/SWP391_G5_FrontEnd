@@ -44,6 +44,9 @@ export default function GradingDashboard() {
   const [gradeInput, setGradeInput] = useState('');
   const [gradeFeedback, setGradeFeedback] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [textContent, setTextContent] = useState('');
+  const [textLoading, setTextLoading] = useState(false);
+  const [textError, setTextError] = useState(false);
 
   const showToast = (message, type = 'success') => {
     setToast({ message, type });
@@ -250,6 +253,52 @@ export default function GradingDashboard() {
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [currentSubmissions, gradingSubmissionId]);
 
+  // Preview logic for current grading submission
+  const fileUrl = gradingSubmission?.fileName?.startsWith('http') ? gradingSubmission.fileName : null;
+  const isImage = fileUrl && /\.(jpeg|jpg|gif|png|webp)($|\?)/i.test(fileUrl);
+  const isVideo = fileUrl && /\.(mp4|webm|ogg)($|\?)/i.test(fileUrl);
+  const isZip = fileUrl && /\.(zip|rar|7z|gz|tar)($|\?)/i.test(fileUrl);
+  const isTextFile = fileUrl && /\.(txt|sql|html|css|js|json|xml|java|cs|py|cpp|c|sh)($|\?)/i.test(fileUrl);
+  const ytMatch = fileUrl && fileUrl.match(/(?:youtu\.be\/|v\/|embed\/|watch\?v=|&v=)([^#&?]{11})/);
+  const ytId = ytMatch ? ytMatch[1] : null;
+  const isCloudinary = fileUrl && fileUrl.includes('cloudinary.com');
+  const isDocType = fileUrl && /\.(pptx?|docx?|xlsx?)($|\?)/i.test(fileUrl);
+  const isPdf = fileUrl && /\.pdf($|\?)/i.test(fileUrl);
+
+  const previewSrc = fileUrl
+    ? (isDocType
+      ? `https://docs.google.com/gview?url=${encodeURIComponent(fileUrl)}&embedded=true`
+      : (isPdf && isCloudinary)
+        ? fileUrl.replace('/upload/', '/upload/fl_attachment:false/')
+        : fileUrl)
+    : null;
+
+  useEffect(() => {
+    if (fileUrl && isTextFile) {
+      setTextLoading(true);
+      setTextError(false);
+      setTextContent('');
+      fetch(fileUrl)
+        .then(res => {
+          if (!res.ok) throw new Error('Fetch failed');
+          return res.text();
+        })
+        .then(text => {
+          setTextContent(text);
+          setTextLoading(false);
+        })
+        .catch(err => {
+          console.error('Error fetching file content:', err);
+          setTextError(true);
+          setTextLoading(false);
+        });
+    } else {
+      setTextContent('');
+      setTextLoading(false);
+      setTextError(false);
+    }
+  }, [fileUrl, isTextFile]);
+
   if (classesLoading || workspaceLoading) {
     return (
       <div className="flex flex-col items-center justify-center py-24 gap-3">
@@ -258,23 +307,6 @@ export default function GradingDashboard() {
       </div>
     );
   }
-
-  // Preview logic for current grading submission
-  const fileUrl = gradingSubmission?.fileName?.startsWith('http') ? gradingSubmission.fileName : null;
-  const isImage = fileUrl && /\.(jpeg|jpg|gif|png|webp)($|\?)/i.test(fileUrl);
-  const isVideo = fileUrl && /\.(mp4|webm|ogg)($|\?)/i.test(fileUrl);
-  const isZip = fileUrl && /\.(zip|rar|7z|gz|tar)($|\?)/i.test(fileUrl);
-  const ytMatch = fileUrl && fileUrl.match(/(?:youtu\.be\/|v\/|embed\/|watch\?v=|&v=)([^#&?]{11})/);
-  const ytId = ytMatch ? ytMatch[1] : null;
-  const isCloudinary = fileUrl && fileUrl.includes('cloudinary.com');
-  const isDocType = fileUrl && /\.(pptx?|docx?|xlsx?)($|\?)/i.test(fileUrl);
-  const previewSrc = fileUrl
-    ? (isCloudinary && !isDocType && !isImage && !isVideo && !isZip
-      ? fileUrl.replace('/upload/', '/upload/fl_attachment:false/').split('?')[0] + '.pdf'
-      : isDocType
-        ? `https://docs.google.com/gview?url=${encodeURIComponent(fileUrl)}&embedded=true`
-        : fileUrl)
-    : null;
 
   return (
     <div className="relative pb-12 h-full">
@@ -518,6 +550,35 @@ export default function GradingDashboard() {
                         <p className="text-xs text-gray-500 mt-2 bg-gray-800 p-2 rounded-lg">{gradingSubmission.fileName}</p>
                       )}
                     </div>
+                  ) : isTextFile ? (
+                    textLoading ? (
+                      <div className="text-center p-8">
+                        <Loader2 className="animate-spin text-emerald-500 mx-auto mb-3" size={32} />
+                        <p className="text-sm font-bold text-gray-400">Đang tải nội dung tệp tin...</p>
+                      </div>
+                    ) : textError ? (
+                      <div className="text-center p-8">
+                        <XCircle size={48} className="mx-auto text-rose-500 mb-3 animate-pulse" />
+                        <p className="text-sm font-bold text-gray-300">Không thể hiển thị nội dung.</p>
+                        <p className="text-xs text-gray-500 mt-1 mb-4">Có lỗi xảy ra khi tải nội dung tệp tin từ máy chủ.</p>
+                        <a href={fileUrl} target="_blank" rel="noopener noreferrer" className="inline-flex bg-emerald-600 hover:bg-emerald-500 text-white font-bold py-2 px-6 rounded-xl transition text-xs">
+                          Tải xuống tệp tin
+                        </a>
+                      </div>
+                    ) : (
+                      <div className="w-full h-full overflow-auto bg-[#1e1e1e] p-5 text-gray-300 font-mono text-xs leading-relaxed select-text flex">
+                        {/* Line Numbers Column */}
+                        <div className="text-gray-600 text-right pr-4 border-r border-gray-800 select-none mr-4 shrink-0">
+                          {textContent.split('\n').map((_, idx) => (
+                            <div key={idx}>{idx + 1}</div>
+                          ))}
+                        </div>
+                        {/* Code Content Column */}
+                        <pre className="whitespace-pre overflow-x-auto w-full text-left scrollbar-thin">
+                          <code>{textContent}</code>
+                        </pre>
+                      </div>
+                    )
                   ) : ytId ? (
                     <iframe width="100%" height="100%" src={`https://www.youtube.com/embed/${ytId}`} title="YouTube" className="border-none" allowFullScreen />
                   ) : isVideo ? (
