@@ -489,11 +489,21 @@ export default function GradingDashboard() {
                       ) : 'Không có tệp đính kèm'}
                     </span>
                   </div>
-                  {fileUrl && (
-                    <a href={fileUrl} target="_blank" rel="noopener noreferrer" className="text-[11px] bg-white/10 hover:bg-white/20 text-white px-3 py-1.5 rounded-full text-decoration-none flex items-center gap-1.5 transition whitespace-nowrap shrink-0 font-medium">
-                      Mở tab mới / Tải
-                    </a>
-                  )}
+                  <div className="flex items-center gap-2 shrink-0">
+                    {fileUrl && (
+                      <a href={fileUrl} target="_blank" rel="noopener noreferrer" className="text-[11px] bg-white/10 hover:bg-white/20 text-white px-3 py-1.5 rounded-full text-decoration-none flex items-center gap-1.5 transition whitespace-nowrap shrink-0 font-medium">
+                        Mở tab mới / Tải
+                      </a>
+                    )}
+                    <button
+                      type="button"
+                      onClick={() => setGradingSubmissionId(null)}
+                      className="p-1.5 hover:bg-white/20 rounded-md text-gray-300 hover:text-white transition-colors shrink-0 flex items-center justify-center"
+                      title="Thoát chấm điểm"
+                    >
+                      <X size={16} />
+                    </button>
+                  </div>
                 </div>
                 
                 <div className="flex-1 flex items-center justify-center overflow-auto relative">
