@@ -553,28 +553,32 @@ export default function GradingDashboard() {
                 
                 <form onSubmit={handleSubmitGrade} className="flex flex-col h-full min-h-min p-5 lg:p-6 gap-6 relative z-10">
                   
-                  <div className="bg-white/60 backdrop-blur-md p-4 rounded-2xl border border-gray-100 shadow-[0_2px_10px_-4px_rgba(0,0,0,0.05)] relative">
-                    <p className="text-xs text-gray-500 mb-1">Đang chấm bài của:</p>
-                    <div className="flex flex-col pr-8">
-                      <span className="text-base font-black text-transparent bg-clip-text bg-gradient-to-r from-gray-900 to-gray-600">
-                        {gradingSubmission.studentName}
-                      </span>
-                      <span className="text-xs text-gray-400 font-bold mt-0.5">
-                        MSSV: {gradingSubmission.studentId}
-                      </span>
-                    </div>
+                  <div className="bg-white/60 backdrop-blur-md p-4 rounded-2xl border border-gray-100 shadow-[0_2px_10px_-4px_rgba(0,0,0,0.05)] flex flex-col gap-3">
+                    <div className="flex items-start justify-between gap-4">
+                      <div className="flex-1 min-w-0">
+                        <p className="text-xs text-gray-500 mb-1">Đang chấm bài của:</p>
+                        <div className="flex flex-col">
+                          <span className="text-base font-black text-transparent bg-clip-text bg-gradient-to-r from-gray-900 to-gray-600 truncate">
+                            {gradingSubmission.studentName}
+                          </span>
+                          <span className="text-xs text-gray-400 font-bold mt-0.5">
+                            MSSV: {gradingSubmission.studentId}
+                          </span>
+                        </div>
+                      </div>
 
-                    <button
-                      type="button"
-                      onClick={() => setGradingSubmissionId(null)}
-                      className="absolute top-3.5 right-3.5 p-1.5 hover:bg-gray-100/80 rounded-lg text-gray-400 hover:text-gray-600 transition-colors shrink-0 flex items-center justify-center border border-gray-100 bg-white shadow-sm"
-                      title="Thoát chấm điểm"
-                    >
-                      <X size={14} />
-                    </button>
+                      <button
+                        type="button"
+                        onClick={() => setGradingSubmissionId(null)}
+                        className="p-1.5 hover:bg-gray-100/80 rounded-lg text-gray-400 hover:text-gray-600 transition-colors shrink-0 flex items-center justify-center border border-gray-100 bg-white shadow-sm mt-1"
+                        title="Thoát chấm điểm"
+                      >
+                        <X size={14} />
+                      </button>
+                    </div>
                     
                     {gradingSubmission.studentNotes && (
-                      <div className="mt-3 pt-3 border-t border-gray-100/80">
+                      <div className="mt-1 pt-3 border-t border-gray-100/80">
                         <p className="text-[10px] uppercase font-bold tracking-wider text-gray-400 mb-1.5">Ghi chú của học viên:</p>
                         <p className="text-xs text-gray-600 italic border-l-[3px] border-emerald-300 pl-3 py-0.5 bg-emerald-50/30 rounded-r-lg">
                           "{gradingSubmission.studentNotes}"
