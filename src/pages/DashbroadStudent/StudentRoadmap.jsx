@@ -2,7 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import {
     BookOpen, User, Calendar, Loader2, FileText,
     Play, FileQuestion, File, CheckCircle, Circle,
-    Search, ExternalLink, Award, ArrowLeft, Map, ChevronRight, ChevronDown
+    Search, ExternalLink, Award, ArrowLeft, Map, ChevronRight, ChevronDown, Download
 } from 'lucide-react';
 import {
     getAcademicTerms,
@@ -323,9 +323,22 @@ function getCloudinaryPdfUrl(rawUrl) {
     return base.replace('/upload/', '/upload/fl_attachment:false/') + '.pdf';
 }
 
+function getCleanFileUrl(rawUrl) {
+    if (!rawUrl) return '';
+    return rawUrl.startsWith('#file:') ? rawUrl.substring(6) : rawUrl;
+}
+
+function getCloudinaryDownloadUrl(url) {
+    if (!url || !url.includes('cloudinary.com')) return url;
+    if (url.includes('/upload/') && !url.includes('fl_attachment')) {
+        return url.replace('/upload/', '/upload/fl_attachment/');
+    }
+    return url;
+}
+
 function StudentMaterialPreview({ material, onBack, onToggleComplete, togglingId }) {
     const [iframeError, setIframeError] = useState(false);
-    const url = material.fileUrl;
+    const url = getCleanFileUrl(material.fileUrl);
     const isCompleted = material.isCompleted;
     const isToggling = togglingId === material.id;
 
@@ -508,7 +521,7 @@ function StudentMaterialPreview({ material, onBack, onToggleComplete, togglingId
                         </p>
                         {url && url !== '#' ? (
                             <a
-                                href={url}
+                                href={getCloudinaryDownloadUrl(url)}
                                 target="_blank"
                                 rel="noopener noreferrer"
                                 download
@@ -542,7 +555,7 @@ function StudentMaterialPreview({ material, onBack, onToggleComplete, togglingId
     );
 }
 
-function RoadmapScreen({ cls, onBack, onSelectMaterial }) {
+function RoadmapScreen({ cls, onBack, onSelectMaterial, refreshKey, onProgressChange }) {
     const [chapters, setChapters] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState('');
@@ -568,7 +581,7 @@ function RoadmapScreen({ cls, onBack, onSelectMaterial }) {
             }
         };
         fetchRoadmap();
-    }, [cls.id]);
+    }, [cls.id, refreshKey]);
 
     /** Đánh dấu / bỏ hoàn thành học liệu. */
     const handleToggleComplete = useCallback(async (material) => {
@@ -591,6 +604,7 @@ function RoadmapScreen({ cls, onBack, onSelectMaterial }) {
             } else {
                 await completeMaterial(material.id);
             }
+            if (onProgressChange) onProgressChange();
         } catch {
             // Revert nếu lỗi
             setChapters(prev => prev.map(ch => ({
@@ -601,7 +615,7 @@ function RoadmapScreen({ cls, onBack, onSelectMaterial }) {
         } finally {
             setTogglingId(null);
         }
-    }, [togglingId]);
+    }, [togglingId, onProgressChange]);
 
     // Lấy danh sách học liệu phẳng phục vụ tính toán phần trăm hoàn thành
     // Chỉ tính các học liệu thuộc chương hiển thị (bỏ nhóm "Chung" vì sinh viên
@@ -944,7 +958,7 @@ function RoadmapScreen({ cls, onBack, onSelectMaterial }) {
                                                                                 <ExternalLink size={12} /> Vào học
                                                                             </button>
                                                                             <a
-                                                                                href={material.fileUrl}
+                                                                                href={getCloudinaryDownloadUrl(getCleanFileUrl(material.fileUrl))}
                                                                                 download
                                                                                 target="_blank"
                                                                                 rel="noopener noreferrer"
@@ -957,7 +971,7 @@ function RoadmapScreen({ cls, onBack, onSelectMaterial }) {
                                                                                 onMouseEnter={e => e.currentTarget.style.background = '#d1e7dd'}
                                                                                 onMouseLeave={e => e.currentTarget.style.background = '#e6f4ea'}
                                                                             >
-                                                                                <Play size={12} /> Tải xuống
+                                                                                <Download size={12} /> Tải xuống
                                                                             </a>
                                                                         </>
                                                                     )}
@@ -1062,7 +1076,7 @@ function RoadmapScreen({ cls, onBack, onSelectMaterial }) {
                                                         <ExternalLink size={12} /> Xem trước
                                                     </button>
                                                     <a
-                                                        href={material.fileUrl}
+                                                        href={getCloudinaryDownloadUrl(getCleanFileUrl(material.fileUrl))}
                                                         download
                                                         target="_blank"
                                                         rel="noopener noreferrer"
@@ -1075,7 +1089,7 @@ function RoadmapScreen({ cls, onBack, onSelectMaterial }) {
                                                         onMouseEnter={e => e.currentTarget.style.background = '#d1e7dd'}
                                                         onMouseLeave={e => e.currentTarget.style.background = '#e6f4ea'}
                                                     >
-                                                        <Play size={12} /> Tải xuống
+                                                        <Download size={12} /> Tải xuống
                                                     </a>
                                                 </>
                                             )}
@@ -1093,14 +1107,22 @@ function RoadmapScreen({ cls, onBack, onSelectMaterial }) {
 
 // ─── Root Component ─────────────────────────────────────────────────────────────
 
-export default function StudentRoadmap({ cls, onBack, onSelectMaterial }) {
+export default function StudentRoadmap({ cls, onBack, onSelectMaterial, refreshKey, onProgressChange }) {
     const [selectedClassState, setSelectedClassState] = useState(null);
 
     const activeClass = cls || selectedClassState;
     const handleBack = onBack || (() => setSelectedClassState(null));
 
     if (activeClass) {
-        return <RoadmapScreen cls={activeClass} onBack={handleBack} onSelectMaterial={onSelectMaterial} />;
+        return (
+            <RoadmapScreen 
+                cls={activeClass} 
+                onBack={handleBack} 
+                onSelectMaterial={onSelectMaterial} 
+                refreshKey={refreshKey}
+                onProgressChange={onProgressChange}
+            />
+        );
     }
 
     return <ClassListScreen onSelectClass={setSelectedClassState} />;
