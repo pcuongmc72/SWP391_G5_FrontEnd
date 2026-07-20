@@ -83,12 +83,12 @@ const normalizeClass = (c) => {
 };
 
 /* ─── Shared styles ────────────────────────────────────── */
-function iconBtnStyle(bg, color) {
+function iconBtnStyle(bg, color, disabled = false) {
   return {
     width: 28, height: 28, borderRadius: 8,
     background: bg, border: 'none',
     display: 'flex', alignItems: 'center', justifyContent: 'center',
-    cursor: 'pointer', color, transition: 'all 0.15s', flexShrink: 0,
+    cursor: disabled ? 'default' : 'pointer', color, transition: 'all 0.15s', flexShrink: 0,
   };
 }
 
@@ -139,6 +139,7 @@ function InfoRow({ icon, label, value }) {
 
 /* ─── ClassCard ────────────────────────────────────────── */
 function ClassCard({ cls, onEdit, onDelete, onViewDetails, onViewRoadmap }) {
+  const isDisabled = cls.status === 'CLOSED' || cls.status === 'ACTIVE';
   return (
     <div style={{
       background: '#ffffff', border: '1px solid #e2e8f0', borderRadius: 20,
@@ -156,11 +157,12 @@ function ClassCard({ cls, onEdit, onDelete, onViewDetails, onViewRoadmap }) {
         <div style={{ display: 'flex', gap: 4 }}>
           <button
             onClick={() => onEdit(cls)}
-            title={cls.status === 'CLOSED' || cls.status === 'ACTIVE' ? "Lớp học đang diễn ra hoặc đã kết thúc - Không thể chỉnh sửa" : "Chỉnh sửa"}
-            disabled={cls.status === 'CLOSED' || cls.status === 'ACTIVE'}
+            title={isDisabled ? "Lớp học đang diễn ra hoặc đã kết thúc - Không thể chỉnh sửa" : "Chỉnh sửa"}
+            disabled={isDisabled}
             style={iconBtnStyle(
-              (cls.status === 'CLOSED' || cls.status === 'ACTIVE') ? '#f1f5f9' : '#f8fafc',
-              (cls.status === 'CLOSED' || cls.status === 'ACTIVE') ? '#cbd5e1' : '#64748b'
+              isDisabled ? '#f1f5f9' : '#f8fafc',
+              isDisabled ? '#cbd5e1' : '#64748b',
+              isDisabled
             )}
           >
             <Edit2 size={13} />
