@@ -553,9 +553,9 @@ export default function GradingDashboard() {
                 
                 <form onSubmit={handleSubmitGrade} className="flex flex-col h-full min-h-min p-5 lg:p-6 gap-6 relative z-10">
                   
-                  <div className="bg-white/60 backdrop-blur-md p-4 rounded-2xl border border-gray-100 shadow-[0_2px_10px_-4px_rgba(0,0,0,0.05)]">
+                  <div className="bg-white/60 backdrop-blur-md p-4 rounded-2xl border border-gray-100 shadow-[0_2px_10px_-4px_rgba(0,0,0,0.05)] relative">
                     <p className="text-xs text-gray-500 mb-1">Đang chấm bài của:</p>
-                    <div className="flex flex-col">
+                    <div className="flex flex-col pr-8">
                       <span className="text-base font-black text-transparent bg-clip-text bg-gradient-to-r from-gray-900 to-gray-600">
                         {gradingSubmission.studentName}
                       </span>
@@ -563,6 +563,15 @@ export default function GradingDashboard() {
                         MSSV: {gradingSubmission.studentId}
                       </span>
                     </div>
+
+                    <button
+                      type="button"
+                      onClick={() => setGradingSubmissionId(null)}
+                      className="absolute top-3.5 right-3.5 p-1.5 hover:bg-gray-100/80 rounded-lg text-gray-400 hover:text-gray-600 transition-colors shrink-0 flex items-center justify-center border border-gray-100 bg-white shadow-sm"
+                      title="Thoát chấm điểm"
+                    >
+                      <X size={14} />
+                    </button>
                     
                     {gradingSubmission.studentNotes && (
                       <div className="mt-3 pt-3 border-t border-gray-100/80">
