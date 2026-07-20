@@ -94,7 +94,7 @@ export default function CourseDirectory({
               background: "rgba(255,255,255,0.14)", border: "1px solid rgba(255,255,255,0.2)",
               borderRadius: "999px", padding: "5px 14px", fontSize: "12px", fontWeight: 700, color: "#ffffff"
             }}>
-              <Calendar size={13} /> {matchedTerm ? matchedTerm.name : (selectedSemester + ' ' + selectedYear)}
+              <Calendar size={13} /> Kỳ {matchedTerm && matchedTerm.termCode !== 'N/A' ? matchedTerm.termCode : selectedYear}
             </span>
           </div>
         </div>
@@ -278,6 +278,13 @@ export default function CourseDirectory({
 function ClassCard({ cls, bannerColor, selectedSemester, onSelectCourse, matchedTermCode }) {
   const [hovered, setHovered] = React.useState(false);
 
+  // Check if there is a meaningful term code (not null/undefined/N/A)
+  const displayTerm = (cls.termCode && cls.termCode !== 'N/A')
+    ? cls.termCode
+    : (matchedTermCode && matchedTermCode !== 'N/A')
+      ? matchedTermCode
+      : null;
+
   return (
     <div
       onClick={() => onSelectCourse(cls)}
@@ -333,20 +340,22 @@ function ClassCard({ cls, bannerColor, selectedSemester, onSelectCourse, matched
           }}>
             {cls.courseCode || cls.id}
           </h3>
-          <span style={{
-            fontSize: "9px",
-            fontWeight: 800,
-            textTransform: "uppercase",
-            letterSpacing: "0.12em",
-            background: "rgba(0,0,0,0.22)",
-            color: "rgba(255,255,255,0.9)",
-            border: "1px solid rgba(255,255,255,0.12)",
-            borderRadius: "999px",
-            padding: "3px 10px",
-            flexShrink: 0,
-          }}>
-            {cls.termCode || matchedTermCode || 'N/A'}
-          </span>
+          {displayTerm && (
+            <span style={{
+              fontSize: "9px",
+              fontWeight: 800,
+              textTransform: "uppercase",
+              letterSpacing: "0.12em",
+              background: "rgba(0,0,0,0.22)",
+              color: "rgba(255,255,255,0.9)",
+              border: "1px solid rgba(255,255,255,0.12)",
+              borderRadius: "999px",
+              padding: "3px 10px",
+              flexShrink: 0,
+            }}>
+              {displayTerm}
+            </span>
+          )}
         </div>
 
         {/* Middle row: Class Code badge */}
@@ -403,15 +412,9 @@ function ClassCard({ cls, bannerColor, selectedSemester, onSelectCourse, matched
         padding: "12px 20px",
         display: "flex",
         alignItems: "center",
-        justifyContent: "space-between",
+        justifyContent: "flex-end",
       }}>
-        <div style={{ display: "flex", alignItems: "center", gap: "4px" }}>
-          <FooterIconBtn title="Bài tập được giao"><ClipboardList size={16} /></FooterIconBtn>
-          <FooterIconBtn title="Thư mục khóa học"><Folder size={16} /></FooterIconBtn>
-          <FooterIconBtn title="Tùy chọn khác"><MoreVertical size={16} /></FooterIconBtn>
-        </div>
-
-        <EnterButton />
+        <EnterButton onClick={() => onSelectCourse(cls)} />
       </div>
     </div>
   );
@@ -420,39 +423,16 @@ function ClassCard({ cls, bannerColor, selectedSemester, onSelectCourse, matched
 // ─────────────────────────────────────────────────────────────
 // Sub-components
 // ─────────────────────────────────────────────────────────────
-function FooterIconBtn({ children, title }) {
+function EnterButton({ onClick }) {
   const [hov, setHov] = React.useState(false);
   return (
     <button
-      title={title}
-      onClick={e => e.stopPropagation()}
       onMouseEnter={() => setHov(true)}
       onMouseLeave={() => setHov(false)}
-      style={{
-        padding: "6px",
-        borderRadius: "8px",
-        color: hov ? "#374151" : "#9CA3AF",
-        background: hov ? "#F3F4F6" : "transparent",
-        border: "none",
-        cursor: "pointer",
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
-        transition: "background 200ms ease, color 200ms ease",
+      onClick={e => {
+        e.stopPropagation();
+        if (onClick) onClick();
       }}
-    >
-      {children}
-    </button>
-  );
-}
-
-function EnterButton() {
-  const [hov, setHov] = React.useState(false);
-  return (
-    <button
-      onMouseEnter={() => setHov(true)}
-      onMouseLeave={() => setHov(false)}
-      onClick={e => e.stopPropagation()}
       style={{
         fontSize: "12px",
         fontWeight: 700,

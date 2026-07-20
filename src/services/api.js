@@ -79,7 +79,9 @@ api.interceptors.response.use(
       message = error.message;
     }
 
-    return Promise.reject(new Error(message));
+    const apiError = new Error(message);
+    apiError.response = error.response;
+    return Promise.reject(apiError);
   }
 );
 

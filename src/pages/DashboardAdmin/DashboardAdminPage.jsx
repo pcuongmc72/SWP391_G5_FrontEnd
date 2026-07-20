@@ -600,6 +600,7 @@ function DashboardAdminPage() {
               users={users}
               currentUser={user}
               isLoading={isLoading}
+              fetchUsers={fetchUsers}
 
               isUserModalOpen={isUserModalOpen}
               setIsUserModalOpen={setIsUserModalOpen}

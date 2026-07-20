@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useEffect, useCallback } from 'react';
+import React, { useState, useMemo, useEffect, useCallback, useRef } from 'react';
 import {
   Plus, Search, Users, BookOpen, Edit2, Trash2,
   X, CheckCircle, AlertCircle, GraduationCap,
@@ -83,12 +83,12 @@ const normalizeClass = (c) => {
 };
 
 /* ─── Shared styles ────────────────────────────────────── */
-function iconBtnStyle(bg, color) {
+function iconBtnStyle(bg, color, disabled = false) {
   return {
     width: 28, height: 28, borderRadius: 8,
     background: bg, border: 'none',
     display: 'flex', alignItems: 'center', justifyContent: 'center',
-    cursor: 'pointer', color, transition: 'all 0.15s', flexShrink: 0,
+    cursor: disabled ? 'default' : 'pointer', color, transition: 'all 0.15s', flexShrink: 0,
   };
 }
 
@@ -139,6 +139,7 @@ function InfoRow({ icon, label, value }) {
 
 /* ─── ClassCard ────────────────────────────────────────── */
 function ClassCard({ cls, onEdit, onDelete, onViewDetails, onViewRoadmap }) {
+  const isDisabled = cls.status === 'CLOSED' || cls.status === 'ACTIVE';
   return (
     <div style={{
       background: '#ffffff', border: '1px solid #e2e8f0', borderRadius: 20,
@@ -156,11 +157,12 @@ function ClassCard({ cls, onEdit, onDelete, onViewDetails, onViewRoadmap }) {
         <div style={{ display: 'flex', gap: 4 }}>
           <button
             onClick={() => onEdit(cls)}
-            title={cls.status === 'CLOSED' || cls.status === 'ACTIVE' ? "Lớp học đang diễn ra hoặc đã kết thúc - Không thể chỉnh sửa" : "Chỉnh sửa"}
-            disabled={cls.status === 'CLOSED' || cls.status === 'ACTIVE'}
+            title={isDisabled ? "Lớp học đang diễn ra hoặc đã kết thúc - Không thể chỉnh sửa" : "Chỉnh sửa"}
+            disabled={isDisabled}
             style={iconBtnStyle(
-              (cls.status === 'CLOSED' || cls.status === 'ACTIVE') ? '#f1f5f9' : '#f8fafc',
-              (cls.status === 'CLOSED' || cls.status === 'ACTIVE') ? '#cbd5e1' : '#64748b'
+              isDisabled ? '#f1f5f9' : '#f8fafc',
+              isDisabled ? '#cbd5e1' : '#64748b',
+              isDisabled
             )}
           >
             <Edit2 size={13} />
@@ -234,7 +236,7 @@ function ClassCard({ cls, onEdit, onDelete, onViewDetails, onViewRoadmap }) {
 }
 
 /* ─── ClassDetailModal (API-integrated) ────────────────── */
-function ClassDetailModal({ isOpen, cls, users = [], onSaveDetails, onClose }) {
+function ClassDetailModal({ isOpen, cls, users = [], showToast, onSaveDetails, onClose }) {
   const isClosed = cls?.status === 'CLOSED' || cls?.status === 'ACTIVE';
   const [localLecturer, setLocalLecturer] = useState('');
   const [localStudents, setLocalStudents] = useState([]);
@@ -250,8 +252,110 @@ function ClassDetailModal({ isOpen, cls, users = [], onSaveDetails, onClose }) {
   const [lecturerSearchError, setLecturerSearchError] = useState('');
   const [enrolledSearchTerm, setEnrolledSearchTerm] = useState('');
 
-  const lecturersList = users.filter(u => u.role === 'Lecturer' && u.status === 'ACTIVE');
-  const studentsList = users.filter(u => u.role === 'Student' && u.status === 'ACTIVE');
+  const lecturersList = users.filter(u => String(u.role).toUpperCase() === 'LECTURER' && String(u.status).toUpperCase() === 'ACTIVE');
+  const studentsList = users.filter(u => String(u.role).toUpperCase() === 'STUDENT' && String(u.status).toUpperCase() === 'ACTIVE');
+
+  const classCsvInputRef = useRef(null);
+
+  const handleImportStudentsCsv = (file) => {
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      try {
+        const text = e.target.result;
+        const lines = text.split('\n');
+        const newStudents = [];
+        const errors = [];
+        const duplicateInFile = new Set();
+
+        if (lines.length === 0) {
+          if (typeof showToast === 'function') {
+            showToast('File CSV trống!', 'error');
+          } else {
+            alert('File CSV trống!');
+          }
+          return;
+        }
+
+        // Clean UTF-8 BOM if present
+        let firstLine = lines[0];
+        if (firstLine.charCodeAt(0) === 0xFEFF) {
+          firstLine = firstLine.substring(1);
+        }
+
+        const headers = firstLine.split(',').map(h => h.trim().replace(/^["']|["']$/g, '').toLowerCase());
+        
+        let idColIndex = -1;
+        for (let i = 0; i < headers.length; i++) {
+          const h = headers[i];
+          if (h === 'studentid' || h === 'id' || h === 'mã sinh viên' || h === 'mã số' || h === 'student id') {
+            idColIndex = i;
+            break;
+          }
+        }
+
+        if (idColIndex === -1) idColIndex = 0;
+
+        for (let i = 1; i < lines.length; i++) {
+          const line = lines[i].trim();
+          if (!line) continue;
+          
+          const cols = line.split(',').map(c => c.trim().replace(/^["']|["']$/g, ''));
+          const studentId = cols[idColIndex];
+          
+          if (!studentId) continue;
+
+          if (duplicateInFile.has(studentId.toLowerCase())) {
+            continue;
+          }
+          duplicateInFile.add(studentId.toLowerCase());
+
+          const matched = studentsList.find(s => String(s.id).toLowerCase() === studentId.toLowerCase());
+          if (!matched) {
+            errors.push(`Dòng ${i + 1}: Học viên ID "${studentId}" không tồn tại trên hệ thống.`);
+            continue;
+          }
+
+          if (localStudents.some(cs => String(cs.id).toLowerCase() === studentId.toLowerCase())) {
+            errors.push(`Dòng ${i + 1}: Học viên "${matched.name}" đã có trong lớp.`);
+            continue;
+          }
+
+          newStudents.push({
+            id: matched.id,
+            name: matched.name,
+            email: matched.email || '',
+            role: 'Student',
+            avatarUrl: matched.avatarUrl || ''
+          });
+        }
+
+        if (newStudents.length > 0) {
+          setLocalStudents(prev => [...prev, ...newStudents]);
+          if (typeof showToast === 'function') {
+            showToast(`Đã thêm thành công ${newStudents.length} học viên từ file vào danh sách lớp!`, 'success');
+          } else {
+            alert(`Đã thêm thành công ${newStudents.length} học viên từ file vào danh sách lớp.`);
+          }
+        }
+
+        if (errors.length > 0) {
+          if (typeof showToast === 'function') {
+            showToast(`Phát hiện ${errors.length} dòng lỗi trong file CSV!`, 'error');
+          }
+          alert(`Phát hiện lỗi ở một số dòng:\n${errors.join('\n')}`);
+        }
+      } catch (err) {
+        console.error('Error parsing class student CSV:', err);
+        if (typeof showToast === 'function') {
+          showToast('Đọc file thất bại hoặc định dạng CSV không hợp lệ!', 'error');
+        } else {
+          alert('Đọc file thất bại hoặc định dạng CSV không hợp lệ!');
+        }
+      }
+    };
+    reader.readAsText(file);
+  };
 
   /* Load students from API whenever modal opens for a class */
   useEffect(() => {
@@ -656,6 +760,29 @@ function ClassDetailModal({ isOpen, cls, users = [], onSaveDetails, onClose }) {
                 >
                   Tìm kiếm
                 </button>
+                <button
+                  type="button"
+                  disabled={isClosed}
+                  onClick={() => classCsvInputRef.current.click()}
+                  style={{ padding: '10px 16px', background: '#ecfdf5', color: '#065f46', border: '1.5px solid #a7f3d0', borderRadius: 12, fontSize: '0.8125rem', fontWeight: 700, cursor: isClosed ? 'not-allowed' : 'pointer', transition: 'all 0.15s', display: 'flex', alignItems: 'center', gap: 4, whiteSpace: 'nowrap' }}
+                  onMouseEnter={e => { if (!isClosed) e.currentTarget.style.background = '#d1fae5'; }}
+                  onMouseLeave={e => { if (!isClosed) e.currentTarget.style.background = '#ecfdf5'; }}
+                >
+                  Nhập CSV
+                </button>
+                <input
+                  type="file"
+                  ref={classCsvInputRef}
+                  onChange={e => {
+                    const file = e.target.files[0];
+                    if (file) {
+                      handleImportStudentsCsv(file);
+                    }
+                    e.target.value = ''; // Reset
+                  }}
+                  accept=".csv"
+                  style={{ display: 'none' }}
+                />
               </div>
 
               {/* Hoặc chọn từ Dropdown */}
@@ -1791,7 +1918,7 @@ function ClassesDashboard({ terms = [], selectedTerm, onTermChange, users = [], 
 
       <ClassModal isOpen={isModalOpen} editingClass={editingClass} classForm={classForm} setClassForm={setClassForm} onSave={handleSave} onClose={() => setIsModalOpen(false)} courses={courses} lecturers={lecturers} termEndDate={(term?.endDate || '').substring(0, 10)} />
 
-      <ClassDetailModal isOpen={Boolean(detailedClass)} cls={detailedClass} users={users} onSaveDetails={handleSaveDetails} onClose={() => setDetailedClass(null)} />
+      <ClassDetailModal isOpen={Boolean(detailedClass)} cls={detailedClass} users={users} showToast={showToast} onSaveDetails={handleSaveDetails} onClose={() => setDetailedClass(null)} />
 
       <ClassRoadmapModal isOpen={Boolean(roadmapClass)} cls={roadmapClass} onClose={() => setRoadmapClass(null)} />
       <ConfirmDeleteModal
