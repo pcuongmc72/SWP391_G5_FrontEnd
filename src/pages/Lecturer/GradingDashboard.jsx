@@ -368,9 +368,9 @@ export default function GradingDashboard() {
           
           <div className="p-3 border-b border-gray-100 bg-gray-50 shrink-0 flex flex-col gap-2">
             <div className="flex items-center justify-between mb-1">
-              <span className="text-xs font-bold text-gray-600 uppercase tracking-wider">Danh sách nộp bài</span>
+              <span className="text-xs font-bold text-gray-600 uppercase tracking-wider">Danh sách sinh viên</span>
               <span className="text-[10px] font-bold bg-emerald-100 text-emerald-700 px-2 py-0.5 rounded-full">
-                {currentSubmissions.length} bài
+                {currentSubmissions.length} sinh viên
               </span>
             </div>
             
@@ -428,7 +428,7 @@ export default function GradingDashboard() {
                   </div>
                   
                   <div className="flex-1 min-w-0">
-                    <div className="flex justify-between items-start mb-1">
+                    <div className="flex justify-between items-start mb-0.5">
                       <span className={`text-[13px] font-bold truncate ${isActive ? 'text-emerald-900' : 'text-gray-900 group-hover:text-emerald-700 transition-colors'}`}>
                         {sub.studentName || student?.name || sub.studentId}
                       </span>
@@ -437,6 +437,9 @@ export default function GradingDashboard() {
                           {timeAgo(sub.submittedAt)}
                         </span>
                       )}
+                    </div>
+                    <div className={`text-[11px] font-semibold mb-1.5 ${isActive ? 'text-emerald-700/80' : 'text-gray-500'}`}>
+                      MSSV: {sub.studentId}
                     </div>
                     
                     <div className="flex items-center justify-between">
@@ -542,7 +545,14 @@ export default function GradingDashboard() {
                   
                   <div className="bg-white/60 backdrop-blur-md p-4 rounded-2xl border border-gray-100 shadow-[0_2px_10px_-4px_rgba(0,0,0,0.05)]">
                     <p className="text-xs text-gray-500 mb-1">Đang chấm bài của:</p>
-                    <p className="text-base font-black text-transparent bg-clip-text bg-gradient-to-r from-gray-900 to-gray-600">{gradingSubmission.studentName}</p>
+                    <div className="flex flex-col">
+                      <span className="text-base font-black text-transparent bg-clip-text bg-gradient-to-r from-gray-900 to-gray-600">
+                        {gradingSubmission.studentName}
+                      </span>
+                      <span className="text-xs text-gray-400 font-bold mt-0.5">
+                        MSSV: {gradingSubmission.studentId}
+                      </span>
+                    </div>
                     
                     {gradingSubmission.studentNotes && (
                       <div className="mt-3 pt-3 border-t border-gray-100/80">
