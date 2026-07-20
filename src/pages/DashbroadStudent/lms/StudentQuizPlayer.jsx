@@ -21,6 +21,7 @@ export default function StudentQuizPlayer({ quizId, triggerNotification, addPoin
 
     // Custom confirm modal state
     const [showSubmitConfirm, setShowSubmitConfirm] = useState(false);
+    const [showStartConfirm, setShowStartConfirm] = useState(false);
 
     // Ref to always hold the latest handleSubmit (avoids stale closure in timer)
     const handleSubmitRef = useRef(null);
@@ -202,7 +203,7 @@ export default function StudentQuizPlayer({ quizId, triggerNotification, addPoin
                     <div className="mt-6 flex justify-end">
                         {hasAttemptsLeft ? (
                             <button 
-                                onClick={handleStartAttempt}
+                                onClick={() => setShowStartConfirm(true)}
                                 disabled={loading}
                                 className="bg-emerald-600 hover:bg-emerald-500 text-white font-bold py-2 px-4 rounded flex items-center gap-2 transition cursor-pointer disabled:opacity-50"
                             >
@@ -323,6 +324,40 @@ export default function StudentQuizPlayer({ quizId, triggerNotification, addPoin
                         </div>
                     </div>
                 </div>
+                </div>
+            )}
+
+            {/* Custom Start Confirmation Modal */}
+            {showStartConfirm && (
+                <div className="fixed inset-0 z-[300] bg-black/50 flex items-center justify-center animate-fade-in p-4">
+                    <div className="bg-white rounded-xl shadow-2xl p-6 max-w-sm w-full animate-scale-up">
+                        <div className="flex items-center gap-3 mb-3">
+                            <div className="bg-emerald-100 p-2 rounded-full text-emerald-600">
+                                <HelpCircle size={24} />
+                            </div>
+                            <h3 className="text-lg font-bold text-gray-800">Xác nhận làm bài</h3>
+                        </div>
+                        <p className="text-sm text-gray-600 mb-6 pl-11">
+                            Bạn đã sẵn sàng để bắt đầu làm bài quiz chưa? Thời gian sẽ bắt đầu tính ngay sau khi bạn xác nhận.
+                        </p>
+                        <div className="flex gap-3 justify-end">
+                            <button 
+                                onClick={() => setShowStartConfirm(false)}
+                                className="px-4 py-2 text-sm font-semibold text-gray-600 bg-gray-100 hover:bg-gray-200 rounded-lg transition cursor-pointer"
+                            >
+                                Hủy bỏ
+                            </button>
+                            <button 
+                                onClick={() => {
+                                    setShowStartConfirm(false);
+                                    handleStartAttempt();
+                                }}
+                                className="px-4 py-2 text-sm font-semibold text-white bg-emerald-600 hover:bg-emerald-700 rounded-lg transition cursor-pointer"
+                            >
+                                Đồng ý
+                            </button>
+                        </div>
+                    </div>
                 </div>
             )}
 
