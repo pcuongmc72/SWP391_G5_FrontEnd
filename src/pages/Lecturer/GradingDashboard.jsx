@@ -385,17 +385,6 @@ export default function GradingDashboard() {
                 </div>
               );
             })()}
-
-            <select
-              value={submissionStatusFilter}
-              onChange={(e) => setSubmissionStatusFilter(e.target.value)}
-              className="w-full bg-white border border-gray-200 rounded-lg px-2 py-1.5 text-xs font-bold text-gray-700 focus:outline-none focus:border-emerald-400 shadow-sm"
-            >
-              <option value="all">Tất cả trạng thái</option>
-              <option value="ungraded">⏳ Cần chấm (đã nộp)</option>
-              <option value="graded">✅ Đã chấm</option>
-              <option value="not_submitted">❌ Chưa nộp</option>
-            </select>
           </div>
 
           <div className="flex-1 overflow-y-auto p-2.5 space-y-2.5">
