@@ -165,6 +165,21 @@ export default function SidebarSyllabus({
                           >
                             {lecture.title}
                           </span>
+                          {(() => {
+                            let textDesc = '';
+                            try {
+                              const parsed = JSON.parse(lecture.description);
+                              textDesc = parsed.desc || '';
+                            } catch(e) {
+                              textDesc = lecture.description || '';
+                            }
+                            if (!textDesc) return null;
+                            return (
+                              <p className="text-[11px] text-gray-500 line-clamp-2 leading-tight mb-1.5" style={{ wordBreak: 'break-word' }}>
+                                {textDesc}
+                              </p>
+                            );
+                          })()}
 
                           <div className="flex items-center gap-2 flex-wrap">
                             <span className={`text-[9px] font-extrabold px-1.5 py-0.5 rounded-sm border ${getBadgeStyle()}`}>

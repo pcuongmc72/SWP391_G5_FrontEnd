@@ -358,9 +358,26 @@ export default function LessonPlayer({
       );
     }
 
-    if (lecture.type === "video") return <VideoPlayer src={fileUrl} lectureId={lecture.id} />;
-    if (lecture.type === "image") return <ImageViewer src={fileUrl} title={lecture.title} />;
-    if (lecture.type === "pdf") return <PdfViewer src={fileUrl} title={lecture.title} />;
+    const getActualMediaType = (typeStr, urlStr) => {
+      if (!typeStr) return 'document';
+      typeStr = typeStr.toLowerCase();
+      if (typeStr.includes('video') || typeStr === 'video') return 'video';
+      if (typeStr.includes('image') || typeStr === 'image') return 'image';
+      if (typeStr.includes('pdf') || typeStr === 'pdf') return 'pdf';
+      if (typeStr.includes('quiz') || typeStr === 'quiz') return 'quiz';
+      
+      if (urlStr) {
+         if (urlStr.match(/\.(mp4|webm|ogg)$/i)) return 'video';
+         if (urlStr.match(/\.(pdf)$/i)) return 'pdf';
+         if (urlStr.match(/\.(jpg|jpeg|png|gif|webp)$/i)) return 'image';
+      }
+      return 'document';
+    };
+    
+    const mediaType = getActualMediaType(lecture.type, fileUrl);
+    if (mediaType === "video") return <VideoPlayer src={fileUrl} lectureId={lecture.id} />;
+    if (mediaType === "image") return <ImageViewer src={fileUrl} title={lecture.title} />;
+    if (mediaType === "pdf") return <PdfViewer src={fileUrl} title={lecture.title} />;
     return <DocumentCard url={fileUrl} title={lecture.title} type={lecture.type} />;
   };
 
@@ -382,7 +399,12 @@ export default function LessonPlayer({
         </div>
       )}
 
-
+      {/* Media Player Area */}
+      {!isQuiz && (
+        <div className="relative bg-black aspect-video w-full flex-shrink-0 border-b border-gray-200 overflow-hidden">
+          {renderMedia()}
+        </div>
+      )}
 
       {/* Tab navigation */}
       {availableTabs.length > 0 && (

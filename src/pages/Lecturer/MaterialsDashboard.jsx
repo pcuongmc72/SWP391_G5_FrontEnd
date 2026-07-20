@@ -328,6 +328,16 @@ export default function MaterialsDashboard() {
       if (!groups[chapter]) groups[chapter] = [];
       groups[chapter].push(m);
     });
+
+    Object.keys(groups).forEach(key => {
+      groups[key].sort((a, b) => {
+        const dateA = new Date(a.publishDate || 0).getTime();
+        const dateB = new Date(b.publishDate || 0).getTime();
+        if (dateA !== dateB) return dateA - dateB;
+        return (a.title || '').localeCompare(b.title || '', undefined, { numeric: true, sensitivity: 'base' });
+      });
+    });
+
     return groups;
   }, [classroomMaterials]);
 
@@ -600,7 +610,21 @@ export default function MaterialsDashboard() {
     setHasSubmitAttempted(true);
     if (!newMaterialForm.title) { showToast('Vui lòng nhập tên bài học', 'info'); return; }
     if (!newMaterialForm.subject) { showToast('Vui lòng chọn hoặc tạo Môn học', 'info'); return; }
-    if (!newMaterialForm.chapter) { showToast('Vui lòng chọn hoặc tạo Chương (Chapter)', 'info'); return; }
+    if (!newMaterialForm.chapter) { showToast('Vui lòng chọn hoặc tạo Chương (Chapter)', 'error'); return; }
+    if (!newMaterialForm.description?.trim()) { showToast('Vui lòng nhập Yêu cầu / Mô tả', 'error'); return; }
+    if (!newMaterialForm.deadline) { showToast('Vui lòng chọn Hạn hoàn thành', 'error'); return; }
+    if (newMaterialForm.deadline && new Date(newMaterialForm.deadline) < new Date(newMaterialForm.publishDate)) {
+      showToast('Hạn hoàn thành không được trước Ngày phát hành!', 'error');
+      return;
+    }
+    if (newMaterialForm.inputType === 'file' && (!newMaterialForm.files || newMaterialForm.files.length === 0) && !newMaterialForm.fileObj) {
+      showToast('Vui lòng chọn ít nhất 1 file để đăng tải!', 'error');
+      return;
+    }
+    if (newMaterialForm.inputType === 'link' && !newMaterialForm.linkUrl) {
+      showToast('Vui lòng nhập đường dẫn liên kết!', 'error');
+      return;
+    }
     setIsUploading(true);
     const selectedCleanChapter = newMaterialForm.chapter.trim().toLowerCase();
     const existingMat = (materials || []).find(m => m.chapter && extractChapterName(m.chapter).trim().toLowerCase() === selectedCleanChapter);
@@ -738,7 +762,17 @@ export default function MaterialsDashboard() {
     e.preventDefault();
     if (!editMaterialForm.title) { showToast('Vui lòng nhập tên bài học', 'info'); return; }
     if (!editMaterialForm.subject) { showToast('Vui lòng chọn hoặc tạo Môn học', 'info'); return; }
-    if (!editMaterialForm.chapter) { showToast('Vui lòng chọn hoặc tạo Chương (Chapter)', 'info'); return; }
+    if (!editMaterialForm.chapter) { showToast('Vui lòng chọn hoặc tạo Chương (Chapter)', 'error'); return; }
+    if (!editMaterialForm.description?.trim()) { showToast('Vui lòng nhập Yêu cầu / Mô tả', 'error'); return; }
+    if (!editMaterialForm.deadline) { showToast('Vui lòng chọn Hạn hoàn thành', 'error'); return; }
+    if (editMaterialForm.deadline && new Date(editMaterialForm.deadline) < new Date(editMaterialForm.publishDate)) {
+      showToast('Hạn hoàn thành không được trước Ngày phát hành!', 'error');
+      return;
+    }
+    if (editMaterialForm.inputType === 'link' && !editMaterialForm.linkUrl) {
+      showToast('Vui lòng nhập đường dẫn liên kết!', 'error');
+      return;
+    }
     setIsUploading(true);
     const selectedCleanChapter = editMaterialForm.chapter.trim().toLowerCase();
     const existingMat = (materials || []).find(m => m.chapter && extractChapterName(m.chapter).trim().toLowerCase() === selectedCleanChapter);
@@ -1232,8 +1266,16 @@ export default function MaterialsDashboard() {
               className={styles.btnEmerald}
               style={{ width: 'auto', padding: '8px 16px', display: 'flex', alignItems: 'center', gap: 6, margin: 0 }}
               onClick={() => {
+                if (!selectedClassId || selectedClassId === 'all') {
+                  showToast('Vui lòng chọn một lớp học cụ thể trước khi đăng tải học liệu!', 'error');
+                  return;
+                }
                 const activeClass = classrooms?.find(c => c.id === selectedClassId);
                 const activeClassName = activeClass ? (activeClass.courseCode || activeClass.id) : '';
+                if (!activeClassName || activeClassName.trim() === '') {
+                  showToast('Lớp học này chưa được gán môn học xác định. Vui lòng kiểm tra lại!', 'error');
+                  return;
+                }
                 setNewMaterialForm(prev => ({ ...prev, subject: activeClassName }));
                 setIsAddMaterialModalOpen(true);
               }}
@@ -1406,16 +1448,30 @@ export default function MaterialsDashboard() {
       </div>
 
       {isAddMaterialModalOpen && (
-        <div className={styles.modalOverlay} onClick={() => { setIsAddMaterialModalOpen(false); setHasSubmitAttempted(false); }}>
-          <div className={styles.modal} onClick={(e) => e.stopPropagation()} style={{ maxWidth: 580 }}>
-            <div className={styles.modalHeader}>
-              <h3 className={styles.modalTitle} style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                <Upload size={18} color="#059669" /> Đăng tải Học liệu Mới
+        <div 
+          onClick={() => { setIsAddMaterialModalOpen(false); setHasSubmitAttempted(false); }}
+          style={{ position: 'fixed', inset: 0, background: 'rgba(248, 250, 252, 0.4)', zIndex: 9998 }}
+        >
+          <div 
+            onClick={(e) => e.stopPropagation()} 
+            style={{ 
+              position: 'fixed', right: 0, top: 0, bottom: 0, width: '100%', maxWidth: '600px', 
+              background: '#ffffff', boxShadow: '-10px 0 30px rgba(0,0,0,0.1)', 
+              zIndex: 9999, display: 'flex', flexDirection: 'column',
+              animation: 'slideInRight 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+              borderLeft: '1px solid #e2e8f0'
+            }}
+          >
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '20px 24px', borderBottom: '1px solid #e2e8f0', background: '#f8fafc' }}>
+              <h3 style={{ margin: 0, display: 'flex', alignItems: 'center', gap: 10, fontSize: 18, fontWeight: 700, color: '#0f172a' }}>
+                <div style={{ padding: 8, background: '#d1fae5', borderRadius: 8, color: '#059669', display: 'flex' }}><Upload size={20} /></div>
+                Đăng tải Học liệu Mới
               </h3>
-              <button type="button" className={styles.iconBtn} onClick={() => { setIsAddMaterialModalOpen(false); setHasSubmitAttempted(false); }}>
+              <button type="button" onClick={() => { setIsAddMaterialModalOpen(false); setHasSubmitAttempted(false); }} style={{ background: '#fff', border: '1px solid #e2e8f0', borderRadius: 8, width: 32, height: 32, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: '#64748b' }}>
                 <X size={16} />
               </button>
             </div>
+            <div style={{ flex: 1, overflowY: 'auto', padding: '24px' }}>
             <form onSubmit={handleAddMaterial}>
               <div style={{ display: 'flex', gap: 12, marginBottom: 12 }}>
                 <div className={styles.field} style={{ flex: 1, margin: 0 }}>
@@ -1469,7 +1525,9 @@ export default function MaterialsDashboard() {
               <div className={styles.field}>
                 <label>Yêu cầu / Mô tả</label>
                 <textarea className={styles.textarea} rows={2} value={newMaterialForm.description}
-                  onChange={(e) => setNewMaterialForm({ ...newMaterialForm, description: e.target.value })} />
+                    onChange={(e) => setNewMaterialForm({ ...newMaterialForm, description: e.target.value })}
+                    style={{ borderColor: hasSubmitAttempted && !newMaterialForm.description?.trim() ? '#ef4444' : undefined }} />
+                  {hasSubmitAttempted && !newMaterialForm.description?.trim() && <p style={{ color: '#ef4444', fontSize: 11, marginTop: 4 }}>Vui lòng nhập yêu cầu/mô tả.</p>}
               </div>
               <div className={styles.row2}>
                 <div className={styles.field} style={{ width: '100%' }}>
@@ -1480,7 +1538,10 @@ export default function MaterialsDashboard() {
                 <div className={styles.field} style={{ width: '100%' }}>
                   <label>Hạn hoàn thành</label>
                   <input type="date" className={styles.input} value={newMaterialForm.deadline}
-                    onChange={(e) => setNewMaterialForm({ ...newMaterialForm, deadline: e.target.value })} />
+                    min={newMaterialForm.publishDate}
+                    onChange={(e) => setNewMaterialForm({ ...newMaterialForm, deadline: e.target.value })}
+                    style={{ borderColor: hasSubmitAttempted && !newMaterialForm.deadline ? '#ef4444' : undefined }} />
+                  {hasSubmitAttempted && !newMaterialForm.deadline && <p style={{ color: '#ef4444', fontSize: 11, marginTop: 4 }}>Bắt buộc nhập hạn hoàn thành.</p>}
                 </div>
               </div>
 
@@ -1626,6 +1687,7 @@ export default function MaterialsDashboard() {
               </div>
             </form>
           </div>
+        </div>
         </div>
       )}
 
@@ -1912,12 +1974,14 @@ export default function MaterialsDashboard() {
                     <div className={styles.field}>
                       <label>Yêu cầu / Mô tả</label>
                       <textarea
-                        className={styles.textarea}
-                        rows={3}
-                        value={editMaterialForm.description}
-                        onChange={(e) => setEditMaterialForm({ ...editMaterialForm, description: e.target.value })}
-                        placeholder="Mô tả hoặc yêu cầu của buổi học này..."
-                      />
+                          className={styles.textarea}
+                          rows={3}
+                          value={editMaterialForm.description}
+                          onChange={(e) => setEditMaterialForm({ ...editMaterialForm, description: e.target.value })}
+                          placeholder="Mô tả hoặc yêu cầu của buổi học này..."
+                          style={{ borderColor: hasSubmitAttempted && !editMaterialForm.description?.trim() ? '#ef4444' : undefined }}
+                        />
+                        {hasSubmitAttempted && !editMaterialForm.description?.trim() && <p style={{ color: '#ef4444', fontSize: 11, marginTop: 4 }}>Vui lòng nhập yêu cầu/mô tả.</p>}
                     </div>
 
                     <div className={styles.row2}>
@@ -1932,12 +1996,11 @@ export default function MaterialsDashboard() {
                       </div>
                       <div className={styles.field} style={{ width: '100%' }}>
                         <label>Hạn hoàn thành</label>
-                        <input
-                          type="date"
-                          className={styles.input}
-                          value={editMaterialForm.deadline}
-                          onChange={(e) => setEditMaterialForm({ ...editMaterialForm, deadline: e.target.value })}
-                        />
+                        <input type="date" className={styles.input} value={editMaterialForm.deadline}
+                    min={editMaterialForm.publishDate}
+                    onChange={(e) => setEditMaterialForm({ ...editMaterialForm, deadline: e.target.value })}
+                    style={{ borderColor: hasSubmitAttempted && !editMaterialForm.deadline ? '#ef4444' : undefined }} />
+                  {hasSubmitAttempted && !editMaterialForm.deadline && <p style={{ color: '#ef4444', fontSize: 11, marginTop: 4 }}>Bắt buộc nhập hạn hoàn thành.</p>}
                       </div>
                     </div>
 
@@ -2230,6 +2293,14 @@ export default function MaterialsDashboard() {
               </button>
             </div>
           </div>
+        </div>
+      )}
+
+      {/* TOAST NOTIFICATION */}
+      {toast && (
+        <div style={{ zIndex: 9999 }} className={`fixed bottom-5 right-5 flex items-center gap-2 px-5 py-3 rounded-xl shadow-xl transition-all border ${toast.type === 'error' ? 'bg-rose-50 border-rose-200 text-rose-800' : 'bg-emerald-50 border-emerald-200 text-emerald-800'}`}>
+          {toast.type === 'error' ? <X size={18} className="text-rose-600" /> : <Check size={18} className="text-emerald-600" />}
+          <span className="text-sm font-semibold">{toast.message}</span>
         </div>
       )}
     </div>

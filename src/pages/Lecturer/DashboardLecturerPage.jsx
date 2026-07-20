@@ -16,7 +16,6 @@ import AssignmentsDashboard from './AssignmentsDashboard';
 import GradingDashboard from './GradingDashboard';
 import FeedbackDashboard from './FeedbackDashboard';
 import ProgressDashboard from './ProgressDashboard';
-import PromotionDashboard from './PromotionDashboard';
 import ClassListDashboard from './ClassListDashboard';
 import SharedBlogForum from '../../components/SharedBlogForum/SharedBlogForum';
 
@@ -27,7 +26,6 @@ const SIDEBAR_ITEMS = [
   { id: 'grading', label: 'Chấm điểm nộp bài', icon: CheckSquare, path: '/dashboard/lecturer/grading' },
   { id: 'feedback', label: 'Hỏi đáp & Hỗ trợ', icon: MessageSquare, path: '/dashboard/lecturer/feedback' },
   { id: 'progress', label: 'Tiến độ học viên', icon: TrendingUp, path: '/dashboard/lecturer/progress' },
-  { id: 'promotion', label: 'Thăng cấp học thuật', icon: Award, path: '/dashboard/lecturer/promotion' },
   { id: 'blog', label: 'Blog & Diễn đàn', icon: MessageSquare, path: '/dashboard/lecturer/blog' },
 ];
 
@@ -364,54 +362,58 @@ function LecturerLayoutInner() {
       <div className={styles.main}>
         <header className={styles.topbar}>
           {/* Class Selector Dropdown */}
-          <div className={styles.topbarLeft}>
-            <div className={styles.classDropdownWrap} ref={classDropdownRef}>
-              <button
-                type="button"
-                className={styles.classDropdownBtn}
-                onClick={() => setClassDropdownOpen((p) => !p)}
-                aria-haspopup="true"
-                aria-expanded={classDropdownOpen}
-              >
-                <div className={styles.classDropdownInfo}>
-                  <span className={styles.classDropdownActiveLabel}>Đang dạy:</span>
-                  <span className={styles.classDropdownActiveName}>
-                    {activeClass ? activeClass.id : (classesLoading ? 'Đang tải...' : 'Chọn lớp học')}
-                  </span>
-                </div>
-                <ChevronDown
-                  size={14}
-                  className={`${styles.classChevron} ${classDropdownOpen ? styles.classChevronOpen : ''}`}
-                />
-              </button>
+          {location.pathname !== '/dashboard/lecturer/blog' ? (
+            <div className={styles.topbarLeft}>
+              <div className={styles.classDropdownWrap} ref={classDropdownRef}>
+                <button
+                  type="button"
+                  className={styles.classDropdownBtn}
+                  onClick={() => setClassDropdownOpen((p) => !p)}
+                  aria-haspopup="true"
+                  aria-expanded={classDropdownOpen}
+                >
+                  <div className={styles.classDropdownInfo}>
+                    <span className={styles.classDropdownActiveLabel}>Đang dạy:</span>
+                    <span className={styles.classDropdownActiveName}>
+                      {activeClass ? activeClass.id : (classesLoading ? 'Đang tải...' : 'Chọn lớp học')}
+                    </span>
+                  </div>
+                  <ChevronDown
+                    size={14}
+                    className={`${styles.classChevron} ${classDropdownOpen ? styles.classChevronOpen : ''}`}
+                  />
+                </button>
 
-              {classDropdownOpen && (
-                <div className={styles.classDropdownMenu} role="menu">
-                  {classrooms.map((c) => {
-                    const isCurrent = c.id === selectedClassId;
-                    return (
-                      <button
-                        key={c.id}
-                        type="button"
-                        className={`${styles.classDropdownItem} ${isCurrent ? styles.classDropdownItemActive : ''}`}
-                        onClick={() => {
-                          setSelectedClassId(c.id);
-                          setClassDropdownOpen(false);
-                        }}
-                        role="menuitem"
-                      >
-                        <div className={styles.classItemContent}>
-                          <span className={styles.classItemName}>{c.id}</span>
-                          <span className={styles.classItemTerm}>{c.termName || 'Spring 2027'}</span>
-                        </div>
-                        {isCurrent && <Check size={14} className={styles.checkIcon} />}
-                      </button>
-                    );
-                  })}
-                </div>
-              )}
+                {classDropdownOpen && (
+                  <div className={styles.classDropdownMenu} role="menu">
+                    {classrooms.map((c) => {
+                      const isCurrent = c.id === selectedClassId;
+                      return (
+                        <button
+                          key={c.id}
+                          type="button"
+                          className={`${styles.classDropdownItem} ${isCurrent ? styles.classDropdownItemActive : ''}`}
+                          onClick={() => {
+                            setSelectedClassId(c.id);
+                            setClassDropdownOpen(false);
+                          }}
+                          role="menuitem"
+                        >
+                          <div className={styles.classItemContent}>
+                            <span className={styles.classItemName}>{c.id}</span>
+                            <span className={styles.classItemTerm}>{c.termName || 'Spring 2027'}</span>
+                          </div>
+                          {isCurrent && <Check size={14} className={styles.checkIcon} />}
+                        </button>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
             </div>
-          </div>
+          ) : (
+            <div className={styles.topbarLeft}></div>
+          )}
 
 
           <div className={styles.topbarRight}>
@@ -473,8 +475,6 @@ function LecturerLayoutInner() {
             <FeedbackDashboard />
           ) : location.pathname === '/dashboard/lecturer/progress' ? (
             <ProgressDashboard />
-          ) : location.pathname === '/dashboard/lecturer/promotion' ? (
-            <PromotionDashboard />
           ) : location.pathname === '/dashboard/lecturer/blog' ? (
             <SharedBlogForum />
           ) : (

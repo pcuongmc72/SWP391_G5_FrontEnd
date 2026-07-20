@@ -422,7 +422,7 @@ function SharedBlogForum({ defaultTab = null, initialSelectedBlog = null, onClea
               borderRadius: '2rem',
               border: '2px dashed #e2e8f0'
             }}>
-              <div style={{ fontSize: '3rem', marginBottom: '1rem' }}>📭</div>
+
               <h3 style={{ fontSize: '1.25rem', fontWeight: 700, color: '#1e293b', margin: 0 }}>Chưa tìm thấy bài viết nào</h3>
               <p style={{ color: '#64748b', marginTop: '0.5rem' }}>
                 {searchQuery || selectedCourse !== 'ALL' 
