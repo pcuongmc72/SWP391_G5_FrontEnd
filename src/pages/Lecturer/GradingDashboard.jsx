@@ -1,5 +1,5 @@
 import { useMemo, useState, useEffect, useCallback } from 'react';
-import { Check, X, CheckSquare, FileText, Pencil, Loader2, Search, BookOpen, CheckCircle2, PanelLeftClose, PanelLeftOpen } from 'lucide-react';
+import { Check, X, CheckSquare, FileText, Pencil, Loader2, Search, BookOpen, CheckCircle2, PanelLeftClose, PanelLeftOpen, XCircle } from 'lucide-react';
 import { useLecturerWorkspace } from '../../context/LecturerWorkspaceContext';
 
 const truncateText = (text, maxLength = 60) => {
@@ -126,18 +126,51 @@ export default function GradingDashboard() {
 
   const currentSubmissions = useMemo(() => {
     if (!activeAsgId) return [];
-    let subs = submissions.filter((s) => String(s.assignmentId) === String(activeAsgId));
     
-    if (submissionStatusFilter === 'graded') subs = subs.filter(s => s.status === 'GRADED');
-    if (submissionStatusFilter === 'ungraded') subs = subs.filter(s => s.status !== 'GRADED');
-
-    // Sort: Submitted first, then Graded
-    return subs.sort((a, b) => {
-      if (a.status === 'SUBMITTED' && b.status !== 'SUBMITTED') return -1;
-      if (a.status !== 'SUBMITTED' && b.status === 'SUBMITTED') return 1;
-      return new Date(b.submittedAt) - new Date(a.submittedAt);
+    // Build the list of all students combined with their submissions
+    let list = (users || []).map(student => {
+      const sub = (submissions || []).find(
+        s => String(s.studentId) === String(student.id) && String(s.assignmentId) === String(activeAsgId)
+      );
+      if (sub) return sub;
+      return {
+        id: `virtual-${student.id}`,
+        assignmentId: activeAsgId,
+        studentId: student.id,
+        studentName: student.name,
+        fileName: null,
+        studentNotes: null,
+        status: 'NOT_SUBMITTED',
+        grade: null,
+        feedback: '',
+        submittedAt: null,
+        gradedAt: null,
+      };
     });
-  }, [submissions, activeAsgId, submissionStatusFilter]);
+
+    // Apply filters
+    if (submissionStatusFilter === 'graded') {
+      list = list.filter(s => s.status === 'GRADED');
+    } else if (submissionStatusFilter === 'ungraded') {
+      list = list.filter(s => s.status === 'SUBMITTED');
+    } else if (submissionStatusFilter === 'not_submitted') {
+      list = list.filter(s => s.status === 'NOT_SUBMITTED');
+    }
+
+    // Sort: Submitted ('SUBMITTED') first, then Graded ('GRADED'), then Not Submitted ('NOT_SUBMITTED')
+    return list.sort((a, b) => {
+      const statusOrder = { 'SUBMITTED': 1, 'GRADED': 2, 'NOT_SUBMITTED': 3 };
+      const orderA = statusOrder[a.status] || 99;
+      const orderB = statusOrder[b.status] || 99;
+      
+      if (orderA !== orderB) {
+        return orderA - orderB;
+      }
+      
+      // If same status, sort by name
+      return a.studentName.localeCompare(b.studentName, 'vi');
+    });
+  }, [users, submissions, activeAsgId, submissionStatusFilter]);
 
   const gradingSubmission = useMemo(() => {
     return currentSubmissions.find(s => s.id === gradingSubmissionId) || null;
@@ -359,8 +392,9 @@ export default function GradingDashboard() {
               className="w-full bg-white border border-gray-200 rounded-lg px-2 py-1.5 text-xs font-bold text-gray-700 focus:outline-none focus:border-emerald-400 shadow-sm"
             >
               <option value="all">Tất cả trạng thái</option>
-              <option value="ungraded">⏳ Cần chấm</option>
+              <option value="ungraded">⏳ Cần chấm (đã nộp)</option>
               <option value="graded">✅ Đã chấm</option>
+              <option value="not_submitted">❌ Chưa nộp</option>
             </select>
           </div>
 
@@ -409,15 +443,21 @@ export default function GradingDashboard() {
                       <span className={`text-[13px] font-bold truncate ${isActive ? 'text-emerald-900' : 'text-gray-900 group-hover:text-emerald-700 transition-colors'}`}>
                         {sub.studentName || student?.name || sub.studentId}
                       </span>
-                      <span className="text-[10px] font-medium text-gray-400 shrink-0 ml-2 mt-0.5">
-                        {timeAgo(sub.submittedAt)}
-                      </span>
+                      {sub.submittedAt && (
+                        <span className="text-[10px] font-medium text-gray-400 shrink-0 ml-2 mt-0.5">
+                          {timeAgo(sub.submittedAt)}
+                        </span>
+                      )}
                     </div>
                     
                     <div className="flex items-center justify-between">
                       <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wider
-                        ${isGraded ? 'bg-gray-100 text-gray-500' : 'bg-gradient-to-r from-amber-100 to-orange-100 text-amber-700 border border-amber-200/50'}`}>
-                        {isGraded ? 'Đã chấm' : 'Cần chấm'}
+                        ${isGraded 
+                          ? 'bg-gray-100 text-gray-500' 
+                          : sub.status === 'NOT_SUBMITTED'
+                            ? 'bg-rose-100 text-rose-700 border border-rose-200/50'
+                            : 'bg-gradient-to-r from-amber-100 to-orange-100 text-amber-700 border border-amber-200/50'}`}>
+                        {isGraded ? 'Đã chấm' : sub.status === 'NOT_SUBMITTED' ? 'Chưa nộp' : 'Cần chấm'}
                       </span>
                       
                       {isGraded && (
@@ -465,7 +505,15 @@ export default function GradingDashboard() {
                 </div>
                 
                 <div className="flex-1 flex items-center justify-center overflow-auto relative">
-                  {!fileUrl ? (
+                  {gradingSubmission.status === 'NOT_SUBMITTED' ? (
+                    <div className="text-center p-8">
+                      <div className="w-16 h-16 bg-rose-50 rounded-full flex items-center justify-center mx-auto mb-4 border border-rose-200 shadow-sm animate-pulse">
+                        <XCircle size={28} className="text-rose-500" />
+                      </div>
+                      <p className="text-sm font-bold text-gray-800">Học viên chưa nộp bài tập này.</p>
+                      <p className="text-xs text-gray-500 mt-1 max-w-[240px] mx-auto">Không có tệp đính kèm hoặc nội dung bài làm để xem trước.</p>
+                    </div>
+                  ) : !fileUrl ? (
                     <div className="text-center p-8">
                       <FileText size={48} className="mx-auto text-gray-600 mb-3" />
                       <p className="text-sm font-bold text-gray-400">Học viên không nộp tệp đính kèm.</p>
@@ -517,6 +565,13 @@ export default function GradingDashboard() {
                     )}
                   </div>
 
+                  {gradingSubmission.status === 'NOT_SUBMITTED' && (
+                    <div className="p-3.5 bg-rose-50 border border-rose-200 rounded-2xl text-xs text-rose-700 font-semibold flex items-center gap-2">
+                      <X size={16} className="text-rose-500 shrink-0" />
+                      <span>Học viên chưa nộp bài. Không thể chấm điểm trực tiếp.</span>
+                    </div>
+                  )}
+
                   <div className="space-y-2">
                     <label className="text-xs font-bold text-gray-700 flex justify-between items-end">
                       <span className="uppercase tracking-wider text-gray-500">Điểm số <span className="text-red-500">*</span></span>
@@ -528,8 +583,9 @@ export default function GradingDashboard() {
                         step="0.1"
                         min="0"
                         max={currentAsg?.maxPoints || 10}
-                        className="w-full p-4 text-3xl font-black text-center text-emerald-700 bg-white rounded-2xl border-2 border-gray-100 focus:outline-none focus:border-emerald-400 focus:ring-4 focus:ring-emerald-400/20 shadow-inner transition-all"
+                        className="w-full p-4 text-3xl font-black text-center text-emerald-700 bg-white rounded-2xl border-2 border-gray-100 focus:outline-none focus:border-emerald-400 focus:ring-4 focus:ring-emerald-400/20 shadow-inner transition-all disabled:opacity-50 disabled:bg-gray-100 disabled:border-gray-200 disabled:text-gray-400"
                         required
+                        disabled={gradingSubmission.status === 'NOT_SUBMITTED'}
                         value={gradeInput}
                         onChange={(e) => setGradeInput(e.target.value)}
                       />
@@ -542,8 +598,9 @@ export default function GradingDashboard() {
                   <div className="space-y-2 flex-1 flex flex-col">
                     <label className="text-xs font-bold uppercase tracking-wider text-gray-500">Nhận xét chi tiết</label>
                     <textarea
-                      className="w-full flex-1 p-4 text-sm bg-white rounded-2xl border border-gray-200 focus:outline-none focus:border-emerald-400 focus:ring-4 focus:ring-emerald-400/20 resize-none transition-all shadow-sm min-h-[140px] leading-relaxed"
+                      className="w-full flex-1 p-4 text-sm bg-white rounded-2xl border border-gray-200 focus:outline-none focus:border-emerald-400 focus:ring-4 focus:ring-emerald-400/20 resize-none transition-all shadow-sm min-h-[140px] leading-relaxed disabled:opacity-50 disabled:bg-gray-100 disabled:border-gray-200"
                       placeholder="Ghi nhận xét chi tiết, gạch đầu dòng những điểm tốt và chưa tốt..."
+                      disabled={gradingSubmission.status === 'NOT_SUBMITTED'}
                       value={gradeFeedback}
                       onChange={(e) => setGradeFeedback(e.target.value)}
                     />
@@ -552,8 +609,9 @@ export default function GradingDashboard() {
                         <button
                           key={t}
                           type="button"
+                          disabled={gradingSubmission.status === 'NOT_SUBMITTED'}
                           onClick={() => setGradeFeedback(prev => prev ? `${prev}\n${t}` : t)}
-                          className="text-[11px] bg-white border border-gray-200 hover:border-emerald-300 hover:bg-emerald-50 hover:text-emerald-700 text-gray-600 font-bold px-3 py-1.5 rounded-full shadow-sm transition-all active:scale-95"
+                          className="text-[11px] bg-white border border-gray-200 hover:border-emerald-300 hover:bg-emerald-50 hover:text-emerald-700 text-gray-600 font-bold px-3 py-1.5 rounded-full shadow-sm transition-all active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
                         >
                           {t}
                         </button>
@@ -563,11 +621,11 @@ export default function GradingDashboard() {
 
                   <button
                     type="submit"
-                    disabled={isSubmitting}
-                    className="w-full bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 disabled:opacity-50 text-white font-black text-[13px] uppercase tracking-wide py-4 rounded-2xl shadow-lg shadow-emerald-500/20 hover:shadow-emerald-500/40 transition-all flex justify-center items-center gap-2 shrink-0 active:scale-[0.98]"
+                    disabled={isSubmitting || gradingSubmission.status === 'NOT_SUBMITTED'}
+                    className="w-full bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 disabled:from-gray-300 disabled:to-gray-400 disabled:opacity-50 disabled:cursor-not-allowed text-white font-black text-[13px] uppercase tracking-wide py-4 rounded-2xl shadow-lg shadow-emerald-500/20 hover:shadow-emerald-500/40 transition-all flex justify-center items-center gap-2 shrink-0 active:scale-[0.98]"
                   >
                     {isSubmitting ? <Loader2 size={18} className="animate-spin" /> : <CheckSquare size={18} />}
-                    {gradingSubmission.status === 'GRADED' ? 'Cập nhật Điểm' : 'Lưu Điểm & Phản hồi'}
+                    {gradingSubmission.status === 'NOT_SUBMITTED' ? 'Chưa nộp bài' : gradingSubmission.status === 'GRADED' ? 'Cập nhật Điểm' : 'Lưu Điểm & Phản hồi'}
                   </button>
                 </form>
               </div>
