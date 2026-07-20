@@ -282,7 +282,6 @@ export default function GradingDashboard() {
       <div className="mb-4 flex flex-col xl:flex-row xl:items-end justify-between gap-4">
         <div>
           <h2 className="text-lg font-extrabold text-gray-900 mb-1">Chấm điểm bài nộp</h2>
-          <p className="text-xs text-gray-500">Chấm điểm nhanh gọn với giao diện Hộp thư 2 cột.</p>
         </div>
         
         {/* Filters Panel */}
