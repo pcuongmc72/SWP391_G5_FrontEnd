@@ -122,6 +122,11 @@ export default function GradingDashboard() {
     }
   }, [assignments, activeAsgId, activeAsgIds, materialFilter, assignmentsByMaterial]);
 
+  // Reset selected submission when assignment changes
+  useEffect(() => {
+    setGradingSubmissionId(null);
+  }, [activeAsgId]);
+
   const currentAsg = assignments.find(a => String(a.id) === String(activeAsgId));
 
   const currentSubmissions = useMemo(() => {
