@@ -125,6 +125,7 @@ export default function GradingDashboard() {
   // Reset selected submission when assignment changes
   useEffect(() => {
     setGradingSubmissionId(null);
+    setIsSidebarOpen(true);
   }, [activeAsgId]);
 
   const currentAsg = assignments.find(a => String(a.id) === String(activeAsgId));
@@ -563,7 +564,10 @@ export default function GradingDashboard() {
 
                       <button
                         type="button"
-                        onClick={() => setGradingSubmissionId(null)}
+                        onClick={() => {
+                          setGradingSubmissionId(null);
+                          setIsSidebarOpen(true);
+                        }}
                         className="p-1.5 hover:bg-gray-100/80 rounded-lg text-gray-400 hover:text-gray-600 transition-colors shrink-0 flex items-center justify-center border border-gray-100 bg-white shadow-sm mt-1"
                         title="Thoát chấm điểm"
                       >
