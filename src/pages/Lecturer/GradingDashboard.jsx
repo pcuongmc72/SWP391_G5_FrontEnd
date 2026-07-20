@@ -444,19 +444,28 @@ export default function GradingDashboard() {
               const student = users.find((s) => s.id === sub.studentId);
               const isActive = gradingSubmissionId === sub.id;
               const isGraded = sub.status === 'GRADED';
+              const isNotSubmitted = sub.status === 'NOT_SUBMITTED';
               const avatar = student?.avatarUrl || `https://api.dicebear.com/7.x/initials/svg?seed=${sub.studentId}`;
               
               return (
                 <div
                   key={sub.id}
-                  onClick={() => handleSelectSubmission(sub)}
-                  className={`group p-3.5 rounded-2xl cursor-pointer border transition-all duration-300 flex items-center gap-3.5 relative overflow-hidden ${isActive ? 'bg-gradient-to-br from-emerald-50 to-teal-50/30 border-emerald-300 shadow-sm ring-1 ring-emerald-100' : 'bg-white border-gray-100 hover:border-emerald-200 hover:shadow-md hover:-translate-y-0.5'}`}
+                  onClick={() => {
+                    if (isNotSubmitted) return;
+                    handleSelectSubmission(sub);
+                  }}
+                  className={`group p-3.5 rounded-2xl border transition-all duration-300 flex items-center gap-3.5 relative overflow-hidden 
+                    ${isNotSubmitted 
+                      ? 'bg-gray-50/65 border-gray-100 opacity-60 cursor-not-allowed select-none' 
+                      : isActive 
+                        ? 'bg-gradient-to-br from-emerald-50 to-teal-50/30 border-emerald-300 shadow-sm ring-1 ring-emerald-100 cursor-pointer' 
+                        : 'bg-white border-gray-100 hover:border-emerald-200 hover:shadow-md hover:-translate-y-0.5 cursor-pointer'}`}
                 >
                   {/* Decorative active bar */}
                   {isActive && <div className="absolute left-0 top-0 bottom-0 w-1 bg-gradient-to-b from-emerald-400 to-teal-500" />}
 
                   <div className="relative">
-                    <img src={avatar} alt="" className={`w-11 h-11 rounded-full shrink-0 object-cover ${isActive ? 'ring-2 ring-emerald-400 ring-offset-2' : 'group-hover:ring-2 group-hover:ring-emerald-200 transition-all'}`} />
+                    <img src={avatar} alt="" className={`w-11 h-11 rounded-full shrink-0 object-cover ${isActive ? 'ring-2 ring-emerald-400 ring-offset-2' : isNotSubmitted ? 'opacity-70' : 'group-hover:ring-2 group-hover:ring-emerald-200 transition-all'}`} />
                     {isGraded && (
                       <div className="absolute -bottom-1 -right-1 bg-white rounded-full p-0.5 shadow-sm">
                         <CheckCircle2 size={12} className="text-emerald-500 fill-emerald-100" />
@@ -466,7 +475,12 @@ export default function GradingDashboard() {
                   
                   <div className="flex-1 min-w-0">
                     <div className="flex justify-between items-start mb-0.5">
-                      <span className={`text-[13px] font-bold truncate ${isActive ? 'text-emerald-900' : 'text-gray-900 group-hover:text-emerald-700 transition-colors'}`}>
+                      <span className={`text-[13px] font-bold truncate 
+                        ${isNotSubmitted 
+                          ? 'text-gray-400' 
+                          : isActive 
+                            ? 'text-emerald-900' 
+                            : 'text-gray-900 group-hover:text-emerald-700 transition-colors'}`}>
                         {sub.studentName || student?.name || sub.studentId}
                       </span>
                       {sub.submittedAt && (
@@ -475,7 +489,7 @@ export default function GradingDashboard() {
                         </span>
                       )}
                     </div>
-                    <div className={`text-[11px] font-semibold mb-1.5 ${isActive ? 'text-emerald-700/80' : 'text-gray-500'}`}>
+                    <div className={`text-[11px] font-semibold mb-1.5 ${isNotSubmitted ? 'text-gray-400' : isActive ? 'text-emerald-700/80' : 'text-gray-500'}`}>
                       MSSV: {sub.studentId}
                     </div>
                     
