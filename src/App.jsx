@@ -64,22 +64,14 @@ function App() {
   return (
     <BrowserRouter>
       <Routes>
-        {/* ── / và /Home → redirect sang /login nếu chưa đăng nhập ── */}
+        {/* ── Mặc định khi chạy lên sẽ vào thẳng trang đăng nhập ── */}
         <Route
           path="/"
-          element={
-            isAuthenticated()
-              ? <AuthenticatedHomeRedirect />
-              : <Navigate to="/login" replace />
-          }
+          element={<Navigate to="/login" replace />}
         />
         <Route
           path="/Home"
-          element={
-            isAuthenticated()
-              ? <AuthenticatedHomeRedirect />
-              : <Navigate to="/login" replace />
-          }
+          element={<Navigate to="/login" replace />}
         />
 
         {/* ── Trang đăng nhập riêng (standalone, không có Navbar) ── */}
