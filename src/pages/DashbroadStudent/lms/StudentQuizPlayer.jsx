@@ -293,7 +293,14 @@ export default function StudentQuizPlayer({ quizId, triggerNotification, addPoin
                             {quizData.questions?.slice((currentPage - 1) * questionsPerPage, currentPage * questionsPerPage).map((q, qIdx) => (
                                 <div key={q.id} className="bg-white border border-gray-200 shadow-sm rounded-xl p-5 space-y-3 relative">
                                     <div className="flex justify-between items-center">
-                                        <span className="text-[10px] font-bold text-emerald-600 uppercase tracking-widest block">Câu {q.order} ({q.points} điểm)</span>
+                                        <span className="text-[10px] font-bold text-emerald-600 uppercase tracking-widest block">
+                                            Câu {q.order} ({q.points} điểm)
+                                            {q.maxSelections > 1 && (
+                                                <span className="text-amber-500 ml-1 normal-case font-semibold">
+                                                    (Lưu ý: Chọn {q.maxSelections} đáp án)
+                                                </span>
+                                            )}
+                                        </span>
                                         <button 
                                             onClick={() => toggleStar(q.id)}
                                             className="text-gray-400 hover:text-amber-500 transition cursor-pointer"
