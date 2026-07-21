@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import {
     BookOpen, User, Calendar, Loader2, FileText,
-    Play, FileQuestion, File, CheckCircle, Circle,
+    Play, ClipboardList, File, CheckCircle, Circle,
     Search, ExternalLink, Award, ArrowLeft, Map, ChevronRight, ChevronDown, Download
 } from 'lucide-react';
 import {
@@ -16,7 +16,7 @@ const TYPE_CONFIG = {
     video:    { label: 'Video',    icon: Play,         color: '#8b5cf6', bg: '#f5f3ff', border: '#c4b5fd' },
     pdf:      { label: 'PDF',      icon: FileText,     color: '#ef4444', bg: '#fef2f2', border: '#fca5a5' },
     document: { label: 'Tài liệu', icon: File,         color: '#3b82f6', bg: '#eff6ff', border: '#93c5fd' },
-    quiz:     { label: 'Quiz',     icon: FileQuestion, color: '#f59e0b', bg: '#fffbeb', border: '#fcd34d' },
+    quiz:     { label: 'Quiz',     icon: ClipboardList, color: '#f59e0b', bg: '#fffbeb', border: '#fcd34d' },
 };
 
 function getTypeConfig(type) {

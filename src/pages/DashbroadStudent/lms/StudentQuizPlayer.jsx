@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { getQuizDetailsForStudent, startQuizAttempt, submitQuizAttempt, getStudentQuizAttempts } from '../../../services/studentService';
-import { HelpCircle, Clock, CheckCircle, XCircle, AlertCircle, Play, Star } from 'lucide-react';
+import { getQuizDetailsForStudent, startQuizAttempt, submitQuizAttempt, getStudentQuizAttempts, getAttemptDetail } from '../../../services/studentService';
+import { HelpCircle, Clock, CheckCircle, XCircle, AlertCircle, Play, Star, Eye, Trophy, Calendar, Hash, BookOpen, X } from 'lucide-react';
 
 export default function StudentQuizPlayer({ quizId, triggerNotification, addPoints, onToggleComplete }) {
     const [quizData, setQuizData] = useState(null);
@@ -21,6 +21,11 @@ export default function StudentQuizPlayer({ quizId, triggerNotification, addPoin
 
     // Custom confirm modal state
     const [showSubmitConfirm, setShowSubmitConfirm] = useState(false);
+    const [showStartConfirm, setShowStartConfirm] = useState(false);
+
+    // Attempt detail modal state
+    const [selectedAttemptDetail, setSelectedAttemptDetail] = useState(null);
+    const [loadingDetail, setLoadingDetail] = useState(false);
 
     // Ref to always hold the latest handleSubmit (avoids stale closure in timer)
     const handleSubmitRef = useRef(null);
@@ -153,6 +158,20 @@ export default function StudentQuizPlayer({ quizId, triggerNotification, addPoin
         }
     };
 
+    const handleViewDetail = async (attempt) => {
+        try {
+            setLoadingDetail(true);
+            const res = await getAttemptDetail(quizData.id, attempt.id);
+            if (res.success) {
+                setSelectedAttemptDetail(res.data);
+            }
+        } catch (err) {
+            triggerNotification(err.response?.data?.message || 'Không thể tải chi tiết lượt thi', 'error');
+        } finally {
+            setLoadingDetail(false);
+        }
+    };
+
     if (loading && !quizData) return <div className="p-5 text-emerald-400">Đang tải bài trắc nghiệm...</div>;
     if (error) return <div className="p-5 text-red-400">{error}</div>;
     if (!quizData) return null;
@@ -166,13 +185,19 @@ export default function StudentQuizPlayer({ quizId, triggerNotification, addPoin
         return `${m}:${s.toString().padStart(2, '0')}`;
     };
 
+    const formatDateTime = (dateStr) => {
+        if (!dateStr) return '-';
+        const d = new Date(dateStr);
+        return d.toLocaleString('vi-VN', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' });
+    };
+
     return (
         <div className="space-y-6">
             {!currentAttempt ? (
                 // LOBBY STATE
                 <div className="bg-white border border-gray-200 shadow-sm rounded-xl p-5 space-y-4">
-                    <h3 className="text-xl font-bold text-emerald-800 flex items-center gap-2">
-                        <HelpCircle /> {quizData.title}
+                    <h3 className="text-xl font-bold text-emerald-800">
+                        {quizData.title}
                     </h3>
                     <p className="text-sm text-gray-600">{quizData.description}</p>
                     
@@ -187,14 +212,34 @@ export default function StudentQuizPlayer({ quizId, triggerNotification, addPoin
 
                     {myAttempts.length > 0 && (
                         <div className="mt-4 border-t border-gray-200 pt-4">
-                            <h4 className="font-bold text-gray-800 mb-2">Lịch sử làm bài:</h4>
-                            <div className="space-y-2">
-                                {myAttempts.map((att, idx) => (
-                                    <div key={att.id} className="bg-gray-50 p-2 rounded flex justify-between text-sm text-gray-700 border border-gray-100">
-                                        <span>Lần {att.attemptNumber}</span>
-                                        <span className="font-bold text-emerald-600">{att.totalScore} điểm</span>
-                                    </div>
-                                ))}
+                            <h4 className="font-bold text-gray-800 mb-3 text-sm">Lịch sử làm bài ({myAttempts.length}/{quizData.maxAttempts} lượt)</h4>
+                            {/* Table header */}
+                            <div className="grid grid-cols-4 gap-2 text-[11px] font-semibold text-gray-400 uppercase tracking-wide px-3 mb-1">
+                                <span>Lần</span>
+                                <span>Điểm</span>
+                                <span>Ngày nộp</span>
+                                <span></span>
+                            </div>
+                            <div className="space-y-1.5">
+                                {myAttempts.map((att) => {
+                                    const isPassed = att.totalScore >= 5;
+                                    return (
+                                        <div key={att.id} className="grid grid-cols-4 gap-2 items-center bg-gray-50 border border-gray-200 rounded-lg px-3 py-2 text-sm">
+                                            <span className="font-medium text-gray-700">Lần {att.attemptNumber}</span>
+                                            <span className={`font-bold ${isPassed ? 'text-emerald-600' : 'text-red-500'}`}>
+                                                {att.totalScore ?? '—'}
+                                            </span>
+                                            <span className="text-gray-500 text-xs">{formatDateTime(att.submittedAt)}</span>
+                                            <button
+                                                onClick={() => handleViewDetail(att)}
+                                                disabled={loadingDetail}
+                                                className="px-2 py-1 text-xs font-semibold text-white bg-emerald-600 hover:bg-emerald-700 rounded-lg transition cursor-pointer disabled:opacity-50"
+                                            >
+                                                Xem chi tiết bài thi
+                                            </button>
+                                        </div>
+                                    );
+                                })}
                             </div>
                         </div>
                     )}
@@ -202,7 +247,7 @@ export default function StudentQuizPlayer({ quizId, triggerNotification, addPoin
                     <div className="mt-6 flex justify-end">
                         {hasAttemptsLeft ? (
                             <button 
-                                onClick={handleStartAttempt}
+                                onClick={() => setShowStartConfirm(true)}
                                 disabled={loading}
                                 className="bg-emerald-600 hover:bg-emerald-500 text-white font-bold py-2 px-4 rounded flex items-center gap-2 transition cursor-pointer disabled:opacity-50"
                             >
@@ -292,7 +337,14 @@ export default function StudentQuizPlayer({ quizId, triggerNotification, addPoin
                             {quizData.questions?.slice((currentPage - 1) * questionsPerPage, currentPage * questionsPerPage).map((q, qIdx) => (
                                 <div key={q.id} className="bg-white border border-gray-200 shadow-sm rounded-xl p-5 space-y-3 relative">
                                     <div className="flex justify-between items-center">
-                                        <span className="text-[10px] font-bold text-emerald-600 uppercase tracking-widest block">Câu {q.order} ({q.points} điểm)</span>
+                                        <span className="text-[10px] font-bold text-emerald-600 uppercase tracking-widest block">
+                                            Câu {q.order} ({q.points} điểm)
+                                            {q.maxSelections > 1 && (
+                                                <span className="text-amber-500 ml-1 normal-case font-semibold">
+                                                    (Lưu ý: Chọn {q.maxSelections} đáp án)
+                                                </span>
+                                            )}
+                                        </span>
                                         <button 
                                             onClick={() => toggleStar(q.id)}
                                             className="text-gray-400 hover:text-amber-500 transition cursor-pointer"
@@ -326,6 +378,40 @@ export default function StudentQuizPlayer({ quizId, triggerNotification, addPoin
                 </div>
             )}
 
+            {/* Custom Start Confirmation Modal */}
+            {showStartConfirm && (
+                <div className="fixed inset-0 z-[300] bg-black/50 flex items-center justify-center animate-fade-in p-4">
+                    <div className="bg-white rounded-xl shadow-2xl p-6 max-w-sm w-full animate-scale-up">
+                        <div className="flex items-center gap-3 mb-3">
+                            <div className="bg-emerald-100 p-2 rounded-full text-emerald-600">
+                                <Play size={24} />
+                            </div>
+                            <h3 className="text-lg font-bold text-gray-800">Xác nhận làm bài</h3>
+                        </div>
+                        <p className="text-sm text-gray-600 mb-6 pl-11">
+                            Bạn đã sẵn sàng để bắt đầu làm bài quiz chưa? Thời gian sẽ bắt đầu tính ngay sau khi bạn xác nhận.
+                        </p>
+                        <div className="flex gap-3 justify-end">
+                            <button 
+                                onClick={() => setShowStartConfirm(false)}
+                                className="px-4 py-2 text-sm font-semibold text-gray-600 bg-gray-100 hover:bg-gray-200 rounded-lg transition cursor-pointer"
+                            >
+                                Hủy bỏ
+                            </button>
+                            <button 
+                                onClick={() => {
+                                    setShowStartConfirm(false);
+                                    handleStartAttempt();
+                                }}
+                                className="px-4 py-2 text-sm font-semibold text-white bg-emerald-600 hover:bg-emerald-700 rounded-lg transition cursor-pointer"
+                            >
+                                Đồng ý
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
             {/* Custom Submit Confirmation Modal */}
             {showSubmitConfirm && (
                 <div className="fixed inset-0 z-[300] bg-black/50 flex items-center justify-center animate-fade-in p-4">
@@ -354,6 +440,67 @@ export default function StudentQuizPlayer({ quizId, triggerNotification, addPoin
                                 className="px-4 py-2 text-sm font-semibold text-white bg-amber-600 hover:bg-amber-700 rounded-lg transition cursor-pointer"
                             >
                                 Nộp bài
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Attempt Detail Modal */}
+            {selectedAttemptDetail && (
+                <div className="fixed inset-0 z-[400] bg-black/60 flex items-start justify-center animate-fade-in p-4 overflow-y-auto">
+                    <div className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl my-8 animate-scale-up">
+                        {/* Modal Header */}
+                        <div className="flex items-center justify-between p-5 border-b border-gray-200">
+                            <div>
+                                <h3 className="text-lg font-bold text-gray-800">Chi tiết lần {selectedAttemptDetail.attemptNumber}</h3>
+                                <p className="text-sm text-gray-500 mt-0.5">Nộp lúc: {formatDateTime(selectedAttemptDetail.submittedAt)}</p>
+                            </div>
+                            <button
+                                onClick={() => setSelectedAttemptDetail(null)}
+                                className="text-gray-400 hover:text-gray-600 transition cursor-pointer p-1 rounded-full hover:bg-gray-100"
+                            >
+                                <X size={22} />
+                            </button>
+                        </div>
+
+                        {/* Question List — chỉ hiện câu hỏi và đáp án đã chọn */}
+                        <div className="p-5 space-y-5 max-h-[70vh] overflow-y-auto">
+                            {selectedAttemptDetail.questions.map((q) => (
+                                <div key={q.questionId} className="border border-gray-200 rounded-xl p-4">
+                                    <p className="text-xs text-gray-400 mb-1">Câu {q.questionOrder}</p>
+                                    <p className="text-sm font-semibold text-gray-800 mb-3">{q.questionText}</p>
+                                    <div className="space-y-2">
+                                        {q.options.map((opt, optIdx) => (
+                                            <div
+                                                key={opt.id}
+                                                className={`flex items-center gap-2 px-3 py-2 rounded-lg border text-sm ${
+                                                    opt.wasSelected
+                                                        ? 'border-emerald-400 bg-emerald-50 text-emerald-800 font-semibold'
+                                                        : 'border-gray-200 bg-white text-gray-600'
+                                                }`}
+                                            >
+                                                <span className="font-bold text-xs w-5 text-center text-gray-400">
+                                                    {String.fromCharCode(65 + optIdx)}.
+                                                </span>
+                                                <span className="flex-1">{opt.optionText}</span>
+                                                {opt.wasSelected && (
+                                                    <span className="text-[10px] text-emerald-600 font-bold">✓ Đã chọn</span>
+                                                )}
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+
+                        {/* Modal Footer */}
+                        <div className="p-4 border-t border-gray-100 flex justify-end">
+                            <button
+                                onClick={() => setSelectedAttemptDetail(null)}
+                                className="px-5 py-2 text-sm font-semibold text-white bg-emerald-600 hover:bg-emerald-700 rounded-lg transition cursor-pointer"
+                            >
+                                Đóng
                             </button>
                         </div>
                     </div>
