@@ -132,6 +132,14 @@ export const getStudentQuizAttempts = async (quizId) => {
 };
 
 /**
+ * Xem chi tiết đáp án của 1 lượt thi
+ */
+export const getAttemptDetail = async (quizId, attemptId) => {
+    const response = await api.get(`/api/Student/quizzes/${quizId}/attempts/${attemptId}/detail`);
+    return response.data;
+};
+
+/**
  * Lấy danh sách câu hỏi / feedback trong một lớp học
  * GET /api/student-classes/{classId}/feedbacks
  */

@@ -286,7 +286,7 @@ export default function LessonPlayer({
   const availableTabs = useMemo(() => {
     if (!lecture) return [];
     const tabs = [];
-    if (lecture.type === "quiz") return [{ id: "quiz", label: "❓ Bài kiểm tra" }];
+    if (lecture.type === "quiz") return [{ id: "quiz", label: "Bài kiểm tra" }];
     if (lecture.type === "in_class" && lecture.inClassExercise)
       return [{ id: "in_class", label: "👥 Thực hành nhóm" }];
     if (lecture.type === "post_class" && lecture.postClassHomework)
