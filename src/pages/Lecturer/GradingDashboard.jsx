@@ -1,5 +1,5 @@
 import { useMemo, useState, useEffect, useCallback } from 'react';
-import { Check, X, CheckSquare, FileText, Pencil, Loader2, Search, BookOpen, CheckCircle2 } from 'lucide-react';
+import { Check, X, CheckSquare, FileText, Pencil, Loader2, Search, BookOpen, CheckCircle2, PanelLeftClose, PanelLeftOpen, XCircle } from 'lucide-react';
 import { useLecturerWorkspace } from '../../context/LecturerWorkspaceContext';
 
 const truncateText = (text, maxLength = 60) => {
@@ -34,6 +34,7 @@ export default function GradingDashboard() {
   // Selection state
   const [activeAsgId, setActiveAsgId] = useState('');
   const [gradingSubmissionId, setGradingSubmissionId] = useState(null);
+  const [isSidebarOpen, setIsSidebarOpen] = useState(true);
   
   // Filter state
   const [materialFilter, setMaterialFilter] = useState('all');
@@ -43,6 +44,9 @@ export default function GradingDashboard() {
   const [gradeInput, setGradeInput] = useState('');
   const [gradeFeedback, setGradeFeedback] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [textContent, setTextContent] = useState('');
+  const [textLoading, setTextLoading] = useState(false);
+  const [textError, setTextError] = useState(false);
 
   const showToast = (message, type = 'success') => {
     setToast({ message, type });
@@ -121,22 +125,61 @@ export default function GradingDashboard() {
     }
   }, [assignments, activeAsgId, activeAsgIds, materialFilter, assignmentsByMaterial]);
 
+  // Reset selected submission when assignment changes
+  useEffect(() => {
+    setGradingSubmissionId(null);
+    setIsSidebarOpen(true);
+  }, [activeAsgId]);
+
   const currentAsg = assignments.find(a => String(a.id) === String(activeAsgId));
 
   const currentSubmissions = useMemo(() => {
     if (!activeAsgId) return [];
-    let subs = submissions.filter((s) => String(s.assignmentId) === String(activeAsgId));
     
-    if (submissionStatusFilter === 'graded') subs = subs.filter(s => s.status === 'GRADED');
-    if (submissionStatusFilter === 'ungraded') subs = subs.filter(s => s.status !== 'GRADED');
-
-    // Sort: Submitted first, then Graded
-    return subs.sort((a, b) => {
-      if (a.status === 'SUBMITTED' && b.status !== 'SUBMITTED') return -1;
-      if (a.status !== 'SUBMITTED' && b.status === 'SUBMITTED') return 1;
-      return new Date(b.submittedAt) - new Date(a.submittedAt);
+    // Build the list of all students combined with their submissions
+    let list = (users || []).map(student => {
+      const sub = (submissions || []).find(
+        s => String(s.studentId) === String(student.id) && String(s.assignmentId) === String(activeAsgId)
+      );
+      if (sub) return sub;
+      return {
+        id: `virtual-${student.id}`,
+        assignmentId: activeAsgId,
+        studentId: student.id,
+        studentName: student.name,
+        fileName: null,
+        studentNotes: null,
+        status: 'NOT_SUBMITTED',
+        grade: null,
+        feedback: '',
+        submittedAt: null,
+        gradedAt: null,
+      };
     });
-  }, [submissions, activeAsgId, submissionStatusFilter]);
+
+    // Apply filters
+    if (submissionStatusFilter === 'graded') {
+      list = list.filter(s => s.status === 'GRADED');
+    } else if (submissionStatusFilter === 'ungraded') {
+      list = list.filter(s => s.status === 'SUBMITTED');
+    } else if (submissionStatusFilter === 'not_submitted') {
+      list = list.filter(s => s.status === 'NOT_SUBMITTED');
+    }
+
+    // Sort: Submitted ('SUBMITTED') first, then Graded ('GRADED'), then Not Submitted ('NOT_SUBMITTED')
+    return list.sort((a, b) => {
+      const statusOrder = { 'SUBMITTED': 1, 'GRADED': 2, 'NOT_SUBMITTED': 3 };
+      const orderA = statusOrder[a.status] || 99;
+      const orderB = statusOrder[b.status] || 99;
+      
+      if (orderA !== orderB) {
+        return orderA - orderB;
+      }
+      
+      // If same status, sort by name
+      return a.studentName.localeCompare(b.studentName, 'vi');
+    });
+  }, [users, submissions, activeAsgId, submissionStatusFilter]);
 
   const gradingSubmission = useMemo(() => {
     return currentSubmissions.find(s => s.id === gradingSubmissionId) || null;
@@ -210,6 +253,52 @@ export default function GradingDashboard() {
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [currentSubmissions, gradingSubmissionId]);
 
+  // Preview logic for current grading submission
+  const fileUrl = gradingSubmission?.fileName?.startsWith('http') ? gradingSubmission.fileName : null;
+  const isImage = fileUrl && /\.(jpeg|jpg|gif|png|webp)($|\?)/i.test(fileUrl);
+  const isVideo = fileUrl && /\.(mp4|webm|ogg)($|\?)/i.test(fileUrl);
+  const isZip = fileUrl && /\.(zip|rar|7z|gz|tar)($|\?)/i.test(fileUrl);
+  const isTextFile = fileUrl && /\.(txt|sql|html|css|js|json|xml|java|cs|py|cpp|c|sh)($|\?)/i.test(fileUrl);
+  const ytMatch = fileUrl && fileUrl.match(/(?:youtu\.be\/|v\/|embed\/|watch\?v=|&v=)([^#&?]{11})/);
+  const ytId = ytMatch ? ytMatch[1] : null;
+  const isCloudinary = fileUrl && fileUrl.includes('cloudinary.com');
+  const isDocType = fileUrl && /\.(pptx?|docx?|xlsx?)($|\?)/i.test(fileUrl);
+  const isPdf = fileUrl && /\.pdf($|\?)/i.test(fileUrl);
+
+  const previewSrc = fileUrl
+    ? (isDocType
+      ? `https://docs.google.com/gview?url=${encodeURIComponent(fileUrl)}&embedded=true`
+      : (isPdf && isCloudinary)
+        ? fileUrl.replace('/upload/', '/upload/fl_attachment:false/')
+        : fileUrl)
+    : null;
+
+  useEffect(() => {
+    if (fileUrl && isTextFile) {
+      setTextLoading(true);
+      setTextError(false);
+      setTextContent('');
+      fetch(fileUrl)
+        .then(res => {
+          if (!res.ok) throw new Error('Fetch failed');
+          return res.text();
+        })
+        .then(text => {
+          setTextContent(text);
+          setTextLoading(false);
+        })
+        .catch(err => {
+          console.error('Error fetching file content:', err);
+          setTextError(true);
+          setTextLoading(false);
+        });
+    } else {
+      setTextContent('');
+      setTextLoading(false);
+      setTextError(false);
+    }
+  }, [fileUrl, isTextFile]);
+
   if (classesLoading || workspaceLoading) {
     return (
       <div className="flex flex-col items-center justify-center py-24 gap-3">
@@ -218,23 +307,6 @@ export default function GradingDashboard() {
       </div>
     );
   }
-
-  // Preview logic for current grading submission
-  const fileUrl = gradingSubmission?.fileName?.startsWith('http') ? gradingSubmission.fileName : null;
-  const isImage = fileUrl && /\.(jpeg|jpg|gif|png|webp)($|\?)/i.test(fileUrl);
-  const isVideo = fileUrl && /\.(mp4|webm|ogg)($|\?)/i.test(fileUrl);
-  const isZip = fileUrl && /\.(zip|rar|7z|gz|tar)($|\?)/i.test(fileUrl);
-  const ytMatch = fileUrl && fileUrl.match(/(?:youtu\.be\/|v\/|embed\/|watch\?v=|&v=)([^#&?]{11})/);
-  const ytId = ytMatch ? ytMatch[1] : null;
-  const isCloudinary = fileUrl && fileUrl.includes('cloudinary.com');
-  const isDocType = fileUrl && /\.(pptx?|docx?|xlsx?)($|\?)/i.test(fileUrl);
-  const previewSrc = fileUrl
-    ? (isCloudinary && !isDocType && !isImage && !isVideo && !isZip
-      ? fileUrl.replace('/upload/', '/upload/fl_attachment:false/').split('?')[0] + '.pdf'
-      : isDocType
-        ? `https://docs.google.com/gview?url=${encodeURIComponent(fileUrl)}&embedded=true`
-        : fileUrl)
-    : null;
 
   return (
     <div className="relative pb-12 h-full">
@@ -248,7 +320,6 @@ export default function GradingDashboard() {
       <div className="mb-4 flex flex-col xl:flex-row xl:items-end justify-between gap-4">
         <div>
           <h2 className="text-lg font-extrabold text-gray-900 mb-1">Chấm điểm bài nộp</h2>
-          <p className="text-xs text-gray-500">Chấm điểm nhanh gọn với giao diện Hộp thư 2 cột.</p>
         </div>
         
         {/* Filters Panel */}
@@ -329,13 +400,14 @@ export default function GradingDashboard() {
       <div className="flex gap-4" style={{ height: 'calc(100vh - 160px)', minHeight: 500 }}>
         
         {/* LEFT COLUMN: LIST OF SUBMISSIONS */}
-        <div className="w-[300px] lg:w-[340px] xl:w-[380px] bg-white rounded-2xl border border-gray-200 shadow-sm flex flex-col overflow-hidden shrink-0">
+        {isSidebarOpen && (
+          <div className="w-[300px] lg:w-[340px] xl:w-[380px] bg-white rounded-2xl border border-gray-200 shadow-sm flex flex-col overflow-hidden shrink-0">
           
           <div className="p-3 border-b border-gray-100 bg-gray-50 shrink-0 flex flex-col gap-2">
             <div className="flex items-center justify-between mb-1">
-              <span className="text-xs font-bold text-gray-600 uppercase tracking-wider">Danh sách nộp bài</span>
+              <span className="text-xs font-bold text-gray-600 uppercase tracking-wider">Danh sách sinh viên</span>
               <span className="text-[10px] font-bold bg-emerald-100 text-emerald-700 px-2 py-0.5 rounded-full">
-                {currentSubmissions.length} bài
+                {currentSubmissions.length} sinh viên
               </span>
             </div>
             
@@ -350,16 +422,6 @@ export default function GradingDashboard() {
                 </div>
               );
             })()}
-
-            <select
-              value={submissionStatusFilter}
-              onChange={(e) => setSubmissionStatusFilter(e.target.value)}
-              className="w-full bg-white border border-gray-200 rounded-lg px-2 py-1.5 text-xs font-bold text-gray-700 focus:outline-none focus:border-emerald-400 shadow-sm"
-            >
-              <option value="all">Tất cả trạng thái</option>
-              <option value="ungraded">⏳ Cần chấm</option>
-              <option value="graded">✅ Đã chấm</option>
-            </select>
           </div>
 
           <div className="flex-1 overflow-y-auto p-2.5 space-y-2.5">
@@ -382,19 +444,28 @@ export default function GradingDashboard() {
               const student = users.find((s) => s.id === sub.studentId);
               const isActive = gradingSubmissionId === sub.id;
               const isGraded = sub.status === 'GRADED';
+              const isNotSubmitted = sub.status === 'NOT_SUBMITTED';
               const avatar = student?.avatarUrl || `https://api.dicebear.com/7.x/initials/svg?seed=${sub.studentId}`;
               
               return (
                 <div
                   key={sub.id}
-                  onClick={() => handleSelectSubmission(sub)}
-                  className={`group p-3.5 rounded-2xl cursor-pointer border transition-all duration-300 flex items-center gap-3.5 relative overflow-hidden ${isActive ? 'bg-gradient-to-br from-emerald-50 to-teal-50/30 border-emerald-300 shadow-sm ring-1 ring-emerald-100' : 'bg-white border-gray-100 hover:border-emerald-200 hover:shadow-md hover:-translate-y-0.5'}`}
+                  onClick={() => {
+                    if (isNotSubmitted) return;
+                    handleSelectSubmission(sub);
+                  }}
+                  className={`group p-3.5 rounded-2xl border transition-all duration-300 flex items-center gap-3.5 relative overflow-hidden 
+                    ${isNotSubmitted 
+                      ? 'bg-gray-50/65 border-gray-100 opacity-60 cursor-not-allowed select-none' 
+                      : isActive 
+                        ? 'bg-gradient-to-br from-emerald-50 to-teal-50/30 border-emerald-300 shadow-sm ring-1 ring-emerald-100 cursor-pointer' 
+                        : 'bg-white border-gray-100 hover:border-emerald-200 hover:shadow-md hover:-translate-y-0.5 cursor-pointer'}`}
                 >
                   {/* Decorative active bar */}
                   {isActive && <div className="absolute left-0 top-0 bottom-0 w-1 bg-gradient-to-b from-emerald-400 to-teal-500" />}
 
                   <div className="relative">
-                    <img src={avatar} alt="" className={`w-11 h-11 rounded-full shrink-0 object-cover ${isActive ? 'ring-2 ring-emerald-400 ring-offset-2' : 'group-hover:ring-2 group-hover:ring-emerald-200 transition-all'}`} />
+                    <img src={avatar} alt="" className={`w-11 h-11 rounded-full shrink-0 object-cover ${isActive ? 'ring-2 ring-emerald-400 ring-offset-2' : isNotSubmitted ? 'opacity-70' : 'group-hover:ring-2 group-hover:ring-emerald-200 transition-all'}`} />
                     {isGraded && (
                       <div className="absolute -bottom-1 -right-1 bg-white rounded-full p-0.5 shadow-sm">
                         <CheckCircle2 size={12} className="text-emerald-500 fill-emerald-100" />
@@ -403,19 +474,33 @@ export default function GradingDashboard() {
                   </div>
                   
                   <div className="flex-1 min-w-0">
-                    <div className="flex justify-between items-start mb-1">
-                      <span className={`text-[13px] font-bold truncate ${isActive ? 'text-emerald-900' : 'text-gray-900 group-hover:text-emerald-700 transition-colors'}`}>
+                    <div className="flex justify-between items-start mb-0.5">
+                      <span className={`text-[13px] font-bold truncate 
+                        ${isNotSubmitted 
+                          ? 'text-gray-400' 
+                          : isActive 
+                            ? 'text-emerald-900' 
+                            : 'text-gray-900 group-hover:text-emerald-700 transition-colors'}`}>
                         {sub.studentName || student?.name || sub.studentId}
                       </span>
-                      <span className="text-[10px] font-medium text-gray-400 shrink-0 ml-2 mt-0.5">
-                        {timeAgo(sub.submittedAt)}
-                      </span>
+                      {sub.submittedAt && (
+                        <span className="text-[10px] font-medium text-gray-400 shrink-0 ml-2 mt-0.5">
+                          {timeAgo(sub.submittedAt)}
+                        </span>
+                      )}
+                    </div>
+                    <div className={`text-[11px] font-semibold mb-1.5 ${isNotSubmitted ? 'text-gray-400' : isActive ? 'text-emerald-700/80' : 'text-gray-500'}`}>
+                      MSSV: {sub.studentId}
                     </div>
                     
                     <div className="flex items-center justify-between">
                       <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wider
-                        ${isGraded ? 'bg-gray-100 text-gray-500' : 'bg-gradient-to-r from-amber-100 to-orange-100 text-amber-700 border border-amber-200/50'}`}>
-                        {isGraded ? 'Đã chấm' : 'Cần chấm'}
+                        ${isGraded 
+                          ? 'bg-gray-100 text-gray-500' 
+                          : sub.status === 'NOT_SUBMITTED'
+                            ? 'bg-rose-100 text-rose-700 border border-rose-200/50'
+                            : 'bg-gradient-to-r from-amber-100 to-orange-100 text-amber-700 border border-amber-200/50'}`}>
+                        {isGraded ? 'Đã chấm' : sub.status === 'NOT_SUBMITTED' ? 'Chưa nộp' : 'Cần chấm'}
                       </span>
                       
                       {isGraded && (
@@ -430,6 +515,7 @@ export default function GradingDashboard() {
             })}
           </div>
         </div>
+        )}
 
         {/* RIGHT COLUMN: PREVIEW & GRADING FORM */}
         <div className="flex-1 bg-white rounded-2xl border border-gray-200 shadow-sm flex flex-col overflow-hidden relative">
@@ -439,12 +525,21 @@ export default function GradingDashboard() {
               {/* Left inner: File Preview */}
               <div className="flex-[1.4] bg-[#0f172a] flex flex-col min-w-[340px] overflow-hidden border-b lg:border-b-0 lg:border-r border-gray-200">
                 <div className="flex items-center justify-between px-4 py-2 bg-black/60 backdrop-blur-sm z-10 shrink-0">
-                  <span className="text-xs font-bold text-gray-300 flex items-center gap-2 truncate pr-4">
-                    <FileText size={14} /> 
-                    {gradingSubmission.fileName ? (
-                      <span className="truncate">{gradingSubmission.fileName.startsWith('http') ? 'Tài liệu học viên nộp' : gradingSubmission.fileName}</span>
-                    ) : 'Không có tệp đính kèm'}
-                  </span>
+                  <div className="flex items-center gap-3 pr-4 overflow-hidden">
+                    <button 
+                      onClick={() => setIsSidebarOpen(!isSidebarOpen)}
+                      className="p-1 hover:bg-white/20 rounded-md text-gray-300 hover:text-white transition-colors shrink-0"
+                      title={isSidebarOpen ? "Thu gọn danh sách" : "Mở rộng danh sách"}
+                    >
+                      {isSidebarOpen ? <PanelLeftClose size={18} /> : <PanelLeftOpen size={18} />}
+                    </button>
+                    <span className="text-xs font-bold text-gray-300 flex items-center gap-2 truncate">
+                      <FileText size={14} className="shrink-0" /> 
+                      {gradingSubmission.fileName ? (
+                        <span className="truncate">{gradingSubmission.fileName.startsWith('http') ? 'Tài liệu học viên nộp' : gradingSubmission.fileName}</span>
+                      ) : 'Không có tệp đính kèm'}
+                    </span>
+                  </div>
                   {fileUrl && (
                     <a href={fileUrl} target="_blank" rel="noopener noreferrer" className="text-[11px] bg-white/10 hover:bg-white/20 text-white px-3 py-1.5 rounded-full text-decoration-none flex items-center gap-1.5 transition whitespace-nowrap shrink-0 font-medium">
                       Mở tab mới / Tải
@@ -453,7 +548,15 @@ export default function GradingDashboard() {
                 </div>
                 
                 <div className="flex-1 flex items-center justify-center overflow-auto relative">
-                  {!fileUrl ? (
+                  {gradingSubmission.status === 'NOT_SUBMITTED' ? (
+                    <div className="text-center p-8">
+                      <div className="w-16 h-16 bg-rose-50 rounded-full flex items-center justify-center mx-auto mb-4 border border-rose-200 shadow-sm animate-pulse">
+                        <XCircle size={28} className="text-rose-500" />
+                      </div>
+                      <p className="text-sm font-bold text-gray-800">Học viên chưa nộp bài tập này.</p>
+                      <p className="text-xs text-gray-500 mt-1 max-w-[240px] mx-auto">Không có tệp đính kèm hoặc nội dung bài làm để xem trước.</p>
+                    </div>
+                  ) : !fileUrl ? (
                     <div className="text-center p-8">
                       <FileText size={48} className="mx-auto text-gray-600 mb-3" />
                       <p className="text-sm font-bold text-gray-400">Học viên không nộp tệp đính kèm.</p>
@@ -461,6 +564,35 @@ export default function GradingDashboard() {
                         <p className="text-xs text-gray-500 mt-2 bg-gray-800 p-2 rounded-lg">{gradingSubmission.fileName}</p>
                       )}
                     </div>
+                  ) : isTextFile ? (
+                    textLoading ? (
+                      <div className="text-center p-8">
+                        <Loader2 className="animate-spin text-emerald-500 mx-auto mb-3" size={32} />
+                        <p className="text-sm font-bold text-gray-400">Đang tải nội dung tệp tin...</p>
+                      </div>
+                    ) : textError ? (
+                      <div className="text-center p-8">
+                        <XCircle size={48} className="mx-auto text-rose-500 mb-3 animate-pulse" />
+                        <p className="text-sm font-bold text-gray-300">Không thể hiển thị nội dung.</p>
+                        <p className="text-xs text-gray-500 mt-1 mb-4">Có lỗi xảy ra khi tải nội dung tệp tin từ máy chủ.</p>
+                        <a href={fileUrl} target="_blank" rel="noopener noreferrer" className="inline-flex bg-emerald-600 hover:bg-emerald-500 text-white font-bold py-2 px-6 rounded-xl transition text-xs">
+                          Tải xuống tệp tin
+                        </a>
+                      </div>
+                    ) : (
+                      <div className="w-full h-full overflow-auto bg-[#1e1e1e] p-5 text-gray-300 font-mono text-xs leading-relaxed select-text flex">
+                        {/* Line Numbers Column */}
+                        <div className="text-gray-600 text-right pr-4 border-r border-gray-800 select-none mr-4 shrink-0">
+                          {textContent.split('\n').map((_, idx) => (
+                            <div key={idx}>{idx + 1}</div>
+                          ))}
+                        </div>
+                        {/* Code Content Column */}
+                        <pre className="whitespace-pre overflow-x-auto w-full text-left scrollbar-thin">
+                          <code>{textContent}</code>
+                        </pre>
+                      </div>
+                    )
                   ) : ytId ? (
                     <iframe width="100%" height="100%" src={`https://www.youtube.com/embed/${ytId}`} title="YouTube" className="border-none" allowFullScreen />
                   ) : isVideo ? (
@@ -491,12 +623,35 @@ export default function GradingDashboard() {
                 
                 <form onSubmit={handleSubmitGrade} className="flex flex-col h-full min-h-min p-5 lg:p-6 gap-6 relative z-10">
                   
-                  <div className="bg-white/60 backdrop-blur-md p-4 rounded-2xl border border-gray-100 shadow-[0_2px_10px_-4px_rgba(0,0,0,0.05)]">
-                    <p className="text-xs text-gray-500 mb-1">Đang chấm bài của:</p>
-                    <p className="text-base font-black text-transparent bg-clip-text bg-gradient-to-r from-gray-900 to-gray-600">{gradingSubmission.studentName}</p>
+                  <div className="bg-white/60 backdrop-blur-md p-4 rounded-2xl border border-gray-100 shadow-[0_2px_10px_-4px_rgba(0,0,0,0.05)] flex flex-col gap-3">
+                    <div className="flex items-start justify-between gap-4">
+                      <div className="flex-1 min-w-0">
+                        <p className="text-xs text-gray-500 mb-1">Đang chấm bài của:</p>
+                        <div className="flex flex-col">
+                          <span className="text-base font-black text-transparent bg-clip-text bg-gradient-to-r from-gray-900 to-gray-600 truncate">
+                            {gradingSubmission.studentName}
+                          </span>
+                          <span className="text-xs text-gray-400 font-bold mt-0.5">
+                            MSSV: {gradingSubmission.studentId}
+                          </span>
+                        </div>
+                      </div>
+
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setGradingSubmissionId(null);
+                          setIsSidebarOpen(true);
+                        }}
+                        className="p-1.5 hover:bg-gray-100/80 rounded-lg text-gray-400 hover:text-gray-600 transition-colors shrink-0 flex items-center justify-center border border-gray-100 bg-white shadow-sm mt-1"
+                        title="Thoát chấm điểm"
+                      >
+                        <X size={14} />
+                      </button>
+                    </div>
                     
                     {gradingSubmission.studentNotes && (
-                      <div className="mt-3 pt-3 border-t border-gray-100/80">
+                      <div className="mt-1 pt-3 border-t border-gray-100/80">
                         <p className="text-[10px] uppercase font-bold tracking-wider text-gray-400 mb-1.5">Ghi chú của học viên:</p>
                         <p className="text-xs text-gray-600 italic border-l-[3px] border-emerald-300 pl-3 py-0.5 bg-emerald-50/30 rounded-r-lg">
                           "{gradingSubmission.studentNotes}"
@@ -504,6 +659,13 @@ export default function GradingDashboard() {
                       </div>
                     )}
                   </div>
+
+                  {gradingSubmission.status === 'NOT_SUBMITTED' && (
+                    <div className="p-3.5 bg-rose-50 border border-rose-200 rounded-2xl text-xs text-rose-700 font-semibold flex items-center gap-2">
+                      <X size={16} className="text-rose-500 shrink-0" />
+                      <span>Học viên chưa nộp bài. Không thể chấm điểm trực tiếp.</span>
+                    </div>
+                  )}
 
                   <div className="space-y-2">
                     <label className="text-xs font-bold text-gray-700 flex justify-between items-end">
@@ -516,8 +678,9 @@ export default function GradingDashboard() {
                         step="0.1"
                         min="0"
                         max={currentAsg?.maxPoints || 10}
-                        className="w-full p-4 text-3xl font-black text-center text-emerald-700 bg-white rounded-2xl border-2 border-gray-100 focus:outline-none focus:border-emerald-400 focus:ring-4 focus:ring-emerald-400/20 shadow-inner transition-all"
+                        className="w-full p-4 text-3xl font-black text-center text-emerald-700 bg-white rounded-2xl border-2 border-gray-100 focus:outline-none focus:border-emerald-400 focus:ring-4 focus:ring-emerald-400/20 shadow-inner transition-all disabled:opacity-50 disabled:bg-gray-100 disabled:border-gray-200 disabled:text-gray-400"
                         required
+                        disabled={gradingSubmission.status === 'NOT_SUBMITTED'}
                         value={gradeInput}
                         onChange={(e) => setGradeInput(e.target.value)}
                       />
@@ -530,8 +693,9 @@ export default function GradingDashboard() {
                   <div className="space-y-2 flex-1 flex flex-col">
                     <label className="text-xs font-bold uppercase tracking-wider text-gray-500">Nhận xét chi tiết</label>
                     <textarea
-                      className="w-full flex-1 p-4 text-sm bg-white rounded-2xl border border-gray-200 focus:outline-none focus:border-emerald-400 focus:ring-4 focus:ring-emerald-400/20 resize-none transition-all shadow-sm min-h-[140px] leading-relaxed"
+                      className="w-full flex-1 p-4 text-sm bg-white rounded-2xl border border-gray-200 focus:outline-none focus:border-emerald-400 focus:ring-4 focus:ring-emerald-400/20 resize-none transition-all shadow-sm min-h-[140px] leading-relaxed disabled:opacity-50 disabled:bg-gray-100 disabled:border-gray-200"
                       placeholder="Ghi nhận xét chi tiết, gạch đầu dòng những điểm tốt và chưa tốt..."
+                      disabled={gradingSubmission.status === 'NOT_SUBMITTED'}
                       value={gradeFeedback}
                       onChange={(e) => setGradeFeedback(e.target.value)}
                     />
@@ -540,8 +704,9 @@ export default function GradingDashboard() {
                         <button
                           key={t}
                           type="button"
+                          disabled={gradingSubmission.status === 'NOT_SUBMITTED'}
                           onClick={() => setGradeFeedback(prev => prev ? `${prev}\n${t}` : t)}
-                          className="text-[11px] bg-white border border-gray-200 hover:border-emerald-300 hover:bg-emerald-50 hover:text-emerald-700 text-gray-600 font-bold px-3 py-1.5 rounded-full shadow-sm transition-all active:scale-95"
+                          className="text-[11px] bg-white border border-gray-200 hover:border-emerald-300 hover:bg-emerald-50 hover:text-emerald-700 text-gray-600 font-bold px-3 py-1.5 rounded-full shadow-sm transition-all active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
                         >
                           {t}
                         </button>
@@ -551,11 +716,11 @@ export default function GradingDashboard() {
 
                   <button
                     type="submit"
-                    disabled={isSubmitting}
-                    className="w-full bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 disabled:opacity-50 text-white font-black text-[13px] uppercase tracking-wide py-4 rounded-2xl shadow-lg shadow-emerald-500/20 hover:shadow-emerald-500/40 transition-all flex justify-center items-center gap-2 shrink-0 active:scale-[0.98]"
+                    disabled={isSubmitting || gradingSubmission.status === 'NOT_SUBMITTED'}
+                    className="w-full bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 disabled:from-gray-300 disabled:to-gray-400 disabled:opacity-50 disabled:cursor-not-allowed text-white font-black text-[13px] uppercase tracking-wide py-4 rounded-2xl shadow-lg shadow-emerald-500/20 hover:shadow-emerald-500/40 transition-all flex justify-center items-center gap-2 shrink-0 active:scale-[0.98]"
                   >
                     {isSubmitting ? <Loader2 size={18} className="animate-spin" /> : <CheckSquare size={18} />}
-                    {gradingSubmission.status === 'GRADED' ? 'Cập nhật Điểm' : 'Lưu Điểm & Phản hồi'}
+                    {gradingSubmission.status === 'NOT_SUBMITTED' ? 'Chưa nộp bài' : gradingSubmission.status === 'GRADED' ? 'Cập nhật Điểm' : 'Lưu Điểm & Phản hồi'}
                   </button>
                 </form>
               </div>

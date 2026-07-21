@@ -45,3 +45,30 @@ export const updateUser = async (id, userData) => {
   return response.data;
 };
 
+/**
+ * Nhập người dùng hàng loạt bằng file Excel/CSV
+ * @param {File} file
+ * @returns {Promise<object>}
+ */
+export const importUsers = async (file) => {
+  const formData = new FormData();
+  formData.append('file', file);
+  const response = await api.post('/api/Users/import', formData, {
+    headers: {
+      'Content-Type': 'multipart/form-data',
+    },
+  });
+  return response.data;
+};
+
+/**
+ * Tải file CSV mẫu nhập tài khoản
+ * @returns {Promise<Blob>}
+ */
+export const downloadImportTemplate = async () => {
+  const response = await api.get('/api/Users/import-template', {
+    responseType: 'blob',
+  });
+  return response.data;
+};
+

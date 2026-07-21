@@ -79,6 +79,14 @@ function extractUrls(text) {
     return [...new Set(matches)];
 }
 
+function getCloudinaryDownloadUrl(url) {
+    if (!url || !url.includes('cloudinary.com')) return url;
+    if (url.includes('/upload/') && !url.includes('fl_attachment')) {
+        return url.replace('/upload/', '/upload/fl_attachment/');
+    }
+    return url;
+}
+
 // ─── Material Preview Modal Component ───────────────────────────────────────────
 
 function MaterialPreviewModal({ isOpen, onClose, fileUrl, fileName }) {
@@ -136,7 +144,7 @@ function MaterialPreviewModal({ isOpen, onClose, fileUrl, fileName }) {
                     </div>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexShrink: 0 }}>
                         <a 
-                            href={fileUrl} 
+                            href={getCloudinaryDownloadUrl(fileUrl)} 
                             target="_blank" 
                             rel="noopener noreferrer" 
                             style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: '0.75rem', color: '#0f766e', fontWeight: 700, textDecoration: 'none', background: 'rgba(15,118,110,0.1)', border: '1px solid rgba(15,118,110,0.2)', borderRadius: 8, padding: '6px 12px' }}
@@ -612,7 +620,7 @@ function AssignmentCard({ assignment, classId, onUpdated, onPreviewFile }) {
                                                 <Eye size={12} /> Xem trước
                                             </button>
                                             <a
-                                                href={meta.attachmentUrl}
+                                                href={getCloudinaryDownloadUrl(meta.attachmentUrl)}
                                                 target="_blank"
                                                 rel="noopener noreferrer"
                                                 download
@@ -660,7 +668,7 @@ function AssignmentCard({ assignment, classId, onUpdated, onPreviewFile }) {
                                         <FileText size={13} color="#6b7280" />
                                         {mySubmission.fileName.startsWith('http') || mySubmission.fileName.startsWith('/') ? (
                                             <div style={{ display: 'inline-flex', gap: 8, alignItems: 'center' }}>
-                                                <a href={mySubmission.fileName} target="_blank" rel="noopener noreferrer" download style={{ fontWeight: 600, color: '#0f766e', textDecoration: 'underline' }}>
+                                                <a href={getCloudinaryDownloadUrl(mySubmission.fileName)} target="_blank" rel="noopener noreferrer" download style={{ fontWeight: 600, color: '#0f766e', textDecoration: 'underline' }}>
                                                     {mySubmission.fileName.split('/').pop()}
                                                 </a>
                                                 <button

@@ -241,10 +241,14 @@ export function LecturerWorkspaceProvider({ children }) {
       uploadFile,
       reload: () => loadWorkspace(selectedClassId),
       addMaterial: async (body) => {
+        let safeType = body.type;
+        if (!['quiz', 'document', 'pdf', 'video'].includes(safeType)) {
+          safeType = 'document';
+        }
         await createMaterial(selectedClassId, {
           title: body.title,
           description: body.description,
-          type: body.type,
+          type: safeType,
           fileUrl: body.url || '#',
           fileSize: body.fileSize,
           chapter: body.chapter,
@@ -253,10 +257,14 @@ export function LecturerWorkspaceProvider({ children }) {
         await loadWorkspace(selectedClassId);
       },
       updateMaterial: async (id, body) => {
+        let safeType = body.type;
+        if (!['quiz', 'document', 'pdf', 'video'].includes(safeType)) {
+          safeType = 'document';
+        }
         await updateMaterial(selectedClassId, id, {
           title: body.title,
           description: body.description,
-          type: body.type,
+          type: safeType,
           fileUrl: body.url || '#',
           fileSize: body.fileSize,
           chapter: body.chapter,

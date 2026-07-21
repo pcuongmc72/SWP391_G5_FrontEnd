@@ -78,17 +78,27 @@ function BlogDetails({ blog, onBack, onEdit, onDelete, isAdmin, isAuthor }) {
                   alignItems: 'center',
                   gap: 6,
                   padding: '8px 16px',
-                  background: '#f8fafc',
-                  border: '1px solid #e2e8f0',
+                  background: '#eff6ff',
+                  border: '1px solid #bfdbfe',
                   borderRadius: 10,
                   fontSize: '0.8125rem',
                   fontWeight: 700,
-                  color: '#334155',
+                  color: '#1d4ed8',
                   cursor: 'pointer',
-                  transition: 'all 0.2s',
+                  transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
                 }}
-                onMouseEnter={e => { e.currentTarget.style.background = '#fff'; e.currentTarget.style.borderColor = '#10b981'; e.currentTarget.style.color = '#059669'; }}
-                onMouseLeave={e => { e.currentTarget.style.background = '#f8fafc'; e.currentTarget.style.borderColor = '#e2e8f0'; e.currentTarget.style.color = '#334155'; }}
+                onMouseEnter={e => { 
+                  e.currentTarget.style.background = '#dbeafe'; 
+                  e.currentTarget.style.borderColor = '#93c5fd'; 
+                  e.currentTarget.style.color = '#1e40af';
+                  e.currentTarget.style.transform = 'scale(1.02)';
+                }}
+                onMouseLeave={e => { 
+                  e.currentTarget.style.background = '#eff6ff'; 
+                  e.currentTarget.style.borderColor = '#bfdbfe'; 
+                  e.currentTarget.style.color = '#1d4ed8';
+                  e.currentTarget.style.transform = 'scale(1)';
+                }}
               >
                 <Edit2 size={14} /> Chỉnh sửa
               </button>
@@ -106,10 +116,20 @@ function BlogDetails({ blog, onBack, onEdit, onDelete, isAdmin, isAuthor }) {
                   fontWeight: 700,
                   color: '#be123c',
                   cursor: 'pointer',
-                  transition: 'all 0.2s',
+                  transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
                 }}
-                onMouseEnter={e => { e.currentTarget.style.background = '#fee2e2'; e.currentTarget.style.transform = 'scale(1.02)'; }}
-                onMouseLeave={e => { e.currentTarget.style.background = '#fff1f2'; e.currentTarget.style.transform = 'scale(1)'; }}
+                onMouseEnter={e => { 
+                  e.currentTarget.style.background = '#fee2e2'; 
+                  e.currentTarget.style.borderColor = '#fca5a5';
+                  e.currentTarget.style.color = '#991b1b';
+                  e.currentTarget.style.transform = 'scale(1.02)'; 
+                }}
+                onMouseLeave={e => { 
+                  e.currentTarget.style.background = '#fff1f2'; 
+                  e.currentTarget.style.borderColor = '#fecdd3';
+                  e.currentTarget.style.color = '#be123c';
+                  e.currentTarget.style.transform = 'scale(1)'; 
+                }}
               >
                 <Trash2 size={14} /> Xóa bài
               </button>

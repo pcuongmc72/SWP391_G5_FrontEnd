@@ -99,42 +99,7 @@ export default function ClassListDashboard() {
           <h3 style={{ margin: 0, fontSize: 24, fontWeight: 800, color: '#0f172a' }}>Quản lý Lớp học & Học vụ</h3>
         </div>
 
-        <p style={{ fontSize: 13, color: '#64748b', marginTop: '-12px', marginBottom: 0, lineHeight: 1.5 }}>
-          Giảng viên có thể chọn các học viên ưu tú để thăng chức làm <strong>Trợ giảng (Assistant)</strong>.
-          Trợ giảng sẽ được cấp thêm quyền xem và hỗ trợ trả lời các thắc mắc (Feedback) của bạn cùng lớp.
-        </p>
 
-        {/* Thống kê - Stats Cards */}
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-          <div className="bg-white rounded-2xl p-5 border border-gray-100 shadow-sm flex items-center gap-4">
-            <div className="w-12 h-12 rounded-full bg-blue-50 flex items-center justify-center">
-              <Users size={24} className="text-blue-500" />
-            </div>
-            <div>
-              <p className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-1">Tổng sĩ số</p>
-              <p className="text-2xl font-black text-gray-800">{stats.total}</p>
-            </div>
-          </div>
-          <div className="bg-white rounded-2xl p-5 border border-emerald-100 shadow-sm flex items-center gap-4 relative overflow-hidden">
-            <div className="absolute right-0 top-0 w-24 h-24 bg-emerald-50 rounded-full blur-2xl -mr-10 -mt-10 pointer-events-none" />
-            <div className="w-12 h-12 rounded-full bg-emerald-50 flex items-center justify-center relative z-10">
-              <ShieldCheck size={24} className="text-emerald-500" />
-            </div>
-            <div className="relative z-10">
-              <p className="text-xs font-bold text-emerald-600 uppercase tracking-wider mb-1">Trợ giảng</p>
-              <p className="text-2xl font-black text-emerald-700">{stats.assistants}</p>
-            </div>
-          </div>
-          <div className="bg-white rounded-2xl p-5 border border-gray-100 shadow-sm flex items-center gap-4">
-            <div className="w-12 h-12 rounded-full bg-orange-50 flex items-center justify-center">
-              <GraduationCap size={24} className="text-orange-500" />
-            </div>
-            <div>
-              <p className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-1">Học viên</p>
-              <p className="text-2xl font-black text-gray-800">{stats.students}</p>
-            </div>
-          </div>
-        </div>
 
         <div className="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden flex flex-col">
           

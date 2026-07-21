@@ -124,34 +124,38 @@ export default function FeedbackDashboard() {
         <p className="text-xs text-gray-500">Xem và giải đáp thắc mắc của học viên trong lớp học của bạn.</p>
       </div>
 
+      {/* ── Filter tabs ── */}
+      <div className="bg-white rounded-2xl border border-gray-200 shadow-sm px-4 py-3 flex flex-col sm:flex-row gap-3 items-center mb-4">
+        <div className="flex bg-gray-100 p-1 rounded-xl gap-1 flex-shrink-0 w-full sm:w-auto overflow-x-auto scrollbar-none">
+          {[
+            { key: 'ALL',      label: 'Tất cả',     count: feedbacks.length },
+            { key: 'OPEN',     label: 'Chờ trả lời', count: openCount },
+            { key: 'RESOLVED', label: 'Đã giải đáp', count: resolvedCount },
+          ].map(tab => (
+            <button
+              key={tab.key}
+              onClick={() => setFilterStatus(tab.key)}
+              className={`px-4 py-1.5 text-xs font-bold rounded-lg whitespace-nowrap transition-all cursor-pointer flex justify-center items-center gap-1.5
+                ${filterStatus === tab.key ? 'bg-white text-emerald-700 shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}
+            >
+              {tab.label}
+              <span className={`text-[10px] font-extrabold px-1.5 rounded-full
+                ${filterStatus === tab.key ? 'bg-emerald-100 text-emerald-700' : 'bg-gray-200 text-gray-500'}`}>
+                {tab.count}
+              </span>
+            </button>
+          ))}
+        </div>
+      </div>
+
       {/* ── 2-COLUMN LAYOUT ───────────────────────── */}
-      <div className="flex gap-4" style={{ height: 'calc(100vh - 160px)', minHeight: 500 }}>
+      <div className="flex gap-4" style={{ height: 'calc(100vh - 230px)', minHeight: 500 }}>
         
         {/* LEFT COLUMN: LIST */}
         <div className="w-[320px] lg:w-[380px] xl:w-[420px] bg-white rounded-2xl border border-gray-200 shadow-sm flex flex-col overflow-hidden shrink-0">
           
-          {/* Filters & Search */}
-          <div className="p-4 border-b border-gray-100 flex flex-col gap-3 shrink-0">
-            <div className="flex bg-gray-100 p-1 rounded-xl gap-1">
-              {[
-                { key: 'ALL',      label: 'Tất cả',     count: feedbacks.length },
-                { key: 'OPEN',     label: 'Chờ trả lời', count: openCount },
-                { key: 'RESOLVED', label: 'Đã giải đáp', count: resolvedCount },
-              ].map(tab => (
-                <button
-                  key={tab.key}
-                  onClick={() => setFilterStatus(tab.key)}
-                  className={`flex-1 px-2 py-1.5 text-[11px] lg:text-xs font-bold rounded-lg whitespace-nowrap transition-all cursor-pointer flex justify-center items-center gap-1.5
-                    ${filterStatus === tab.key ? 'bg-white text-emerald-700 shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}
-                >
-                  {tab.label}
-                  <span className={`text-[9px] lg:text-[10px] font-extrabold px-1.5 rounded-full
-                    ${filterStatus === tab.key ? 'bg-emerald-100 text-emerald-700' : 'bg-gray-200 text-gray-500'}`}>
-                    {tab.count}
-                  </span>
-                </button>
-              ))}
-            </div>
+          {/* Search */}
+          <div className="p-4 border-b border-gray-100 shrink-0">
             <div className="relative w-full">
               <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
               <input

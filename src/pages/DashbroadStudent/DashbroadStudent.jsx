@@ -19,7 +19,14 @@ import {
 
 // Services
 import { logout, getUser } from '../../services/authService';
-import { getAcademicTerms, getStudentClasses, getClassStudents } from '../../services/studentService';
+import {
+  getAcademicTerms,
+  getStudentClasses,
+  getClassStudents,
+  getStudentLearningMaterials,
+  completeMaterial,
+  uncompleteMaterial
+} from '../../services/studentService';
 import { fetchClassBlogs, createBlog } from '../../services/blogService';
 
 // LMS Components
@@ -312,6 +319,7 @@ export default function DashbroadStudent() {
   const [classBlogs, setClassBlogs] = useState([]);
   const [loadingBlogs, setLoadingBlogs] = useState(false);
   const [refreshBlogsKey, setRefreshBlogsKey] = useState(0);
+  const [refreshRoadmapKey, setRefreshRoadmapKey] = useState(0);
 
   // Filter States
   const [searchTerm, setSearchTerm] = useState('');
@@ -513,7 +521,9 @@ export default function DashbroadStudent() {
       setActiveLecture(syllabus[0].lectures[0]);
       setActiveSectionId(syllabus[0].id);
     }
-    triggerNotification(`👉 Đã chuyển sang môn học: ${course.courseCode || course.id}`, "success");
+
+    // Sync completed materials from backend for this course
+    syncProgressFromBackend(course.id);
   };
 
   // Metrics counting
@@ -556,30 +566,59 @@ export default function DashbroadStudent() {
     });
   };
 
-  const handleToggleComplete = (lectureId, silent = false) => {
+  // Sync learning progress completed ids from backend
+  const syncProgressFromBackend = async (classId) => {
+    try {
+      const res = await getStudentLearningMaterials(classId);
+      if (res.success && res.data?.chapters) {
+        const completedIds = res.data.chapters
+          .flatMap(ch => ch.materials)
+          .filter(m => m.isCompleted)
+          .map(m => m.id);
+
+        setProgress(prev => ({
+          ...prev,
+          completedLectures: completedIds
+        }));
+      }
+    } catch (e) {
+      console.error("Failed to sync progress from backend:", e);
+    }
+  };
+
+  const [togglingLectureId, setTogglingLectureId] = useState(null);
+
+  const handleToggleComplete = async (lectureId, silent = false) => {
     const idToToggle = lectureId || activeLecture?.id;
-    if (!idToToggle) return;
+    if (!idToToggle || togglingLectureId === idToToggle) return;
 
-    setProgress((prev) => {
-      const alreadyCompleted = prev.completedLectures.includes(idToToggle);
-      let updatedList = [];
+    setTogglingLectureId(idToToggle);
+    const alreadyCompleted = progress.completedLectures.includes(idToToggle);
 
+    try {
       if (alreadyCompleted) {
-        updatedList = prev.completedLectures.filter((id) => id !== idToToggle);
-        if (!silent) triggerNotification("ℹ️ Đã xóa bài giảng khỏi tiến trình hoàn tất.", "info");
+        await uncompleteMaterial(idToToggle);
+        if (!silent) triggerNotification("Đã xóa bài giảng khỏi tiến trình hoàn tất.", "info");
       } else {
-        updatedList = [...prev.completedLectures, idToToggle];
-        if (!silent) triggerNotification("🎉 Tuyệt vời! Đã ghi nhận hoàn thành bài học này. Nhận +50 XP rèn luyện!", "success");
+        await completeMaterial(idToToggle);
+        if (!silent) triggerNotification("Đã đánh dấu bài học là hoàn thành.", "success");
         setTimeout(() => {
           addPoints(50);
         }, 100);
       }
 
-      return {
-        ...prev,
-        completedLectures: updatedList
-      };
-    });
+      // Sync fresh progress from backend
+      if (selectedCourse) {
+        await syncProgressFromBackend(selectedCourse.id);
+        // Refresh Roadmap component if it is mounted
+        setRefreshRoadmapKey(prev => prev + 1);
+      }
+    } catch (e) {
+      console.error("Lỗi khi cập nhật trạng thái học liệu:", e);
+      triggerNotification("❌ Lỗi đồng bộ tiến độ với máy chủ.", "error");
+    } finally {
+      setTogglingLectureId(null);
+    }
   };
 
   const formatDate = (dateString) => {
@@ -823,8 +862,6 @@ export default function DashbroadStudent() {
                         <span>Bài tập</span>
                       </button>
 
-
-
                       <button
                         onClick={() => setActiveCourseTab("people")}
                         className={`flex items-center gap-2 px-4 py-1.5 rounded-full text-xs font-bold transition-all duration-300 ease-in-out shrink-0 cursor-pointer ${activeCourseTab === "people"
@@ -835,28 +872,11 @@ export default function DashbroadStudent() {
                         <Users size={14} className={activeCourseTab === "people" ? "text-emerald-600" : ""} />
                         <span>Thành viên (People)</span>
                       </button>
-
-                      <button
-                        onClick={() => setActiveCourseTab("qa")}
-                        className={`flex items-center gap-2 px-4 py-1.5 rounded-full text-xs font-bold transition-all duration-300 ease-in-out shrink-0 cursor-pointer ${activeCourseTab === "qa"
-                          ? "bg-emerald-50 text-emerald-700 shadow-2xs border border-emerald-200/50 scale-102"
-                          : "text-gray-500 hover:text-gray-800 hover:bg-gray-50 hover:scale-101"
-                          }`}
-                      >
-                        <span>Hỏi đáp</span>
-                      </button>
                     </div>
                   </div>
 
 
                 </div>
-
-                {/* QA tab content */}
-                {activeCourseTab === "qa" && (
-                  <div className="bg-white border border-gray-200 rounded-2xl p-6 shadow-2xs animate-fade-in">
-                    <StudentFeedback cls={selectedCourse} />
-                  </div>
-                )}
 
                 {/* Stream tab content */}
                 {activeCourseTab === "stream" && (
@@ -879,7 +899,7 @@ export default function DashbroadStudent() {
                           <span className="opacity-60">•</span>
                           <span>Lớp: <strong className="font-bold text-white">{selectedCourse.id}</strong></span>
                           <span className="opacity-60">•</span>
-                           <span>Học kỳ: <strong className="font-bold text-white">{matchedTerm ? (matchedTerm.name || matchedTerm.termCode) : (selectedSemester + ' ' + selectedYear)}</strong></span>
+                          <span>Học kỳ: <strong className="font-bold text-white">{matchedTerm ? (matchedTerm.name || matchedTerm.termCode) : (selectedSemester + ' ' + selectedYear)}</strong></span>
                         </div>
                       </div>
                     </div>
@@ -1032,23 +1052,25 @@ export default function DashbroadStudent() {
                 {/* Classwork tab content */}
                 {activeCourseTab === "classwork" && (
                   <div className="bg-white border border-gray-200 rounded-2xl p-6 shadow-2xs">
-                    <StudentRoadmap 
-                        cls={selectedCourse} 
-                        onBack={() => setActiveCourseTab("stream")} 
-                        onSelectMaterial={(material, chapterId) => {
-                            const lecture = {
-                                id: material.id,
-                                title: material.title,
-                                type: material.type || material.materialType || 'video',
-                                url: material.fileUrl,
-                                description: material.description,
-                                // Tương thích với LessonPlayer
-                                urlType: material.fileUrl?.includes('youtube') ? 'youtube' : 'local'
-                            };
-                            setActiveLecture(lecture);
-                            setActiveSectionId(chapterId);
-                            setCurrentView("lecture");
-                        }}
+                    <StudentRoadmap
+                      cls={selectedCourse}
+                      refreshKey={refreshRoadmapKey}
+                      onProgressChange={() => syncProgressFromBackend(selectedCourse.id)}
+                      onBack={() => setActiveCourseTab("stream")}
+                      onSelectMaterial={(material, chapterId) => {
+                        const lecture = {
+                          id: material.id,
+                          title: material.title,
+                          type: material.type || material.materialType || 'video',
+                          url: material.fileUrl,
+                          description: material.description,
+                          // Tương thích với LessonPlayer
+                          urlType: material.fileUrl?.includes('youtube') ? 'youtube' : 'local'
+                        };
+                        setActiveLecture(lecture);
+                        setActiveSectionId(chapterId);
+                        setCurrentView("lecture");
+                      }}
                     />
                   </div>
                 )}
@@ -1197,44 +1219,44 @@ export default function DashbroadStudent() {
                 {activeLecture?.type !== "quiz" && (
                   <div className="flex flex-col gap-4 lg:h-[calc(100vh-140px)]">
                     {/* Tabs */}
-                  <div className="flex bg-white border border-gray-200 rounded-xl p-1 shadow-sm shrink-0">
-                    <button
-                      onClick={() => setRightTab("syllabus")}
-                      className={`flex-1 py-2 text-sm font-bold rounded-lg transition-colors cursor-pointer ${rightTab === "syllabus" || activeLecture?.type === "quiz" ? "bg-emerald-50 text-emerald-700" : "text-gray-500 hover:bg-gray-50"}`}
-                    >
-                      Nội dung bài học
-                    </button>
-                    <button
-                      onClick={() => setRightTab("qa")}
-                      className={`flex-1 py-2 text-sm font-bold rounded-lg transition-colors cursor-pointer ${rightTab === "qa" ? "bg-emerald-50 text-emerald-700" : "text-gray-500 hover:bg-gray-50"}`}
-                    >
-                      💬 Thảo luận
-                    </button>
-                  </div>
+                    <div className="flex bg-white border border-gray-200 rounded-xl p-1 shadow-sm shrink-0">
+                      <button
+                        onClick={() => setRightTab("syllabus")}
+                        className={`flex-1 py-2 text-sm font-bold rounded-lg transition-colors cursor-pointer ${rightTab === "syllabus" || activeLecture?.type === "quiz" ? "bg-emerald-50 text-emerald-700" : "text-gray-500 hover:bg-gray-50"}`}
+                      >
+                        Nội dung bài học
+                      </button>
+                      <button
+                        onClick={() => setRightTab("qa")}
+                        className={`flex-1 py-2 text-sm font-bold rounded-lg transition-colors cursor-pointer ${rightTab === "qa" ? "bg-emerald-50 text-emerald-700" : "text-gray-500 hover:bg-gray-50"}`}
+                      >
+                        💬 Thảo luận
+                      </button>
+                    </div>
 
-                  <div className="bg-white border border-gray-200 rounded-xl overflow-hidden shadow-sm flex-1 flex flex-col">
-                    <div className="flex-1 overflow-y-auto custom-scrollbar p-0">
-                      {rightTab === "syllabus" || activeLecture?.type === "quiz" ? (
-                        syllabus && syllabus.length > 0 && activeLecture ? (
-                          <SidebarSyllabus
-                            sections={syllabus}
-                            activeLectureId={activeLecture.id}
-                            completedLectures={progress.completedLectures}
-                            onLectureSelect={(lecture, sectionId) => {
-                              setActiveLecture(lecture);
-                              setActiveSectionId(sectionId);
-                            }}
-                            onToggleComplete={handleToggleComplete}
-                          />
-                        ) : null
-                      ) : (
-                        <div className="h-full bg-gray-50/30">
-                          <StudentFeedback cls={selectedCourse} activeLecture={activeLecture} />
-                        </div>
-                      )}
+                    <div className="bg-white border border-gray-200 rounded-xl overflow-hidden shadow-sm flex-1 flex flex-col">
+                      <div className="flex-1 overflow-y-auto custom-scrollbar p-0">
+                        {rightTab === "syllabus" || activeLecture?.type === "quiz" ? (
+                          syllabus && syllabus.length > 0 && activeLecture ? (
+                            <SidebarSyllabus
+                              sections={syllabus}
+                              activeLectureId={activeLecture.id}
+                              completedLectures={progress.completedLectures}
+                              onLectureSelect={(lecture, sectionId) => {
+                                setActiveLecture(lecture);
+                                setActiveSectionId(sectionId);
+                              }}
+                              onToggleComplete={handleToggleComplete}
+                            />
+                          ) : null
+                        ) : (
+                          <div className="h-full bg-gray-50/30">
+                            <StudentFeedback cls={selectedCourse} activeLecture={activeLecture} />
+                          </div>
+                        )}
+                      </div>
                     </div>
                   </div>
-                </div>
                 )}
               </div>
             )

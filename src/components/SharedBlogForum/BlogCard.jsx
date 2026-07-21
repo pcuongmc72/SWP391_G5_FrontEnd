@@ -1,7 +1,8 @@
 import React from 'react';
 import { 
   Calendar, Tag, ChevronRight, 
-  Lock, Globe, Edit2, Trash2 
+  Lock, Globe, Edit2, Trash2,
+  Check, X
 } from 'lucide-react';
 import RoleBadge from './RoleBadge';
 
@@ -52,79 +53,55 @@ function BlogCard({ thread, onClick, onEdit, onDelete, onApprove, isAdmin, isPen
       <div style={{
         display: 'flex',
         justifyContent: 'space-between',
-        alignItems: 'flex-start',
-        gap: '1rem',
-        marginBottom: '0.5rem'
+        alignItems: 'center',
+        gap: '0.5rem',
+        marginBottom: '0.75rem',
+        flexWrap: 'wrap'
       }}>
         {courseName && (
           <div style={{
             display: 'flex',
             alignItems: 'center',
-            gap: '0.35rem',
-            color: '#0D3E26',
+            color: '#047857',
             fontSize: '0.75rem',
-            fontWeight: 700,
+            fontWeight: 600,
             background: '#ecfdf5',
-            padding: '0.35rem 0.75rem',
-            borderRadius: '0.625rem',
-            border: '1px solid #a7f3d0',
-            whiteSpace: 'nowrap',
-            overflow: 'hidden',
-            textOverflow: 'ellipsis',
-            maxWidth: '180px'
+            padding: '0.25rem 0.625rem',
+            borderRadius: '0.375rem',
+            flexShrink: 1,
+            minWidth: 0
           }}>
-            <Tag size={12} />
-            {courseName}
+            <span style={{
+              whiteSpace: 'nowrap',
+              overflow: 'hidden',
+              textOverflow: 'ellipsis',
+              maxWidth: '180px'
+            }}>
+              {courseName}
+            </span>
           </div>
         )}
 
-        {/* Visibility & Status Badges */}
-        <div style={{
-          display: 'flex',
-          flexDirection: 'column',
-          alignItems: 'flex-end',
-          gap: '0.4rem',
-          flexShrink: 0
-        }}>
-          <div style={{ display: 'flex', gap: '0.4rem' }}>
-            <div style={{
-              padding: '0.35rem 0.75rem',
-              borderRadius: '2rem',
-              fontSize: '0.7rem',
-              fontWeight: 700,
-              display: 'flex',
-              alignItems: 'center',
-              gap: '0.35rem',
-              background: !isPrivate ? '#ecfdf5' : '#fff7ed',
-              color: !isPrivate ? '#059669' : '#d97706',
-              border: `1px solid ${!isPrivate ? '#a7f3d0' : '#ffedd5'}`,
-            }}>
-              {!isPrivate ? <Globe size={12} /> : <Lock size={12} />}
-              {!isPrivate ? 'Công khai' : 'Riêng tư'}
-            </div>
-
-            {/* Status Badge */}
-            {(showStatus || isPendingView || isAdmin) && (
-              <>
-                {status === 0 && (
-                  <div style={{ padding: '0.35rem 0.75rem', borderRadius: '2rem', fontSize: '0.7rem', fontWeight: 800, background: '#fffbeb', color: '#b45309', border: '1px solid #fde68a' }}>
-                    🕒 Đang chờ duyệt
-                  </div>
-                )}
-                {status === 1 && (
-                  <div style={{ padding: '0.35rem 0.75rem', borderRadius: '2rem', fontSize: '0.7rem', fontWeight: 800, background: '#f0fdf4', color: '#15803d', border: '1px solid #bbf7d0' }}>
-                    ✅ Đã duyệt
-                  </div>
-                )}
-                {status === 2 && (
-                  <div style={{ padding: '0.35rem 0.75rem', borderRadius: '2rem', fontSize: '0.7rem', fontWeight: 800, background: '#fef2f2', color: '#b91c1c', border: '1px solid #fecaca' }}>
-                    ❌ Đã từ chối
-                  </div>
-                )}
-              </>
+        {/* Status Badge */}
+        {(showStatus || isPendingView || isAdmin) && (
+          <div style={{ display: 'flex', gap: '0.4rem', flexShrink: 0 }}>
+            {status === 0 && (
+              <div style={{ padding: '0.25rem 0.625rem', borderRadius: '0.375rem', fontSize: '0.7rem', fontWeight: 700, background: '#fef3c7', color: '#b45309' }}>
+                🕒 Chờ duyệt
+              </div>
+            )}
+            {status === 1 && (
+              <div style={{ padding: '0.25rem 0.625rem', borderRadius: '0.375rem', fontSize: '0.7rem', fontWeight: 700, background: '#dcfce7', color: '#15803d' }}>
+                Đã duyệt
+              </div>
+            )}
+            {status === 2 && (
+              <div style={{ padding: '0.25rem 0.625rem', borderRadius: '0.375rem', fontSize: '0.7rem', fontWeight: 700, background: '#fee2e2', color: '#b91c1c' }}>
+                Đã từ chối
+              </div>
             )}
           </div>
-        </div>
+        )}
       </div>
 
       {/* Title & Content */}
@@ -143,7 +120,7 @@ function BlogCard({ thread, onClick, onEdit, onDelete, onApprove, isAdmin, isPen
           {title}
         </h3>
         <p style={{
-          fontSize: '0.875rem',
+          fontSize: '0.775rem',
           color: '#64748b',
           lineHeight: 1.5,
           display: '-webkit-box',
@@ -181,91 +158,139 @@ function BlogCard({ thread, onClick, onEdit, onDelete, onApprove, isAdmin, isPen
             {authorName?.[0]?.toUpperCase() || 'U'}
           </div>
           <div style={{ textAlign: 'left' }}>
-            <div style={{ fontSize: '0.8125rem', fontWeight: 600, color: '#334155', display: 'flex', alignItems: 'center', gap: '6px' }}>
+            <div style={{ fontSize: '0.7125rem', fontWeight: 600, color: '#334155', display: 'flex', alignItems: 'center', gap: '5px' }}>
               {authorName}
               <RoleBadge roleData={thread} />
             </div>
-            <div style={{ fontSize: '0.7rem', color: '#94a3b8', display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
-              <Calendar size={10} />
-              {formatDate(createdAt)}
+            <div style={{ fontSize: '0.7rem', color: '#94a3b8', display: 'flex', alignItems: 'center', gap: '0.5rem', marginTop: '3px' }}>
+              <span style={{ display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
+                <Calendar size={10} />
+                {formatDate(createdAt)}
+              </span>
+              <span>•</span>
+              <span style={{ display: 'flex', alignItems: 'center', gap: '0.25rem', color: !isPrivate ? '#059669' : '#d97706' }}>
+                {!isPrivate ? <Globe size={10} /> : <Lock size={10} />}
+                {!isPrivate ? 'Công khai' : 'Riêng tư'}
+              </span>
             </div>
           </div>
         </div>
 
-        {/* Approval Actions */}
-        {isPendingView && (
-          <div style={{ display: 'flex', gap: '0.5rem' }}>
-            <button
-              onClick={(e) => { e.stopPropagation(); onApprove(thread.id, 1); }}
-              style={{
-                padding: '0.4rem 0.8rem',
-                borderRadius: '0.5rem',
-                border: 'none',
-                background: '#ecfdf5',
-                color: '#059669',
-                fontSize: '0.75rem',
-                fontWeight: 700,
-                cursor: 'pointer'
-              }}
-            >
-              Duyệt
-            </button>
-            <button
-              onClick={(e) => { e.stopPropagation(); onApprove(thread.id, 2); }}
-              style={{
-                padding: '0.4rem 0.8rem',
-                borderRadius: '0.5rem',
-                border: 'none',
-                background: '#fff1f2',
-                color: '#e11d48',
-                fontSize: '0.75rem',
-                fontWeight: 700,
-                cursor: 'pointer'
-              }}
-            >
-              Từ chối
-            </button>
-          </div>
-        )}
-
         {/* Edit/Delete Actions */}
         {(isAdmin || isAuthor) && (
-          <div style={{ display: 'flex', gap: '0.25rem' }} onClick={(e) => e.stopPropagation()}>
+          <div style={{ display: 'flex', gap: '0.5rem' }} onClick={(e) => e.stopPropagation()}>
             <button 
               onClick={(e) => { e.stopPropagation(); onEdit(thread); }}
               style={{
-                padding: '0.4rem',
-                borderRadius: '0.5rem',
+                width: '32px',
+                height: '32px',
+                borderRadius: '50%',
                 border: 'none',
-                background: '#f8fafc',
-                color: '#64748b',
+                background: '#eff6ff',
+                color: '#2563eb',
                 cursor: 'pointer',
-                transition: 'all 0.2s',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
               }}
-              onMouseEnter={(e) => { e.currentTarget.style.background = '#e2e8f0'; e.currentTarget.style.color = '#0f172a'; }}
-              onMouseLeave={(e) => { e.currentTarget.style.background = '#f8fafc'; e.currentTarget.style.color = '#64748b'; }}
+              onMouseEnter={(e) => { 
+                e.currentTarget.style.background = '#dbeafe'; 
+                e.currentTarget.style.transform = 'scale(1.08)'; 
+              }}
+              onMouseLeave={(e) => { 
+                e.currentTarget.style.background = '#eff6ff'; 
+                e.currentTarget.style.transform = 'scale(1)'; 
+              }}
             >
               <Edit2 size={14} />
             </button>
             <button 
               onClick={(e) => { e.stopPropagation(); onDelete(thread.id); }}
               style={{
-                padding: '0.4rem',
-                borderRadius: '0.5rem',
+                width: '32px',
+                height: '32px',
+                borderRadius: '50%',
                 border: 'none',
                 background: '#fff1f2',
-                color: '#f43f5e',
+                color: '#e11d48',
                 cursor: 'pointer',
-                transition: 'all 0.2s',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
               }}
-              onMouseEnter={(e) => { e.currentTarget.style.background = '#ffe4e6'; }}
-              onMouseLeave={(e) => { e.currentTarget.style.background = '#fff1f2'; }}
+              onMouseEnter={(e) => { 
+                e.currentTarget.style.background = '#ffe4e6'; 
+                e.currentTarget.style.transform = 'scale(1.08)'; 
+              }}
+              onMouseLeave={(e) => { 
+                e.currentTarget.style.background = '#fff1f2'; 
+                e.currentTarget.style.transform = 'scale(1)'; 
+              }}
             >
               <Trash2 size={14} />
             </button>
           </div>
         )}
       </div>
+
+      {/* Approval Actions Block */}
+      {isPendingView && (
+        <div style={{
+          display: 'grid',
+          gridTemplateColumns: '1fr 1fr',
+          gap: '0.75rem',
+          marginTop: '0.25rem',
+          paddingTop: '0.75rem',
+          borderTop: '1px solid #f1f5f9'
+        }} onClick={(e) => e.stopPropagation()}>
+          <button
+            onClick={(e) => { e.stopPropagation(); onApprove(thread.id, 1); }}
+            style={{
+              padding: '0.5rem',
+              borderRadius: '0.5rem',
+              border: 'none',
+              background: '#ecfdf5',
+              color: '#059669',
+              fontSize: '0.75rem',
+              fontWeight: 700,
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: '0.35rem',
+              transition: 'all 0.2s',
+            }}
+            onMouseEnter={(e) => e.currentTarget.style.background = '#d1fae5'}
+            onMouseLeave={(e) => e.currentTarget.style.background = '#ecfdf5'}
+          >
+            <Check size={14} /> Duyệt
+          </button>
+          <button
+            onClick={(e) => { e.stopPropagation(); onApprove(thread.id, 2); }}
+            style={{
+              padding: '0.5rem',
+              borderRadius: '0.5rem',
+              border: 'none',
+              background: '#fff1f2',
+              color: '#e11d48',
+              fontSize: '0.75rem',
+              fontWeight: 700,
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: '0.35rem',
+              transition: 'all 0.2s',
+            }}
+            onMouseEnter={(e) => e.currentTarget.style.background = '#ffe4e6'}
+            onMouseLeave={(e) => e.currentTarget.style.background = '#fff1f2'}
+          >
+            <X size={14} /> Từ chối
+          </button>
+        </div>
+      )}
     </div>
   );
 }
