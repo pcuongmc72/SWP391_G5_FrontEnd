@@ -14,7 +14,8 @@ import {
   CircleAlert,
   BookOpen,
   ClipboardList,
-  Users
+  Users,
+  FileText
 } from 'lucide-react';
 
 // Services
@@ -1182,7 +1183,7 @@ export default function DashbroadStudent() {
                     </button>
                     <div className="flex items-center gap-3">
                       <span className="text-[11px] font-bold text-gray-600 hidden sm:inline">
-                        Môn học: {selectedCourse.courseCode || selectedCourse.id}
+                        {activeSectionId ? `${activeSectionId.includes(' ÷ ') ? activeSectionId.split(' ÷ ')[1] : activeSectionId}: ` : ""}{activeLecture?.title || ""}
                       </span>
                       <button
                         onClick={() => handleToggleComplete()}
@@ -1237,18 +1238,7 @@ export default function DashbroadStudent() {
                     <div className="bg-white border border-gray-200 rounded-xl overflow-hidden shadow-sm flex-1 flex flex-col">
                       <div className="flex-1 overflow-y-auto custom-scrollbar p-0">
                         {rightTab === "syllabus" || activeLecture?.type === "quiz" ? (
-                          syllabus && syllabus.length > 0 && activeLecture ? (
-                            <SidebarSyllabus
-                              sections={syllabus}
-                              activeLectureId={activeLecture.id}
-                              completedLectures={progress.completedLectures}
-                              onLectureSelect={(lecture, sectionId) => {
-                                setActiveLecture(lecture);
-                                setActiveSectionId(sectionId);
-                              }}
-                              onToggleComplete={handleToggleComplete}
-                            />
-                          ) : null
+                          <LessonDescriptionPanel lecture={activeLecture} />
                         ) : (
                           <div className="h-full bg-gray-50/30">
                             <StudentFeedback cls={selectedCourse} activeLecture={activeLecture} />
@@ -1264,6 +1254,76 @@ export default function DashbroadStudent() {
         </main>
       </div>
       <ChangePasswordModal isOpen={changePasswordOpen} onClose={() => setChangePasswordOpen(false)} />
+    </div>
+  );
+}
+
+function getParsedDescription(desc) {
+  if (!desc) return "";
+  const trimmed = desc.trim();
+  if (trimmed.startsWith("{") && trimmed.endsWith("}")) {
+    try {
+      const parsed = JSON.parse(trimmed);
+      return parsed.desc || parsed.description || "";
+    } catch (e) {
+      // ignore
+    }
+  }
+  return desc;
+}
+
+function LessonDescriptionPanel({ lecture }) {
+  const description = getParsedDescription(lecture?.description);
+
+  return (
+    <div style={{ padding: "24px", color: "#374151", fontFamily: "inherit" }}>
+      <div style={{ display: "flex", alignItems: "center", gap: "10px", marginBottom: "18px", borderBottom: "2px solid #F3F4F6", paddingBottom: "12px" }}>
+        <div style={{ 
+          width: "36px", 
+          height: "36px", 
+          borderRadius: "10px", 
+          background: "rgba(15,118,110,0.08)", 
+          display: "flex", 
+          alignItems: "center", 
+          justifyContent: "center", 
+          color: "#0f766e" 
+        }}>
+          <FileText size={18} />
+        </div>
+        <div>
+          <h3 style={{ fontSize: "15px", fontWeight: 700, color: "#111827", margin: 0 }}>Mô tả bài học</h3>
+          <p style={{ fontSize: "11px", color: "#6B7280", margin: "2px 0 0" }}>Thông tin chi tiết về nội dung học tập</p>
+        </div>
+      </div>
+      
+      {description ? (
+        <div style={{ 
+          fontSize: "13.5px", 
+          lineHeight: "1.7", 
+          color: "#4B5563", 
+          whiteSpace: "pre-wrap",
+          background: "#F9FAFB",
+          border: "1px solid #E5E7EB",
+          borderRadius: "12px",
+          padding: "16px",
+          boxShadow: "0 1px 2px rgba(0,0,0,0.02)"
+        }}>
+          {description}
+        </div>
+      ) : (
+        <div style={{ 
+          textAlign: "center", 
+          padding: "40px 16px", 
+          background: "#F9FAFB", 
+          border: "1.5px dashed #E5E7EB", 
+          borderRadius: "12px" 
+        }}>
+          <span style={{ fontSize: "24px", display: "block", marginBottom: "8px" }}>📖</span>
+          <p style={{ fontSize: "13px", color: "#9CA3AF", fontWeight: 550, margin: 0 }}>
+            No lesson description available.
+          </p>
+        </div>
+      )}
     </div>
   );
 }
