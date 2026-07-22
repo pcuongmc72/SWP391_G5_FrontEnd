@@ -421,14 +421,14 @@ export default function DashbroadStudent() {
   }, []);
 
   const matchedTerm = useMemo(() => {
-    return terms.find(t => t.id === selectedSemester);
+    return terms.find(t => String(t.id).toLowerCase() === String(selectedSemester).toLowerCase());
   }, [terms, selectedSemester]);
 
   // Auto-update selectedSemester when selectedYear changes
   useEffect(() => {
     if (!selectedYear || terms.length === 0) return;
 
-    const currentSelectedTerm = terms.find(t => t.id === selectedSemester);
+    const currentSelectedTerm = terms.find(t => String(t.id).toLowerCase() === String(selectedSemester).toLowerCase());
     const currentSelectedTermYear = currentSelectedTerm?.startDate?.split('-')[0];
 
     if (currentSelectedTermYear !== selectedYear) {

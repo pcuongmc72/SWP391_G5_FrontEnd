@@ -335,6 +335,15 @@ function TermModal({ isOpen, editingTerm, termForm, setTermForm, onSave, onClose
     e.target.style.background = '#f8fafc';
   };
 
+  const todayStr = (() => {
+    const now = new Date();
+    return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+  })();
+
+  const minStartDate = (editingTerm && editingTerm.startDate && editingTerm.startDate < todayStr)
+    ? editingTerm.startDate
+    : todayStr;
+
   return (
     <div
       onClick={e => { if (e.target === e.currentTarget) onClose(); }}
@@ -407,6 +416,7 @@ function TermModal({ isOpen, editingTerm, termForm, setTermForm, onSave, onClose
               <input
                 type="date"
                 value={termForm.startDate}
+                min={minStartDate}
                 onChange={e => setTermForm({ ...termForm, startDate: e.target.value })}
                 style={inputStyle}
                 onFocus={focusStyle} onBlur={blurStyle}
@@ -417,6 +427,7 @@ function TermModal({ isOpen, editingTerm, termForm, setTermForm, onSave, onClose
               <input
                 type="date"
                 value={termForm.endDate}
+                min={termForm.startDate || minStartDate}
                 onChange={e => setTermForm({ ...termForm, endDate: e.target.value })}
                 style={inputStyle}
                 onFocus={focusStyle} onBlur={blurStyle}
@@ -563,6 +574,11 @@ function TermsDashboard({ onViewClasses, onTermsChange, showToast, toast }) {
     }
     if (new Date(startDate) >= new Date(endDate)) {
       showToast('Ngày khai giảng phải trước ngày bế giảng!', 'error'); return;
+    }
+    const now = new Date();
+    const todayStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+    if (!editingTerm && startDate < todayStr) {
+      showToast('Ngày khai giảng không được ở trong quá khứ!', 'error'); return;
     }
 
     try {
