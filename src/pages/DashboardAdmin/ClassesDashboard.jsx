@@ -284,7 +284,7 @@ function ClassDetailModal({ isOpen, cls, users = [], showToast, onSaveDetails, o
         }
 
         const headers = firstLine.split(',').map(h => h.trim().replace(/^["']|["']$/g, '').toLowerCase());
-        
+
         let idColIndex = -1;
         for (let i = 0; i < headers.length; i++) {
           const h = headers[i];
@@ -299,10 +299,10 @@ function ClassDetailModal({ isOpen, cls, users = [], showToast, onSaveDetails, o
         for (let i = 1; i < lines.length; i++) {
           const line = lines[i].trim();
           if (!line) continue;
-          
+
           const cols = line.split(',').map(c => c.trim().replace(/^["']|["']$/g, ''));
           const studentId = cols[idColIndex];
-          
+
           if (!studentId) continue;
 
           if (duplicateInFile.has(studentId.toLowerCase())) {
@@ -1477,7 +1477,6 @@ function ClassModal({ isOpen, editingClass, classForm, setClassForm, onSave, onC
           <div>
             <label style={labelStyle}>
               Trạng thái
-              <span style={{ fontSize: '0.72rem', fontWeight: 500, color: '#10b981', marginLeft: 6 }}>(tự động)</span>
             </label>
             <input readOnly value={statusLabel[classForm.status] || classForm.status}
               style={readonlyStyle} title="Trạng thái tự tính theo ngày" />

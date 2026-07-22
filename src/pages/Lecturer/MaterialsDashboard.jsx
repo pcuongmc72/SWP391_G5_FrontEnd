@@ -2,14 +2,14 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import {
   Upload, Plus, CheckSquare, Film, FileText, FileSpreadsheet, ImageIcon, Paperclip, Pencil,
   Search, ChevronDown, ChevronRight, BookOpen, X, MessageSquare, Check, Trash2, Clock, Award, Users, CheckCircle, ExternalLink,
-  ZoomIn, ZoomOut, Maximize, Edit3
+  ZoomIn, ZoomOut, Maximize, Edit3, RefreshCw
 } from 'lucide-react';
 import { useLecturerWorkspace } from '../../context/LecturerWorkspaceContext';
 import styles from './LecturerDashboard.module.css';
-import { createQuiz, getQuizDetails, updateQuiz, deleteQuiz } from '../../services/lecturerService';
+import { createQuiz, getQuizDetails, updateQuiz, deleteQuiz, getQuizAttempts } from '../../services/lecturerService';
 
 // ─── ChapterDropdown Component ───────────────────────────────────────────────
-function GenericDropdown({ value, onChange, existingItems, hasError = false, placeholder, icon: Icon, color, emptyText }) {
+function GenericDropdown({ value, onChange, existingItems, hasError = false, placeholder, icon: Icon, color, emptyText, disabled = false }) {
   const [open, setOpen] = useState(false);
   const [touched, setTouched] = useState(false);
   const [newInput, setNewInput] = useState('');
@@ -40,25 +40,31 @@ function GenericDropdown({ value, onChange, existingItems, hasError = false, pla
   return (
     <div ref={ref} style={{ position: 'relative' }}>
       <div
-        onClick={() => { setOpen(o => !o); setTouched(true); }}
+        onClick={() => {
+          if (disabled) return;
+          setOpen(o => !o);
+          setTouched(true);
+        }}
         style={{
           display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-          border: `1.5px solid ${showError ? '#ef4444' : open ? color : '#64748b'}`,
-          borderRadius: 8, padding: '8px 12px', cursor: 'pointer',
-          background: showError ? '#fff5f5' : '#fff',
-          fontSize: 13, color: value ? '#0f172a' : '#475569',
+          border: `1.5px solid ${disabled ? '#e2e8f0' : showError ? '#ef4444' : open ? color : '#64748b'}`,
+          borderRadius: 8, padding: '8px 12px',
+          cursor: disabled ? 'not-allowed' : 'pointer',
+          background: disabled ? '#f1f5f9' : showError ? '#fff5f5' : '#fff',
+          fontSize: 13, color: disabled ? '#334155' : value ? '#0f172a' : '#475569',
+          fontWeight: disabled ? 600 : 400,
           transition: 'border-color 0.2s, background 0.2s', userSelect: 'none', minHeight: 38,
-          boxShadow: showError ? '0 0 0 3px rgba(239,68,68,0.12)' : open ? `0 0 0 3px ${color}1A` : 'none',
+          boxShadow: !disabled && showError ? '0 0 0 3px rgba(239,68,68,0.12)' : !disabled && open ? `0 0 0 3px ${color}1A` : 'none',
         }}
       >
         <span style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-          <Icon size={13} color={showError ? '#ef4444' : value ? color : '#475569'} />
+          <Icon size={13} color={disabled ? '#64748b' : showError ? '#ef4444' : value ? color : '#475569'} />
           {value || placeholder}
         </span>
-        <ChevronDown size={14} color="#1e293b" style={{ transform: open ? 'rotate(180deg)' : 'rotate(0deg)', transition: 'transform 0.2s' }} />
+        {!disabled && <ChevronDown size={14} color="#1e293b" style={{ transform: open ? 'rotate(180deg)' : 'rotate(0deg)', transition: 'transform 0.2s' }} />}
       </div>
-      {showError && <span style={{ fontSize: 11, color: '#ef4444', marginTop: 3, display: 'flex', alignItems: 'center', gap: 3 }}>⚠️ Vui lòng chọn hoặc tạo!</span>}
-      {open && (
+      {!disabled && showError && <span style={{ fontSize: 11, color: '#ef4444', marginTop: 3, display: 'flex', alignItems: 'center', gap: 3 }}>⚠️ Vui lòng chọn hoặc tạo!</span>}
+      {!disabled && open && (
         <div style={{
           position: 'absolute', top: 'calc(100% + 4px)', left: 0, right: 0, zIndex: 999,
           background: '#fff', border: '1.5px solid #e2e8f0', borderRadius: 10,
@@ -168,6 +174,26 @@ export default function MaterialsDashboard() {
   const [isRenaming, setIsRenaming] = useState(false);
   const [filterType, setFilterType] = useState('all'); // all | video | pdf | document | quiz
   const [hasSubmitAttempted, setHasSubmitAttempted] = useState(false);
+  const [isRefreshingAttempts, setIsRefreshingAttempts] = useState(false);
+
+  const handleRefreshAttempts = async () => {
+    const material = materials.find(m => m.id === editingMaterialId);
+    let quizId = (material && material.url && material.url !== '#') ? material.url : editingMaterialId;
+    console.log("[handleRefreshAttempts] material:", material, "quizId:", quizId);
+    if (!quizId) return;
+    setIsRefreshingAttempts(true);
+    try {
+      const attemptsData = await getQuizAttempts(quizId);
+      console.log("[handleRefreshAttempts] attemptsData returned:", attemptsData);
+      if (attemptsData) {
+        setEditMaterialForm(prev => ({ ...prev, attempts: attemptsData }));
+      }
+    } catch (err) {
+      console.error("Lỗi khi tải lại danh sách lượt làm", err);
+    } finally {
+      setIsRefreshingAttempts(false);
+    }
+  };
 
   const [newMaterialForm, setNewMaterialForm] = useState({
     title: '', description: '', type: 'image', fileName: '', fileSize: '', fileObj: null, files: [],
@@ -503,29 +529,38 @@ export default function MaterialsDashboard() {
     let quizAttempts = [];
 
     if (material.type === 'quiz') {
-      try {
-        const quizId = material.url;
-        const quizDetails = await getQuizDetails(quizId);
-        if (quizDetails) {
-          quizTimeLimit = quizDetails.timeLimit || '';
-          quizMaxAttempts = quizDetails.maxAttempts || 1;
-          quizQuestions = quizDetails.questions.map(q => ({
-            questionText: q.questionText,
-            points: q.points,
-            options: q.options.map(o => ({
-              optionText: o.optionText,
-              isCorrect: o.isCorrect || false
-            }))
-          }));
+      const quizId = (material.url && material.url !== '#') ? material.url : material.id;
+      console.log("[handleEditMaterialStart] Quiz Edit - quizId:", quizId, "material:", material);
+      if (quizId) {
+        try {
+          const quizDetails = await getQuizDetails(quizId);
+          console.log("[handleEditMaterialStart] quizDetails:", quizDetails);
+          if (quizDetails) {
+            quizTimeLimit = quizDetails.timeLimit || '';
+            quizMaxAttempts = quizDetails.maxAttempts || 1;
+            quizQuestions = (quizDetails.questions || []).map(q => ({
+              questionText: q.questionText,
+              points: q.points,
+              options: (q.options || []).map(o => ({
+                optionText: o.optionText,
+                isCorrect: o.isCorrect || false
+              }))
+            }));
+          }
+        } catch (err) {
+          console.error("Lỗi khi tải câu hỏi trắc nghiệm", err);
+          showToast('Không tải được câu hỏi trắc nghiệm, vui lòng tạo lại.', 'info');
         }
 
-        const attemptsData = await getQuizAttempts(quizId);
-        if (attemptsData) {
-          quizAttempts = attemptsData;
+        try {
+          const attemptsData = await getQuizAttempts(quizId);
+          console.log("[handleEditMaterialStart] attemptsData:", attemptsData);
+          if (attemptsData) {
+            quizAttempts = attemptsData;
+          }
+        } catch (err) {
+          console.error("Lỗi khi tải lượt làm trắc nghiệm", err);
         }
-      } catch (err) {
-        console.error("Lỗi khi tải câu hỏi hoặc lượt làm trắc nghiệm", err);
-        showToast('Không tải được câu hỏi trắc nghiệm, vui lòng tạo lại.', 'info');
       }
     }
 
@@ -569,6 +604,7 @@ export default function MaterialsDashboard() {
 
   const handleCancelEdit = () => {
     setEditingMaterialId(null);
+    setHasSubmitAttempted(false);
   };
 
   const applyEditFiles = (fileList) => {
@@ -625,6 +661,14 @@ export default function MaterialsDashboard() {
       showToast('Vui lòng nhập đường dẫn liên kết!', 'error');
       return;
     }
+    if (newMaterialForm.inputType === 'quiz') {
+      const hasEmptyQuestion = newMaterialForm.questions.some(q => !q.questionText?.trim());
+      const hasEmptyOption = newMaterialForm.questions.some(q => q.options.some(o => !o.optionText?.trim()));
+      if (hasEmptyQuestion || hasEmptyOption) {
+        showToast('Vui lòng nhập đầy đủ nội dung câu hỏi và các lựa chọn!', 'error');
+        return;
+      }
+    }
     setIsUploading(true);
     const selectedCleanChapter = newMaterialForm.chapter.trim().toLowerCase();
     const existingMat = (materials || []).find(m => m.chapter && extractChapterName(m.chapter).trim().toLowerCase() === selectedCleanChapter);
@@ -639,6 +683,8 @@ export default function MaterialsDashboard() {
           maxAttempts: newMaterialForm.maxAttempts || 1,
           chapter: compoundChapter,
           lesson: null,
+          publishDate: newMaterialForm.publishDate,
+          deadline: newMaterialForm.deadline,
           questions: newMaterialForm.questions.map(q => ({
             questionText: q.questionText.trim(),
             points: q.points || 0,
@@ -760,6 +806,7 @@ export default function MaterialsDashboard() {
 
   const handleUpdateMaterial = async (e) => {
     e.preventDefault();
+    setHasSubmitAttempted(true);
     if (!editMaterialForm.title) { showToast('Vui lòng nhập tên bài học', 'info'); return; }
     if (!editMaterialForm.subject) { showToast('Vui lòng chọn hoặc tạo Môn học', 'info'); return; }
     if (!editMaterialForm.chapter) { showToast('Vui lòng chọn hoặc tạo Chương (Chapter)', 'error'); return; }
@@ -772,6 +819,14 @@ export default function MaterialsDashboard() {
     if (editMaterialForm.inputType === 'link' && !editMaterialForm.linkUrl) {
       showToast('Vui lòng nhập đường dẫn liên kết!', 'error');
       return;
+    }
+    if (editMaterialForm.inputType === 'quiz') {
+      const hasEmptyQuestion = editMaterialForm.questions.some(q => !q.questionText?.trim());
+      const hasEmptyOption = editMaterialForm.questions.some(q => q.options.some(o => !o.optionText?.trim()));
+      if (hasEmptyQuestion || hasEmptyOption) {
+        showToast('Vui lòng nhập đầy đủ nội dung câu hỏi và các lựa chọn!', 'error');
+        return;
+      }
     }
     setIsUploading(true);
     const selectedCleanChapter = editMaterialForm.chapter.trim().toLowerCase();
@@ -787,6 +842,8 @@ export default function MaterialsDashboard() {
           description: editMaterialForm.description?.trim() || '',
           timeLimit: editMaterialForm.timeLimit ? parseInt(editMaterialForm.timeLimit) : null,
           maxAttempts: editMaterialForm.maxAttempts || 1,
+          publishDate: editMaterialForm.publishDate,
+          deadline: editMaterialForm.deadline,
           questions: editMaterialForm.questions.map(q => ({
             questionText: q.questionText.trim(),
             points: q.points || 0,
@@ -923,18 +980,43 @@ export default function MaterialsDashboard() {
   const handleDeleteMaterial = async (id) => {
     const material = materials.find(m => m.id === id);
     const isQuiz = material && material.type === 'quiz';
-    if (!window.confirm(isQuiz ? 'Vô hiệu hóa bài trắc nghiệm này?\nBài trắc nghiệm sẽ bị ẩn khỏi học sinh nhưng vẫn hiển thị trong danh sách của giảng viên.' : 'Vô hiệu hóa học liệu này?\nHọc liệu sẽ bị ẩn khỏi học sinh nhưng vẫn hiển thị trong danh sách của giảng viên.')) return;
+
+    if (isQuiz) {
+      const quizId = (material?.url && material.url !== '#') ? material.url : id;
+      let attemptsCount = 0;
+
+      if (editingMaterialId === id && editMaterialForm.attempts) {
+        attemptsCount = editMaterialForm.attempts.length;
+      } else if (quizId) {
+        try {
+          const attemptsData = await getQuizAttempts(quizId);
+          attemptsCount = attemptsData ? attemptsData.length : 0;
+        } catch (err) {
+          console.error("Lỗi khi kiểm tra lượt làm trắc nghiệm:", err);
+        }
+      }
+
+      if (attemptsCount > 0) {
+        showToast('Không thể xóa bài trắc nghiệm này vì đã có sinh viên làm bài!', 'error');
+        return false;
+      }
+    }
+
+    if (!window.confirm(isQuiz ? 'Bạn có chắc chắn muốn xóa bài trắc nghiệm này? Thao tác này không thể hoàn tác.' : 'Bạn có chắc chắn muốn xóa học liệu này? Thao tác này không thể hoàn tác.')) return false;
+
     try {
       if (isQuiz) {
-        const quizId = material.url;
+        const quizId = (material?.url && material.url !== '#') ? material.url : id;
         await deleteQuiz(quizId);
         await api.reload();
       } else {
         await api.removeMaterial(id);
       }
-      showToast('Đã vô hiệu hóa học liệu.');
+      showToast('Đã xóa thành công.');
+      return true;
     } catch (err) {
-      showToast(err.message || 'Vô hiệu hóa thất bại.', 'info');
+      showToast(err.message || 'Xóa thất bại.', 'error');
+      return false;
     }
   };
 
@@ -1045,7 +1127,7 @@ export default function MaterialsDashboard() {
             <div key={qIdx} style={{ background: '#fff', border: '1px solid #cbd5e1', borderRadius: 10, padding: 12, position: 'relative' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
                 <span style={{ fontSize: 11, fontWeight: 800, color: '#0f766e', textTransform: 'uppercase' }}>Câu hỏi {qIdx + 1}</span>
-                {questions.length > 1 && (
+                {!isEdit && questions.length > 1 && (
                   <button
                     type="button"
                     onClick={() => handleRemoveQuestion(qIdx, isEdit)}
@@ -1063,8 +1145,11 @@ export default function MaterialsDashboard() {
                   placeholder="Nhập nội dung câu hỏi..."
                   value={q.questionText}
                   onChange={(e) => handleUpdateQuestionField(qIdx, 'questionText', e.target.value, isEdit)}
-                  required
+                  style={{ borderColor: hasSubmitAttempted && !q.questionText?.trim() ? '#ef4444' : undefined }}
                 />
+                {hasSubmitAttempted && !q.questionText?.trim() && (
+                  <p style={{ color: '#ef4444', fontSize: 11, marginTop: 4 }}>Vui lòng nhập nội dung câu hỏi.</p>
+                )}
               </div>
 
               <div style={{ marginBottom: 12, fontSize: 11, fontWeight: 600, color: '#059669', background: '#ecfdf5', padding: '6px 12px', borderRadius: 6, display: 'inline-block' }}>
@@ -1074,25 +1159,33 @@ export default function MaterialsDashboard() {
               <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
                 <label style={{ fontSize: 10, fontWeight: 700, color: '#64748b', marginBottom: 2 }}>Các lựa chọn (Tích chọn tất cả các đáp án đúng):</label>
                 {q.options.map((opt, oIdx) => (
-                  <div key={oIdx} style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-                    <input
-                      type="checkbox"
-                      checked={opt.isCorrect}
-                      onChange={(e) => handleUpdateOption(qIdx, oIdx, 'isCorrect', e.target.checked, isEdit)}
-                      style={{ cursor: 'pointer', accentColor: '#059669' }}
-                    />
-                    <span style={{ fontSize: 11, fontWeight: 700, color: '#475569' }}>
-                      {String.fromCharCode(65 + oIdx)}.
-                    </span>
-                    <input
-                      type="text"
-                      className={styles.input}
-                      placeholder={`Lựa chọn ${String.fromCharCode(65 + oIdx)}...`}
-                      value={opt.optionText}
-                      onChange={(e) => handleUpdateOption(qIdx, oIdx, 'optionText', e.target.value, isEdit)}
-                      style={{ padding: '6px 10px', fontSize: 12 }}
-                      required
-                    />
+                  <div key={oIdx} style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+                    <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+                      <input
+                        type="checkbox"
+                        checked={opt.isCorrect}
+                        onChange={(e) => handleUpdateOption(qIdx, oIdx, 'isCorrect', e.target.checked, isEdit)}
+                        style={{ cursor: 'pointer', accentColor: '#059669' }}
+                      />
+                      <span style={{ fontSize: 11, fontWeight: 700, color: '#475569' }}>
+                        {String.fromCharCode(65 + oIdx)}.
+                      </span>
+                      <input
+                        type="text"
+                        className={styles.input}
+                        placeholder={`Lựa chọn ${String.fromCharCode(65 + oIdx)}...`}
+                        value={opt.optionText}
+                        onChange={(e) => handleUpdateOption(qIdx, oIdx, 'optionText', e.target.value, isEdit)}
+                        style={{
+                          padding: '6px 10px',
+                          fontSize: 12,
+                          borderColor: hasSubmitAttempted && !opt.optionText?.trim() ? '#ef4444' : undefined
+                        }}
+                      />
+                    </div>
+                    {hasSubmitAttempted && !opt.optionText?.trim() && (
+                      <p style={{ color: '#ef4444', fontSize: 11, marginLeft: 34, marginTop: 2 }}>Vui lòng nhập lựa chọn này.</p>
+                    )}
                   </div>
                 ))}
               </div>
@@ -1100,19 +1193,21 @@ export default function MaterialsDashboard() {
           ))}
         </div>
 
-        <button
-          type="button"
-          onClick={() => handleAddQuestion(isEdit)}
-          style={{
-            marginTop: 14, width: '100%', padding: '8px', border: '1px dashed #059669',
-            background: '#fff', color: '#059669', borderRadius: 8, fontSize: 12, fontWeight: 700,
-            cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 4
-          }}
-          onMouseEnter={e => e.currentTarget.style.background = '#f0fdf4'}
-          onMouseLeave={e => e.currentTarget.style.background = '#fff'}
-        >
-          <Plus size={14} /> Thêm câu hỏi mới
-        </button>
+        {!isEdit && (
+          <button
+            type="button"
+            onClick={() => handleAddQuestion(isEdit)}
+            style={{
+              marginTop: 14, width: '100%', padding: '8px', border: '1px dashed #059669',
+              background: '#fff', color: '#059669', borderRadius: 8, fontSize: 12, fontWeight: 700,
+              cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 4
+            }}
+            onMouseEnter={e => e.currentTarget.style.background = '#f0fdf4'}
+            onMouseLeave={e => e.currentTarget.style.background = '#fff'}
+          >
+            <Plus size={14} /> Thêm câu hỏi mới
+          </button>
+        )}
       </div>
     );
   };
@@ -1349,8 +1444,8 @@ export default function MaterialsDashboard() {
                                 video: { label: '🎬 Video', color: '#3b82f6', bg: '#eff6ff', border: '#bfdbfe' },
                                 image: { label: '🖼️ Ảnh', color: '#10b981', bg: '#f0fdf4', border: '#bbf7d0' },
                                 pdf: { label: '📄 PDF', color: '#ef4444', bg: '#fef2f2', border: '#fecaca' },
-                                document: { label: '📝 Tài liệu', color: '#10b981', bg: '#f0fdf4', border: '#bbf7d0' },
-                                quiz: { label: '✅ Quiz', color: '#f59e0b', bg: '#fffbeb', border: '#fde68a' },
+                                document: { label: 'Tài liệu', color: '#10b981', bg: '#f0fdf4', border: '#bbf7d0' },
+                                quiz: { label: 'Quiz', color: '#f59e0b', bg: '#fffbeb', border: '#fde68a' },
                               }[m.type] || { label: '📎 File', color: '#64748b', bg: '#f8fafc', border: '#e2e8f0' };
 
                               return (
@@ -1385,7 +1480,7 @@ export default function MaterialsDashboard() {
                                           <div className={styles.materialMetaGrid}>
                                             {meta.publishDate && <span>📅 Mở: {meta.publishDate}</span>}
                                             {meta.deadline && <span>⏰ Hạn: {meta.deadline}</span>}
-                                            {m.fileSize && <span>💾 {m.fileSize}</span>}
+                                            {m.fileSize && <span>{['Quiz', 'Tài liệu'].includes(m.fileSize) ? m.fileSize : `💾 ${m.fileSize}`}</span>}
                                             {commentsCount > 0 && <span>💬 {commentsCount} ghi chú</span>}
                                           </div>
                                         )}
@@ -1518,8 +1613,11 @@ export default function MaterialsDashboard() {
                   value={newMaterialForm.title}
                   onChange={(e) => setNewMaterialForm({ ...newMaterialForm, title: e.target.value })}
                   placeholder="VD: Bài 1 - Giới thiệu Agile Scrum..."
-                  required
+                  style={{ borderColor: hasSubmitAttempted && !newMaterialForm.title?.trim() ? '#ef4444' : undefined }}
                 />
+                {hasSubmitAttempted && !newMaterialForm.title?.trim() && (
+                  <p style={{ color: '#ef4444', fontSize: 11, marginTop: 4 }}>Vui lòng nhập tên bài học.</p>
+                )}
               </div>
 
               <div className={styles.field}>
@@ -1717,54 +1815,134 @@ export default function MaterialsDashboard() {
 
               {/* Left Column: Preview File / Quiz Attempts */}
               {editMaterialForm.fileName && (
-                editMaterialForm.type === 'quiz' ? (
-                  <div style={{ flex: 1.5, background: '#fff', borderRadius: 16, border: '1px solid #cbd5e1', display: 'flex', flexDirection: 'column', overflow: 'hidden', minWidth: 400, boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.05)' }}>
-                    <div style={{ padding: '16px 20px', borderBottom: '1px solid #e2e8f0', background: '#f8fafc', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                      <h4 style={{ margin: 0, fontSize: 13, fontWeight: 700, color: '#0f172a', display: 'flex', alignItems: 'center', gap: 6 }}>
-                        <Users size={16} color="#059669" /> Kết quả & Lịch sử làm bài
-                      </h4>
-                      <span style={{ fontSize: 11, fontWeight: 700, padding: '3px 8px', borderRadius: 6, color: '#047857', background: '#d1fae5' }}>
-                        {editMaterialForm.attempts?.length || 0} lượt làm
-                      </span>
-                    </div>
+                editMaterialForm.type === 'quiz' ? (() => {
+                  const map = {};
+                  (users || []).forEach(u => {
+                    if (!u.id) return;
+                    const key = String(u.id).toLowerCase();
+                    map[key] = {
+                      studentId: u.id,
+                      studentName: u.name || 'Học sinh',
+                      email: u.email || '',
+                      attempts: []
+                    };
+                  });
 
-                    <div style={{ flex: 1, overflowY: 'auto', padding: 20, background: '#fff' }}>
-                      {(!editMaterialForm.attempts || editMaterialForm.attempts.length === 0) ? (
-                        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '100%', color: '#94a3b8', padding: '40px 0', minHeight: 250 }}>
-                          <Users size={36} style={{ marginBottom: 8, color: '#cbd5e1' }} />
-                          <p style={{ margin: 0, fontSize: 12, fontWeight: 600 }}>Chưa có học sinh nào làm bài kiểm tra này</p>
+                  (editMaterialForm.attempts || []).forEach(att => {
+                    const sId = att.studentId ? String(att.studentId).toLowerCase() : null;
+                    const sName = att.studentFullName ? String(att.studentFullName).toLowerCase().trim() : null;
+
+                    let targetKey = null;
+                    if (sId && map[sId]) {
+                      targetKey = sId;
+                    } else if (sName) {
+                      targetKey = Object.keys(map).find(k => map[k].studentName && map[k].studentName.toLowerCase().trim() === sName);
+                    }
+
+                    if (targetKey && map[targetKey]) {
+                      map[targetKey].attempts.push(att);
+                    } else {
+                      const newKey = sId || sName || Math.random().toString();
+                      map[newKey] = {
+                        studentId: att.studentId || '',
+                        studentName: att.studentFullName || 'Học sinh',
+                        email: '',
+                        attempts: [att]
+                      };
+                    }
+                  });
+
+                  const studentList = Object.values(map);
+                  const completedCount = studentList.filter(s => s.attempts.length > 0).length;
+                  const totalAttemptsCount = editMaterialForm.attempts?.length || 0;
+
+                  return (
+                    <div style={{ flex: 1.5, background: '#fff', borderRadius: 16, border: '1px solid #cbd5e1', display: 'flex', flexDirection: 'column', overflow: 'hidden', minWidth: 400, boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.05)' }}>
+                      <div style={{ padding: '16px 20px', borderBottom: '1px solid #e2e8f0', background: '#f8fafc', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                        <h4 style={{ margin: 0, fontSize: 13, fontWeight: 700, color: '#0f172a', display: 'flex', alignItems: 'center', gap: 6 }}>
+                          <Users size={16} color="#059669" /> Kết quả & Lịch sử làm bài
+                        </h4>
+                        <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
+                          <button
+                            type="button"
+                            onClick={handleRefreshAttempts}
+                            disabled={isRefreshingAttempts}
+                            style={{
+                              display: 'inline-flex', alignItems: 'center', gap: 4,
+                              fontSize: 11, fontWeight: 700, padding: '3px 8px', borderRadius: 6,
+                              color: '#0f766e', background: '#e6f4ea', border: '1px solid #a3cfbb',
+                              cursor: isRefreshingAttempts ? 'wait' : 'pointer', transition: 'all 0.15s'
+                            }}
+                            title="Tải lại danh sách làm bài mới nhất"
+                          >
+                            <RefreshCw size={12} style={{ animation: isRefreshingAttempts ? 'spin 1s linear infinite' : 'none' }} />
+                            {isRefreshingAttempts ? 'Đang tải...' : 'Tải lại'}
+                          </button>
+                          <span style={{ fontSize: 11, fontWeight: 700, padding: '3px 8px', borderRadius: 6, color: '#047857', background: '#d1fae5' }}>
+                            {completedCount}/{studentList.length || (users ? users.length : 0)} sinh viên đã làm
+                          </span>
+                          <span style={{ fontSize: 11, fontWeight: 700, padding: '3px 8px', borderRadius: 6, color: '#4338ca', background: '#e0e7ff' }}>
+                            {totalAttemptsCount} lượt nộp
+                          </span>
                         </div>
-                      ) : (
-                        <div style={{ overflowX: 'auto' }}>
-                          <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12, textAlign: 'left' }}>
-                            <thead>
-                              <tr style={{ borderBottom: '2px solid #f1f5f9', color: '#64748b', fontWeight: 700 }}>
-                                <th style={{ padding: '8px 12px' }}>Học sinh</th>
-                                <th style={{ padding: '8px 12px', textAlign: 'center' }}>Lần làm</th>
-                                <th style={{ padding: '8px 12px', textAlign: 'center' }}>Điểm số</th>
-                                <th style={{ padding: '8px 12px' }}>Thời gian nộp</th>
-                              </tr>
-                            </thead>
-                            <tbody>
-                              {editMaterialForm.attempts.map((att, idx) => (
-                                <tr key={att.id || idx} style={{ borderBottom: '1px solid #f1f5f9', color: '#334155' }}>
-                                  <td style={{ padding: '10px 12px', fontWeight: 600 }}>{att.studentFullName}</td>
-                                  <td style={{ padding: '10px 12px', textAlign: 'center' }}>Lượt #{att.attemptNumber}</td>
-                                  <td style={{ padding: '10px 12px', textAlign: 'center', fontWeight: 700, color: '#059669' }}>
-                                    {att.totalScore != null ? `${att.totalScore}đ` : 'Chưa nộp'}
-                                  </td>
-                                  <td style={{ padding: '10px 12px', color: '#64748b' }}>
-                                    {att.submittedAt ? new Date(att.submittedAt).toLocaleString('vi-VN', { hour: '2-digit', minute: '2-digit', day: '2-digit', month: '2-digit' }) : 'N/A'}
-                                  </td>
-                                </tr>
-                              ))}
-                            </tbody>
-                          </table>
-                        </div>
-                      )}
+                      </div>
+
+                      <div style={{ flex: 1, overflowY: 'auto', padding: 16, background: '#fff' }}>
+                        {studentList.length === 0 ? (
+                          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '100%', color: '#94a3b8', padding: '40px 0', minHeight: 250 }}>
+                            <Users size={36} style={{ marginBottom: 8, color: '#cbd5e1' }} />
+                            <p style={{ margin: 0, fontSize: 12, fontWeight: 600 }}>Chưa có sinh viên nào trong lớp này</p>
+                          </div>
+                        ) : (
+                          <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                            {studentList.map((st) => {
+                              const hasAttempts = st.attempts.length > 0;
+                              const validScores = st.attempts.map(a => a.totalScore).filter(sc => sc != null);
+                              const maxScore = validScores.length > 0 ? Math.max(...validScores) : null;
+                              return (
+                                <div key={st.studentId || st.studentName} style={{ border: '1px solid #e2e8f0', borderRadius: 12, padding: '12px 14px', background: hasAttempts ? '#f8fafc' : '#fff' }}>
+                                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                    <div>
+                                      <span style={{ fontSize: 13, fontWeight: 700, color: '#0f172a' }}>{st.studentName}</span>
+                                      {st.studentId && <span style={{ fontSize: 11, color: '#64748b', marginLeft: 8 }}>({st.studentId})</span>}
+                                    </div>
+                                    <div>
+                                      {hasAttempts ? (
+                                        <span style={{ fontSize: 11, fontWeight: 800, color: maxScore >= 5 ? '#047857' : '#dc2626', background: maxScore >= 5 ? '#ecfdf5' : '#fef2f2', padding: '3px 8px', borderRadius: 6, border: `1px solid ${maxScore >= 5 ? '#a7f3d0' : '#fecaca'}` }}>
+                                          Điểm cao nhất: {maxScore}đ ({st.attempts.length} lượt)
+                                        </span>
+                                      ) : (
+                                        <span style={{ fontSize: 11, fontWeight: 600, color: '#94a3b8', background: '#f1f5f9', padding: '3px 8px', borderRadius: 6 }}>
+                                          Chưa làm bài
+                                        </span>
+                                      )}
+                                    </div>
+                                  </div>
+
+                                  {hasAttempts && (
+                                    <div style={{ display: 'flex', flexDirection: 'column', gap: 6, marginTop: 10, borderTop: '1px dashed #e2e8f0', paddingTop: 8 }}>
+                                      {st.attempts.map((att, idx) => (
+                                        <div key={att.id || idx} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: 12, padding: '6px 10px', background: '#fff', borderRadius: 8, border: '1px solid #f1f5f9' }}>
+                                          <span style={{ fontWeight: 600, color: '#334155' }}>Lượt #{att.attemptNumber || (idx + 1)}</span>
+                                          <span style={{ fontWeight: 800, color: att.totalScore != null && att.totalScore >= 5 ? '#059669' : '#dc2626' }}>
+                                            {att.totalScore != null ? `${att.totalScore} điểm` : 'Đang làm...'}
+                                          </span>
+                                          <span style={{ fontSize: 11, color: '#64748b' }}>
+                                            {att.submittedAt ? new Date(att.submittedAt).toLocaleString('vi-VN', { hour: '2-digit', minute: '2-digit', day: '2-digit', month: '2-digit' }) : 'N/A'}
+                                          </span>
+                                        </div>
+                                      ))}
+                                    </div>
+                                  )}
+                                </div>
+                              );
+                            })}
+                          </div>
+                        )}
+                      </div>
                     </div>
-                  </div>
-                ) : (
+                  );
+                })() : (
                   <div style={{ flex: 1.5, background: '#0f172a', borderRadius: 16, display: 'flex', flexDirection: 'column', overflow: 'hidden', minWidth: 400, position: 'relative', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)' }}>
                     {/* Toolbar */}
                     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px 16px', background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(8px)', zIndex: 2, borderBottom: '1px solid rgba(255,255,255,0.1)' }}>
@@ -1957,6 +2135,7 @@ export default function MaterialsDashboard() {
                         icon={BookOpen}
                         color="#059669"
                         emptyText="Chưa có chương nào trong lớp này."
+                        disabled={true}
                       />
                     </div>
 
@@ -1964,11 +2143,14 @@ export default function MaterialsDashboard() {
                       <label>Tên bài học &nbsp;<span style={{ color: '#ef4444' }}>*</span></label>
                       <input
                         className={styles.input}
-                        required
                         value={editMaterialForm.title}
                         onChange={(e) => setEditMaterialForm({ ...editMaterialForm, title: e.target.value })}
                         placeholder="VD: Bài 1 - Giới thiệu Agile Scrum..."
+                        style={{ borderColor: hasSubmitAttempted && !editMaterialForm.title?.trim() ? '#ef4444' : undefined }}
                       />
+                      {hasSubmitAttempted && !editMaterialForm.title?.trim() && (
+                        <p style={{ color: '#ef4444', fontSize: 11, marginTop: 4 }}>Vui lòng nhập tên bài học.</p>
+                      )}
                     </div>
 
                     <div className={styles.field}>
@@ -1991,7 +2173,8 @@ export default function MaterialsDashboard() {
                           type="date"
                           className={styles.input}
                           value={editMaterialForm.publishDate}
-                          onChange={(e) => setEditMaterialForm({ ...editMaterialForm, publishDate: e.target.value })}
+                          disabled
+                          style={{ background: '#f1f5f9', color: '#334155', fontWeight: 600, cursor: 'not-allowed', border: '1.5px solid #e2e8f0' }}
                         />
                       </div>
                       <div className={styles.field} style={{ width: '100%' }}>
@@ -2005,20 +2188,18 @@ export default function MaterialsDashboard() {
                     </div>
 
                     <div className={styles.field}>
-                      <label>Nội dung đính kèm</label>
-                      {editMaterialForm.inputType === 'quiz' ? (
-                        <div style={{ display: 'flex', background: '#ecfdf5', padding: '8px 12px', borderRadius: 10, marginBottom: 16, border: '1px solid #a7f3d0', color: '#065f46', fontSize: 12, fontWeight: 700, alignItems: 'center', gap: 6 }}>
-                          Bài học trắc nghiệm (Không thể thay đổi loại học liệu này)
-                        </div>
-                      ) : (
-                        <div style={{ display: 'flex', background: '#f1f5f9', padding: 4, borderRadius: 10, marginBottom: 16 }}>
-                          <button type="button" onClick={() => setEditMaterialForm({ ...editMaterialForm, inputType: 'file' })} style={{ flex: 1, padding: '8px 0', border: 'none', background: editMaterialForm.inputType === 'file' ? '#fff' : 'transparent', color: editMaterialForm.inputType === 'file' ? '#059669' : '#64748b', fontWeight: 700, fontSize: 13, borderRadius: 8, cursor: 'pointer', boxShadow: editMaterialForm.inputType === 'file' ? '0 1px 3px rgba(0,0,0,0.1)' : 'none', transition: 'all 0.2s' }}>
-                            Tải tệp từ máy
-                          </button>
-                          <button type="button" onClick={() => setEditMaterialForm({ ...editMaterialForm, inputType: 'link' })} style={{ flex: 1, padding: '8px 0', border: 'none', background: editMaterialForm.inputType === 'link' ? '#fff' : 'transparent', color: editMaterialForm.inputType === 'link' ? '#059669' : '#64748b', fontWeight: 700, fontSize: 13, borderRadius: 8, cursor: 'pointer', boxShadow: editMaterialForm.inputType === 'link' ? '0 1px 3px rgba(0,0,0,0.1)' : 'none', transition: 'all 0.2s' }}>
-                            Gắn link liên kết
-                          </button>
-                        </div>
+                      {editMaterialForm.inputType !== 'quiz' && (
+                        <>
+                          <label>Nội dung đính kèm</label>
+                          <div style={{ display: 'flex', background: '#f1f5f9', padding: 4, borderRadius: 10, marginBottom: 16 }}>
+                            <button type="button" onClick={() => setEditMaterialForm({ ...editMaterialForm, inputType: 'file' })} style={{ flex: 1, padding: '8px 0', border: 'none', background: editMaterialForm.inputType === 'file' ? '#fff' : 'transparent', color: editMaterialForm.inputType === 'file' ? '#059669' : '#64748b', fontWeight: 700, fontSize: 13, borderRadius: 8, cursor: 'pointer', boxShadow: editMaterialForm.inputType === 'file' ? '0 1px 3px rgba(0,0,0,0.1)' : 'none', transition: 'all 0.2s' }}>
+                              Tải tệp từ máy
+                            </button>
+                            <button type="button" onClick={() => setEditMaterialForm({ ...editMaterialForm, inputType: 'link' })} style={{ flex: 1, padding: '8px 0', border: 'none', background: editMaterialForm.inputType === 'link' ? '#fff' : 'transparent', color: editMaterialForm.inputType === 'link' ? '#059669' : '#64748b', fontWeight: 700, fontSize: 13, borderRadius: 8, cursor: 'pointer', boxShadow: editMaterialForm.inputType === 'link' ? '0 1px 3px rgba(0,0,0,0.1)' : 'none', transition: 'all 0.2s' }}>
+                              Gắn link liên kết
+                            </button>
+                          </div>
+                        </>
                       )}
 
 
@@ -2206,8 +2387,8 @@ export default function MaterialsDashboard() {
                   <button
                     type="button"
                     onClick={async () => {
-                      if (window.confirm('Bạn có chắc chắn muốn xóa học liệu này? Thao tác này không thể hoàn tác.')) {
-                        await handleDeleteMaterial(editingMaterialId);
+                      const deleted = await handleDeleteMaterial(editingMaterialId);
+                      if (deleted) {
                         setEditingMaterialId(null);
                       }
                     }}

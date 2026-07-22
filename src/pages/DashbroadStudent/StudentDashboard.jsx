@@ -67,13 +67,13 @@ export default function StudentDashboard() {
         fetchTerms();
     }, []);
 
-    const matchedTerm = terms.find(t => t.id === selectedSemester);
+    const matchedTerm = terms.find(t => String(t.id).toLowerCase() === String(selectedSemester).toLowerCase());
 
     // Auto-update selectedSemester when selectedYear changes
     useEffect(() => {
         if (!selectedYear || terms.length === 0) return;
 
-        const currentSelectedTerm = terms.find(t => t.id === selectedSemester);
+        const currentSelectedTerm = terms.find(t => String(t.id).toLowerCase() === String(selectedSemester).toLowerCase());
         const currentSelectedTermYear = currentSelectedTerm?.startDate?.split('-')[0];
 
         if (currentSelectedTermYear !== selectedYear) {
