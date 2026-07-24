@@ -57,58 +57,43 @@ function getSyllabusForCourse(courseCode) {
   return [];
 }
 
-// ─── Google Classroom Three-State Sidebar Nav Item ────────────
-//  collapsed  → icon-only, 40px pill centered, tooltip on hover
-//  expanded   → icon + label, full-width pill, left-aligned
-function SidebarNavItem({ icon, label, isActive, onClick, title, collapsed }) {
+// ─── Google Classroom Sidebar Nav Item ────────────
+function SidebarNavItem({ icon, label, isActive, onClick, title }) {
   const [hov, setHov] = React.useState(false);
-  const [showTooltip, setShowTooltip] = React.useState(false);
-
-  const handleMouseEnter = () => {
-    setHov(true);
-    // Only show tooltip when fully collapsed (not during hover-expansion transition)
-    if (collapsed) setShowTooltip(true);
-  };
-  const handleMouseLeave = () => {
-    setHov(false);
-    setShowTooltip(false);
-  };
 
   return (
     <div style={{ position: 'relative', width: '100%' }}>
       <button
         onClick={onClick}
-        onMouseEnter={handleMouseEnter}
-        onMouseLeave={handleMouseLeave}
+        onMouseEnter={() => setHov(true)}
+        onMouseLeave={() => setHov(false)}
         aria-label={title}
         style={{
           display: 'flex',
           alignItems: 'center',
-          justifyContent: collapsed ? 'center' : 'flex-start',
-          gap: '12px',
-          width: collapsed ? '40px' : '100%',
-          height: '48px',
-          borderRadius: '999px',
-          fontSize: '14px',
-          fontWeight: isActive ? 600 : 500,
-          color: isActive ? '#0f766e' : (hov ? '#111827' : '#4B5563'),
+          justifyContent: 'flex-start',
+          gap: 'var(--space-3)',
+          width: '100%',
+          borderRadius: 'var(--radius-full)',
+          fontSize: 'var(--font-size-sm)',
+          fontWeight: isActive ? 'var(--font-weight-bold)' : 'var(--font-weight-semibold)',
+          color: isActive ? '#0f766e' : (hov ? '#1F2937' : '#4B5563'),
           background: isActive
-            ? 'rgba(15, 118, 110, 0.12)'
-            : hov ? '#F1F3F4' : 'transparent',
-          border: 'none',
+            ? 'rgba(15, 118, 110, 0.08)'
+            : hov ? '#F3F4F6' : 'transparent',
+          border: isActive ? '1.5px solid #0f766e' : '1.5px solid transparent',
           cursor: 'pointer',
-          fontFamily: 'inherit',
+          fontFamily: 'var(--font-family-base)',
           textAlign: 'left',
-          transition: 'background 200ms ease, color 200ms ease, width 280ms ease-in-out',
+          transition: 'all var(--transition-fast)',
           whiteSpace: 'nowrap',
           overflow: 'hidden',
           flexShrink: 0,
-          padding: collapsed ? '0' : '0 16px 0 12px',
-          margin: collapsed ? '0 auto' : '0',
+          padding: '10px 16px',
           boxSizing: 'border-box',
         }}
       >
-        {/* Icon — ALWAYS rendered and visible */}
+        {/* Icon */}
         <span style={{
           color: isActive ? '#0f766e' : (hov ? '#374151' : '#5F6368'),
           display: 'flex',
@@ -123,137 +108,54 @@ function SidebarNavItem({ icon, label, isActive, onClick, title, collapsed }) {
           {icon}
         </span>
 
-        {/* Label — fades + slides when toggling */}
+        {/* Label */}
         <span style={{
-          opacity: collapsed ? 0 : 1,
-          transform: collapsed ? 'translateX(-8px)' : 'translateX(0)',
-          maxWidth: collapsed ? '0px' : '180px',
+          maxWidth: '180px',
           overflow: 'hidden',
           whiteSpace: 'nowrap',
           textOverflow: 'ellipsis',
-          pointerEvents: collapsed ? 'none' : 'auto',
-          transition: [
-            'opacity 200ms ease',
-            'transform 220ms ease',
-            'max-width 280ms ease-in-out',
-          ].join(', '),
+          transition: 'all var(--transition-fast)',
         }}>
           {label}
         </span>
       </button>
-
-      {/* Tooltip — only when truly collapsed (not hover-expanding) */}
-      {collapsed && showTooltip && (
-        <div
-          role="tooltip"
-          style={{
-            position: 'absolute',
-            left: 'calc(100% + 14px)',
-            top: '50%',
-            transform: 'translateY(-50%)',
-            background: '#3C4043',
-            color: '#ffffff',
-            fontSize: '12px',
-            fontWeight: 500,
-            lineHeight: 1.4,
-            padding: '6px 12px',
-            borderRadius: '6px',
-            whiteSpace: 'nowrap',
-            zIndex: 9999,
-            pointerEvents: 'none',
-            boxShadow: '0 2px 10px rgba(0,0,0,0.2)',
-            animation: 'fadeInTooltip 150ms ease-out forwards',
-          }}
-        >
-          {label}
-          {/* Arrow pointing left */}
-          <span style={{
-            position: 'absolute',
-            right: '100%',
-            top: '50%',
-            transform: 'translateY(-50%)',
-            width: 0,
-            height: 0,
-            borderTop: '5px solid transparent',
-            borderBottom: '5px solid transparent',
-            borderRight: '6px solid #3C4043',
-          }} />
-        </div>
-      )}
     </div>
   );
 }
 
 // ────────────────────────────────────────────────────────────────
-//  SidebarRail — Three-State Google Classroom Navigation Rail
+//  SidebarRail — Permanently Expanded Student Navigation Sidebar
 // ────────────────────────────────────────────────────────────────
-function SidebarRail({ isPinned, selectedCourse, location, setSelectedCourse, navigate }) {
-  const [isHovered, setIsHovered] = React.useState(false);
-
-  // The sidebar is "visually expanded" when pinned OR hovered
-  const isExpanded = isPinned || isHovered;
-  // Icons show tooltip only when sidebar is truly collapsed (not hovering or pinned)
-  const collapsed = !isExpanded;
-
+function SidebarRail({ selectedCourse, location, setSelectedCourse, navigate }) {
   return (
     <aside
-      onMouseEnter={() => setIsHovered(true)}
-      onMouseLeave={() => setIsHovered(false)}
       style={{
-        /* Width drives the three states */
-        width: isExpanded ? '240px' : '72px',
+        width: '260px',
         flexShrink: 0,
         background: '#ffffff',
         borderRight: '1px solid #E5E7EB',
         display: 'flex',
         flexDirection: 'column',
-        padding: isExpanded ? '16px 12px 16px' : '16px 0 16px',
+        padding: '16px 12px',
         position: 'sticky',
         top: 0,
         height: '100vh',
         overflowY: 'auto',
         overflowX: 'hidden',
-        /* Core animation: width + padding transition */
-        transition: [
-          'width 280ms ease-in-out',
-          'padding 280ms ease-in-out',
-        ].join(', '),
         userSelect: 'none',
         boxSizing: 'border-box',
-        /* Elevated enough to cover content when hover-expanding */
-        zIndex: isHovered && !isPinned ? 20 : 'auto',
-        /* Subtle shadow when hover-expanded (not pinned) to indicate overlay */
-        boxShadow: isHovered && !isPinned
-          ? '4px 0 16px rgba(0,0,0,0.08)'
-          : 'none',
+        zIndex: 20,
       }}
     >
-      {/* ── Pin indicator dot (shows when pinned) ── */}
-      {isPinned && (
-        <div style={{
-          position: 'absolute',
-          top: '12px',
-          right: '10px',
-          width: '6px',
-          height: '6px',
-          borderRadius: '50%',
-          background: '#0f766e',
-          opacity: 0.7,
-          transition: 'opacity 200ms ease',
-        }} />
-      )}
 
       {/* ── Nav items ── */}
       <div style={{
         display: 'flex',
         flexDirection: 'column',
-        gap: '4px',
+        gap: 'var(--space-2)',
         flex: 1,
-        /* Center items when collapsed; stretch when expanded */
-        alignItems: isExpanded ? 'stretch' : 'center',
-        transition: 'align-items 0ms',
+        alignItems: 'stretch',
       }}>
-
         {/* 1. Home / Lớp học */}
         <SidebarNavItem
           icon={<Home size={20} />}
@@ -261,10 +163,7 @@ function SidebarRail({ isPinned, selectedCourse, location, setSelectedCourse, na
           isActive={!selectedCourse && location.pathname === '/dashboard/student'}
           onClick={() => { setSelectedCourse(null); navigate('/dashboard/student'); }}
           title="Lớp học của tôi"
-          collapsed={collapsed}
         />
-
-
 
         {/* 3. Blog & Diễn đàn */}
         <SidebarNavItem
@@ -273,29 +172,8 @@ function SidebarRail({ isPinned, selectedCourse, location, setSelectedCourse, na
           isActive={location.pathname === '/dashboard/student/blog'}
           onClick={() => { setSelectedCourse(null); navigate('/dashboard/student/blog'); }}
           title="Blog & Diễn đàn"
-          collapsed={collapsed}
         />
-
       </div>
-
-      {/* ── Hover-mode hint (shown at bottom when hover-expanded but not pinned) ── */}
-      {isHovered && !isPinned && (
-        <div style={{
-          marginTop: 'auto',
-          paddingTop: '12px',
-          borderTop: '1px solid #F3F4F6',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          gap: '6px',
-          opacity: 0.55,
-          animation: 'fadeIn 200ms ease-out',
-        }}>
-          <span style={{ fontSize: '10px', color: '#6B7280', whiteSpace: 'nowrap', fontWeight: 500 }}>
-            Nhấn ☰ để ghim
-          </span>
-        </div>
-      )}
     </aside>
   );
 }
@@ -732,8 +610,6 @@ export default function DashbroadStudent() {
         studentCode={studentCode}
         studentEmail={studentEmail}
         onLogout={handleLogout}
-        onToggleSidebar={() => setSidebarOpen(prev => !prev)}
-        sidebarOpen={sidebarOpen}
         onHome={() => {
           setSelectedCourse(null);
           navigate('/dashboard/student');
@@ -743,36 +619,39 @@ export default function DashbroadStudent() {
 
       {/* Visual notification banner */}
       {notification && (
-        <div className={`fixed bottom-8 right-8 z-[200] max-w-sm rounded-full px-5 py-3 shadow-2xl flex gap-2.5 items-center animate-fade-in ${notification.type === "success"
-          ? "bg-[#064e3b] text-white border border-[#065f46]"
-          : "bg-teal-900 text-white border border-teal-800"
-          }`}>
+        <div 
+          className="animate-fade-in"
+          style={{
+            position: 'fixed',
+            bottom: '32px',
+            right: '32px',
+            zIndex: 9999,
+            maxWidth: '384px',
+            borderRadius: '9999px',
+            padding: '12px 20px',
+            boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)',
+            display: 'flex',
+            gap: '10px',
+            alignItems: 'center',
+            background: notification.type === "success" ? "#064e3b" : "#115e59",
+            color: "#ffffff",
+            border: notification.type === "success" ? "1px solid #065f46" : "1px solid #134e4a",
+            boxSizing: 'border-box'
+          }}
+        >
           {notification.type === "success" ? (
             <Check size={16} className="text-emerald-400 shrink-0" strokeWidth={3} />
           ) : (
             <CircleAlert size={16} className="text-teal-300 shrink-0" />
           )}
-          <p className="text-[14px] font-bold m-0 leading-none">{notification.message}</p>
+          <p style={{ fontSize: '14px', fontWeight: 'bold', margin: 0, lineHeight: 1 }}>{notification.message}</p>
         </div>
       )}
 
       {/* Main Container */}
       <div style={{ flex: 1, display: 'flex', overflow: 'hidden' }}>
 
-        {/*
-         * ── Three-State Sidebar (Google Classroom style) ──────────────
-         *  sidebarOpen (existing state) → now means "isPinned"
-         *  isHovered   (local state)    → hover-expand trigger
-         *  isExpanded  = isPinned || isHovered → drives all visual states
-         *
-         * States:
-         *  1. Collapsed (default)  → 72px, icons only
-         *  2. Hover Expanded       → 240px while mouse is inside
-         *  3. Pinned               → hamburger clicked → always 240px
-         * ─────────────────────────────────────────────────────────────
-         */}
         <SidebarRail
-          isPinned={sidebarOpen}
           selectedCourse={selectedCourse}
           location={location}
           setSelectedCourse={setSelectedCourse}

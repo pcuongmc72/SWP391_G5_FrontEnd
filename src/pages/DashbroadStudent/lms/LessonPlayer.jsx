@@ -180,24 +180,46 @@ function ImageViewer({ src, title }) {
   );
 }
 
+// Helper for Cloudinary PDF conversion
+const getCloudinaryPdfUrl = (rawUrl) => {
+  if (!rawUrl) return '';
+  if (rawUrl.match(/\.pdf($|\?)/i)) return rawUrl;
+  const base = rawUrl.split('?')[0];
+  return base.replace('/upload/', '/upload/fl_attachment:false/') + '.pdf';
+};
+
+// Helper for Cloudinary download forcing
+const getCloudinaryDownloadUrl = (url) => {
+  if (!url || !url.includes('cloudinary.com')) return url;
+  if (url.includes('/upload/') && !url.includes('fl_attachment')) {
+    return url.replace('/upload/', '/upload/fl_attachment/');
+  }
+  return url;
+};
+
 // ─────────────────────────────────────────
-// Sub-component: PDF Viewer
+// Sub-component: Document Iframe Preview (PDF / Office Docs)
 // ─────────────────────────────────────────
-function PdfViewer({ src, title }) {
+function IframeDocViewer({ src, title, isGoogleDoc = false }) {
+  const finalSrc = isGoogleDoc
+    ? `https://docs.google.com/gview?url=${encodeURIComponent(src)}&embedded=true`
+    : src;
+
   return (
     <div className="w-full h-full flex flex-col bg-gray-50">
       <div className="flex items-center justify-between px-4 py-2 bg-white border-b border-gray-200">
         <span className="text-xs text-gray-600 font-medium truncate">{title}</span>
         <a
-          href={src}
+          href={getCloudinaryDownloadUrl(src)}
+          download
           target="_blank"
           rel="noreferrer"
-          className="flex items-center gap-1 text-emerald-400 hover:text-emerald-300 text-xs font-bold transition"
+          className="flex items-center gap-1 text-emerald-600 hover:text-emerald-500 text-xs font-bold transition"
         >
-          <ExternalLink size={13} /> Mở tab mới
+          <Download size={13} /> Tải xuống
         </a>
       </div>
-      <iframe src={src} title={title} className="flex-1 w-full border-0" />
+      <iframe src={finalSrc} title={title} className="flex-1 w-full border-0 bg-white" />
     </div>
   );
 }
@@ -367,9 +389,9 @@ export default function LessonPlayer({
       if (typeStr.includes('quiz') || typeStr === 'quiz') return 'quiz';
       
       if (urlStr) {
-         if (urlStr.match(/\.(mp4|webm|ogg)$/i)) return 'video';
-         if (urlStr.match(/\.(pdf)$/i)) return 'pdf';
-         if (urlStr.match(/\.(jpg|jpeg|png|gif|webp)$/i)) return 'image';
+         if (urlStr.match(/\.(mp4|webm|ogg)($|\?)/i)) return 'video';
+         if (urlStr.match(/\.pdf($|\?)/i)) return 'pdf';
+         if (urlStr.match(/\.(jpg|jpeg|png|gif|webp)($|\?)/i)) return 'image';
       }
       return 'document';
     };
@@ -377,12 +399,32 @@ export default function LessonPlayer({
     const mediaType = getActualMediaType(lecture.type, fileUrl);
     if (mediaType === "video") return <VideoPlayer src={fileUrl} lectureId={lecture.id} />;
     if (mediaType === "image") return <ImageViewer src={fileUrl} title={lecture.title} />;
-    if (mediaType === "pdf") return <PdfViewer src={fileUrl} title={lecture.title} />;
+
+    // PDF / Cloudinary / Microsoft Office Document Previews
+    const isCloudinary = fileUrl.includes('cloudinary.com');
+    const isPdfType = mediaType === "pdf" || fileUrl.match(/\.pdf($|\?)/i);
+    const isDocType = fileUrl.match(/\.(pptx?|docx?|xlsx?)($|\?)/i);
+
+    if (isCloudinary && !isDocType) {
+      const pdfUrl = getCloudinaryPdfUrl(fileUrl);
+      return <IframeDocViewer src={pdfUrl} title={lecture.title} isGoogleDoc={false} />;
+    } else if (isPdfType) {
+      return <IframeDocViewer src={fileUrl} title={lecture.title} isGoogleDoc={false} />;
+    } else if (isDocType) {
+      return <IframeDocViewer src={fileUrl} title={lecture.title} isGoogleDoc={true} />;
+    }
+
     return <DocumentCard url={fileUrl} title={lecture.title} type={lecture.type} />;
   };
 
   const isQuiz = lecture.type === "quiz";
   const completionPercent = completedLectures.length > 0 ? Math.min(100, completedLectures.length * 10) : 0;
+  const isVideo = !isQuiz && fileUrl && (
+    lecture.type === "video" ||
+    fileUrl.includes('youtube.com') ||
+    fileUrl.includes('youtu.be') ||
+    fileUrl.match(/\.(mp4|webm|ogg)($|\?)/i)
+  );
 
   return (
     <div
@@ -401,7 +443,10 @@ export default function LessonPlayer({
 
       {/* Media Player Area */}
       {!isQuiz && (
-        <div className="relative bg-black aspect-video w-full flex-shrink-0 border-b border-gray-200 overflow-hidden">
+        <div className={isVideo
+          ? "relative bg-black aspect-video w-full flex-shrink-0 border-b border-gray-200 overflow-hidden"
+          : "relative bg-white flex-1 w-full border-b border-gray-200 overflow-hidden"
+        }>
           {renderMedia()}
         </div>
       )}
@@ -428,7 +473,11 @@ export default function LessonPlayer({
       )}
 
       {/* Content area */}
-      <div className={`flex-1 overflow-y-auto custom-scrollbar p-5 min-h-[200px] ${isQuiz ? "bg-white text-gray-800" : "bg-gray-50 text-gray-800"}`}>
+      {availableTabs.length > 0 && (
+        <div 
+          className={`overflow-y-auto custom-scrollbar p-5 ${isQuiz ? "bg-white text-gray-800 flex-1" : "bg-gray-50 text-gray-800 border-t border-gray-200"}`}
+          style={isQuiz ? {} : { flex: '0 0 auto', height: '260px' }}
+        >
 
         {/* Quiz tab */}
         {((activeTab === "quiz" && lecture.type !== "quiz") || lecture.type === "quiz") && (
@@ -501,11 +550,6 @@ export default function LessonPlayer({
               </div>
             )}
 
-            {!lecture.readings && !lecture.attachments?.length && (
-              <div className="text-center py-8 text-gray-400 text-sm">
-                Bài học này chưa có tài liệu bổ sung.
-              </div>
-            )}
           </div>
         )}
 
@@ -608,7 +652,8 @@ export default function LessonPlayer({
 
 
 
-      </div>
+        </div>
+      )}
     </div>
   );
 }

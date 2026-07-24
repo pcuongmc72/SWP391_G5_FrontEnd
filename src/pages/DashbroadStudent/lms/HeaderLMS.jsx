@@ -1,6 +1,5 @@
 import React, { useState } from "react";
 import {
-  Menu,
   BookOpen,
   LogOut,
   ChevronDown,
@@ -18,8 +17,6 @@ export default function HeaderLMS({
   studentCode,
   studentEmail,
   onLogout,
-  onToggleSidebar,
-  sidebarOpen,
   onHome,
   onChangePassword
 }) {
@@ -45,11 +42,8 @@ export default function HeaderLMS({
       userSelect: "none",
     }}>
 
-      {/* ─── Left side: Toggle + Brand ─── */}
+      {/* ─── Left side: Brand ─── */}
       <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-        {/* Sidebar toggle */}
-        <MenuToggle sidebarOpen={sidebarOpen} onToggleSidebar={onToggleSidebar} />
-
         {/* Brand logo */}
         <div
           onClick={onHome}
@@ -232,50 +226,6 @@ export default function HeaderLMS({
 }
 
 // ─── Sub-components ───────────────────────────────────────────
-
-function MenuToggle({ sidebarOpen, onToggleSidebar }) {
-  const [hov, setHov] = useState(false);
-  const isPinned = sidebarOpen;
-  return (
-    <button
-      onClick={onToggleSidebar}
-      onMouseEnter={() => setHov(true)}
-      onMouseLeave={() => setHov(false)}
-      title={isPinned ? "Bỏ ghim thanh điều hướng" : "Ghim thanh điều hướng (luôn mở rộng)"}
-      style={{
-        width: "36px",
-        height: "36px",
-        borderRadius: "8px",
-        background: isPinned
-          ? "rgba(15,118,110,0.1)"
-          : hov ? "#F3F4F6" : "transparent",
-        border: isPinned ? "1px solid rgba(15,118,110,0.2)" : "none",
-        cursor: "pointer",
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
-        color: isPinned ? "#0f766e" : (hov ? "#374151" : "#6B7280"),
-        transition: "background 200ms ease, color 200ms ease, border-color 200ms ease",
-        flexShrink: 0,
-        position: "relative",
-      }}
-    >
-      <Menu size={20} />
-      {/* Pin indicator dot */}
-      {isPinned && (
-        <span style={{
-          position: "absolute",
-          top: "5px",
-          right: "5px",
-          width: "5px",
-          height: "5px",
-          borderRadius: "50%",
-          background: "#0f766e",
-        }} />
-      )}
-    </button>
-  );
-}
 
 function AvatarPill({ avatarLetter, studentName, showLauncher, onClick }) {
   const [hov, setHov] = useState(false);
