@@ -143,7 +143,7 @@ function LoginPage() {
           {/* API Error */}
           {apiErr && (
             <div className={styles.apiError} role="alert">
-              ⚠️ {apiErr}
+              {apiErr} Nếu email tồn tại trong hệ thống, link khôi phục mật khẩu đã được gửi đi.
             </div>
           )}
 
@@ -155,7 +155,7 @@ function LoginPage() {
               padding: '0.75rem 1rem', borderRadius: '0.75rem',
               marginBottom: '1rem', textAlign: 'center'
             }} role="alert">
-              ✅ {successMsg}
+              {successMsg}
             </div>
           )}
 
@@ -170,7 +170,7 @@ function LoginPage() {
                 name="email"
                 type="email"
                 autoComplete="email"
-                placeholder="example@email.com"
+                placeholder="Enter your email"
                 className={`${styles.input} ${errors.email ? styles.inputError : ''}`}
                 value={form.email}
                 onChange={handleChange}
