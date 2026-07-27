@@ -44,7 +44,7 @@ api.interceptors.response.use(
     const isLoginRequest = requestUrl.toLowerCase().includes('/auth/login');
 
     if ((status === 400 || status === 401) && isLoginRequest) {
-      return Promise.reject(new Error('Email hoặc mật khẩu không đúng. Vui lòng thử lại.'));
+      return Promise.reject(new Error('Email hoặc mật khẩu không đúng. Vui lòng thử lại'));
     }
 
     if (status === 401 && !originalRequest._retry) {

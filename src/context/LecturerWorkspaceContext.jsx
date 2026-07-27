@@ -8,7 +8,6 @@ import {
   getSubmissions,
   getFeedbacks,
   getThreads,
-  getClassSessions,
   createMaterial,
   updateMaterial,
   deleteMaterial,
@@ -127,7 +126,6 @@ export function LecturerWorkspaceProvider({ children }) {
   const [submissions, setSubmissions] = useState([]);
   const [feedbacks, setFeedbacks] = useState([]);
   const [threads, setThreads] = useState([]);
-  const [sessions, setSessions] = useState([]);
   const [classDetail, setClassDetail] = useState(null);
 
   const [selectedClassId, setSelectedClassId] = useState('');
@@ -178,8 +176,7 @@ export function LecturerWorkspaceProvider({ children }) {
         assignmentsData,
         submissionsData,
         feedbacksData,
-        threadsData,
-        sessionsData
+        threadsData
       ] = await Promise.all([
         getClassDetail(classId).catch(() => null),
         getClassStudents(classId).catch(() => []),
@@ -187,8 +184,7 @@ export function LecturerWorkspaceProvider({ children }) {
         getAssignments(classId).catch(() => []),
         getSubmissions(classId).catch(() => []),
         getFeedbacks(classId).catch(() => []),
-        getThreads(classId).catch(() => []),
-        getClassSessions(classId).catch(() => [])
+        getThreads(classId).catch(() => [])
       ]);
 
       setClassDetail(classDetailData);
@@ -198,7 +194,6 @@ export function LecturerWorkspaceProvider({ children }) {
       setSubmissions((submissionsData || []).map(mapSubmission));
       setFeedbacks((feedbacksData || []).map(mapFeedback));
       setThreads((threadsData || []).map(mapThread));
-      setSessions(sessionsData || []);
 
       setClassrooms((prev) =>
         prev.map((c) =>
@@ -339,7 +334,6 @@ export function LecturerWorkspaceProvider({ children }) {
     setThreads,
     feedbacks,
     setFeedbacks,
-    sessions,
     activeSubTab,
     setActiveSubTab,
     searchQuery,

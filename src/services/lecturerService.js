@@ -18,41 +18,6 @@ export const getClassStudents = async (classId) => {
   return unwrap(response);
 };
 
-// Sessions / Schedule
-export const getClassSessions = async (classId, { from, to } = {}) => {
-  const params = {};
-  if (from) params.from = from;
-  if (to) params.to = to;
-  const response = await api.get(
-    `/api/Lecturer/classes/${encodeURIComponent(classId)}/sessions`,
-    { params }
-  );
-  return unwrap(response);
-};
-
-export const createSession = async (classId, body) => {
-  const response = await api.post(
-    `/api/Lecturer/classes/${encodeURIComponent(classId)}/sessions`,
-    body
-  );
-  return unwrap(response);
-};
-
-export const updateSession = async (classId, sessionId, body) => {
-  const response = await api.put(
-    `/api/Lecturer/classes/${encodeURIComponent(classId)}/sessions/${sessionId}`,
-    body
-  );
-  return unwrap(response);
-};
-
-export const deleteSession = async (classId, sessionId) => {
-  const response = await api.delete(
-    `/api/Lecturer/classes/${encodeURIComponent(classId)}/sessions/${sessionId}`
-  );
-  return unwrap(response);
-};
-
 // Materials
 export const getMaterials = async (classId) => {
   const response = await api.get(`/api/Lecturer/classes/${encodeURIComponent(classId)}/materials`);

@@ -1,6 +1,7 @@
 import React, { useState, useRef } from 'react';
 import {
-  Plus, Edit2, Search, CheckCircle, Eye, EyeOff, Upload, Download, FileSpreadsheet, AlertCircle, RefreshCw, X
+  Plus, Edit2, Search, CheckCircle, Eye, EyeOff, Upload, Download, FileSpreadsheet, AlertCircle, RefreshCw, X,
+  ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight
 } from 'lucide-react';
 import { importUsers, downloadImportTemplate } from '../../services/userService';
 
@@ -32,6 +33,8 @@ function AdminDashboard({
   const [showPassword, setShowPassword] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [roleFilter, setRoleFilter] = useState('ALL');
+  const [currentPage, setCurrentPage] = useState(1);
+  const ITEMS_PER_PAGE = 10;
 
   const [isImportOpen, setIsImportOpen] = useState(false);
   const [importFile, setImportFile] = useState(null);
@@ -157,6 +160,27 @@ function AdminDashboard({
     return getRolePriority(a.role) - getRolePriority(b.role);
   });
 
+  const totalPages = Math.ceil(sortedUsers.length / ITEMS_PER_PAGE);
+  const indexOfLastItem = currentPage * ITEMS_PER_PAGE;
+  const indexOfFirstItem = indexOfLastItem - ITEMS_PER_PAGE;
+  const currentUsers = sortedUsers.slice(indexOfFirstItem, indexOfLastItem);
+
+  const getPageNumbers = () => {
+    const pageLimit = 5;
+    let start = Math.max(1, currentPage - Math.floor(pageLimit / 2));
+    let end = Math.min(totalPages, start + pageLimit - 1);
+
+    if (end - start + 1 < pageLimit) {
+      start = Math.max(1, end - pageLimit + 1);
+    }
+
+    const pages = [];
+    for (let i = start; i <= end; i++) {
+      pages.push(i);
+    }
+    return pages;
+  };
+
   return (
     <div className="space-y-6">
 
@@ -197,11 +221,11 @@ function AdminDashboard({
             <div className="relative flex-1">
               <Search className="absolute left-3 top-2.5 h-4 w-4 text-slate-400" />
               <input type="text" placeholder="Tìm tài khoản theo tên, email, ID..."
-                value={searchQuery} onChange={e => setSearchQuery(e.target.value)}
+                value={searchQuery} onChange={e => { setSearchQuery(e.target.value); setCurrentPage(1); }}
                 className="w-full bg-white border border-slate-200 rounded-xl pl-9 pr-4 py-2 text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-emerald-800 focus:border-emerald-800" />
             </div>
             <div className="flex gap-2">
-              <select value={roleFilter} onChange={e => setRoleFilter(e.target.value)}
+              <select value={roleFilter} onChange={e => { setRoleFilter(e.target.value); setCurrentPage(1); }}
                 className="bg-white border border-slate-200 rounded-xl px-3 py-2 text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-emerald-800">
                 <option value="ALL">Tất cả</option>
                 <option value="Admin">Admin</option>
@@ -260,7 +284,7 @@ function AdminDashboard({
                     </td>
                   </tr>
                 ) : (
-                  sortedUsers.map(u => (
+                  currentUsers.map(u => (
                     <tr key={u.id} className="hover:bg-slate-50/50 transition-colors">
                       <td className="px-6 py-4">
                         <div className="flex items-center gap-3">
@@ -325,6 +349,73 @@ function AdminDashboard({
               </tbody>
             </table>
           </div>
+
+          {/* Pagination Controls */}
+          {!isLoading && sortedUsers.length > 10 && (
+            <div className="flex justify-end gap-4 pt-4 border-t border-slate-100">
+              <div className="flex items-center gap-1">
+                {/* First Page */}
+                <button
+                  type="button"
+                  disabled={currentPage === 1}
+                  onClick={() => setCurrentPage(1)}
+                  className="p-2 border border-slate-200 rounded-xl hover:bg-slate-50 text-slate-500 hover:text-slate-700 disabled:opacity-40 disabled:hover:bg-transparent transition-colors cursor-pointer disabled:cursor-not-allowed"
+                  title="Trang đầu"
+                >
+                  <ChevronsLeft className="h-4 w-4" />
+                </button>
+
+                {/* Previous Page */}
+                <button
+                  type="button"
+                  disabled={currentPage === 1}
+                  onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+                  className="p-2 border border-slate-200 rounded-xl hover:bg-slate-50 text-slate-500 hover:text-slate-700 disabled:opacity-40 disabled:hover:bg-transparent transition-colors cursor-pointer disabled:cursor-not-allowed"
+                  title="Trang trước"
+                >
+                  <ChevronLeft className="h-4 w-4" />
+                </button>
+
+                {/* Page Numbers */}
+                {getPageNumbers().map(pageNum => (
+                  <button
+                    key={pageNum}
+                    type="button"
+                    onClick={() => setCurrentPage(pageNum)}
+                    className={`h-9 w-9 flex items-center justify-center font-semibold rounded-xl text-xs transition-colors cursor-pointer ${
+                      currentPage === pageNum
+                        ? 'bg-emerald-900 text-white shadow-sm'
+                        : 'border border-slate-200 hover:bg-slate-50 text-slate-700'
+                    }`}
+                  >
+                    {pageNum}
+                  </button>
+                ))}
+
+                {/* Next Page */}
+                <button
+                  type="button"
+                  disabled={currentPage === totalPages}
+                  onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
+                  className="p-2 border border-slate-200 rounded-xl hover:bg-slate-50 text-slate-500 hover:text-slate-700 disabled:opacity-40 disabled:hover:bg-transparent transition-colors cursor-pointer disabled:cursor-not-allowed"
+                  title="Trang sau"
+                >
+                  <ChevronRight className="h-4 w-4" />
+                </button>
+
+                {/* Last Page */}
+                <button
+                  type="button"
+                  disabled={currentPage === totalPages}
+                  onClick={() => setCurrentPage(totalPages)}
+                  className="p-2 border border-slate-200 rounded-xl hover:bg-slate-50 text-slate-500 hover:text-slate-700 disabled:opacity-40 disabled:hover:bg-transparent transition-colors cursor-pointer disabled:cursor-not-allowed"
+                  title="Trang cuối"
+                >
+                  <ChevronsRight className="h-4 w-4" />
+                </button>
+              </div>
+            </div>
+          )}
         </div>
       </div>
 
@@ -364,7 +455,7 @@ function AdminDashboard({
               <div>
                 <label className="block text-sm font-semibold text-slate-700 mb-1">Email <span className="text-rose-500">*</span></label>
                 <input type="email" value={userForm.email} onChange={e => setUserForm({ ...userForm, email: e.target.value })}
-                  className="w-full border border-slate-200 rounded-xl px-3 py-2 text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-emerald-800" placeholder="example@email.com" />
+                  className="w-full border border-slate-200 rounded-xl px-3 py-2 text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-emerald-800" placeholder="Enter your email" />
               </div>
               <div>
                 <label className="block text-sm font-semibold text-slate-700 mb-1">Đường dẫn ảnh đại diện (Avatar URL)</label>
