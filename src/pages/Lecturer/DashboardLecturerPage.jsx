@@ -286,7 +286,8 @@ function LecturerLayoutInner() {
     activeSubTab, setActiveSubTab,
     searchQuery, setSearchQuery,
     feedbacks,
-    classrooms, selectedClassId, setSelectedClassId, classesLoading
+    classrooms, selectedClassId, setSelectedClassId, classesLoading,
+    isClassReadOnly, classReadOnlyMessage
   } = useLecturerWorkspace();
 
   const [dropdownOpen, setDropdownOpen] = useState(false);
@@ -465,6 +466,12 @@ function LecturerLayoutInner() {
         </header>
 
         <div className={styles.content}>
+          {isClassReadOnly && location.pathname !== '/dashboard/lecturer/blog' && (
+            <div className={styles.readOnlyBanner} role="status">
+              <strong>Lớp đã kết thúc — chế độ chỉ xem.</strong>
+              <span>{classReadOnlyMessage}</span>
+            </div>
+          )}
           {location.pathname === '/dashboard/lecturer/classes-list' ? (
             <ClassListDashboard />
           ) : location.pathname === '/dashboard/lecturer/assignments' ? (
