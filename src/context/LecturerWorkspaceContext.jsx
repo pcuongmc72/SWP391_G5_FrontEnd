@@ -224,6 +224,9 @@ export function LecturerWorkspaceProvider({ children }) {
       ...fromList,
       termStartDate: classDetail?.termStartDate,
       termEndDate: classDetail?.termEndDate,
+      classEndDate: classDetail?.classEndDate,
+      effectiveEndDate: classDetail?.effectiveEndDate,
+      isReadOnly: classDetail?.isReadOnly ?? false,
       courseCode: classDetail?.courseCode || fromList.courseCode,
       courseName: classDetail?.courseName || fromList.courseName,
     };
@@ -231,11 +234,29 @@ export function LecturerWorkspaceProvider({ children }) {
 
   const myClassrooms = classrooms;
 
+  const isClassReadOnly = classDetail?.isReadOnly ?? false;
+  const classReadOnlyMessage = isClassReadOnly
+    ? `Lớp học đã kết thúc ngày ${classDetail?.effectiveEndDate || classDetail?.termEndDate}. Bạn chỉ có thể xem dữ liệu.`
+    : '';
+
+  const assertClassWritable = useCallback(() => {
+    if (isClassReadOnly) {
+      const error = new Error(classReadOnlyMessage);
+      error.code = 'CLASS_ENDED';
+      throw error;
+    }
+  }, [isClassReadOnly, classReadOnlyMessage]);
+
   const api = useMemo(
     () => ({
-      uploadFile,
+      assertWritable: assertClassWritable,
+      uploadFile: async (...args) => {
+        assertClassWritable();
+        return uploadFile(...args);
+      },
       reload: () => loadWorkspace(selectedClassId),
       addMaterial: async (body) => {
+        assertClassWritable();
         let safeType = body.type;
         if (!['quiz', 'document', 'pdf', 'video'].includes(safeType)) {
           safeType = 'document';
@@ -252,6 +273,7 @@ export function LecturerWorkspaceProvider({ children }) {
         await loadWorkspace(selectedClassId);
       },
       updateMaterial: async (id, body) => {
+        assertClassWritable();
         let safeType = body.type;
         if (!['quiz', 'document', 'pdf', 'video'].includes(safeType)) {
           safeType = 'document';
@@ -268,47 +290,57 @@ export function LecturerWorkspaceProvider({ children }) {
         await loadWorkspace(selectedClassId);
       },
       removeMaterial: async (id) => {
+        assertClassWritable();
         await deleteMaterial(selectedClassId, id);
         await loadWorkspace(selectedClassId);
       },
       completeMaterialAll: async (id) => {
+        assertClassWritable();
         await markMaterialCompleteAll(selectedClassId, id);
         await loadWorkspace(selectedClassId);
       },
       addAssignment: async (body) => {
+        assertClassWritable();
         await createAssignment(selectedClassId, body);
         await loadWorkspace(selectedClassId);
       },
       updateAssignment: async (id, body) => {
+        assertClassWritable();
         await updateAssignment(selectedClassId, id, body);
         await loadWorkspace(selectedClassId);
       },
       removeAssignment: async (id) => {
+        assertClassWritable();
         await deleteAssignment(selectedClassId, id);
         await loadWorkspace(selectedClassId);
       },
       gradeSubmission: async (id, body) => {
+        assertClassWritable();
         await gradeSubmission(selectedClassId, id, body);
         await loadWorkspace(selectedClassId);
       },
       respondFeedback: async (id, body) => {
+        assertClassWritable();
         await respondFeedback(selectedClassId, id, body);
         await loadWorkspace(selectedClassId);
       },
       addThread: async (body) => {
+        assertClassWritable();
         await createThread(selectedClassId, body);
         await loadWorkspace(selectedClassId);
       },
       addReply: async (threadId, body) => {
+        assertClassWritable();
         await createReply(selectedClassId, threadId, body);
         await loadWorkspace(selectedClassId);
       },
       promoteStudent: async (studentId, role = 'assistant') => {
+        assertClassWritable();
         await promoteStudentInClass(selectedClassId, studentId, role);
         await loadWorkspace(selectedClassId);
       },
     }),
-    [selectedClassId, loadWorkspace]
+    [selectedClassId, loadWorkspace, assertClassWritable]
   );
 
   const value = {
@@ -319,6 +351,8 @@ export function LecturerWorkspaceProvider({ children }) {
     myClassrooms,
     activeClass,
     classDetail,
+    isClassReadOnly,
+    classReadOnlyMessage,
     selectedClassId,
     setSelectedClassId,
     classesLoading,

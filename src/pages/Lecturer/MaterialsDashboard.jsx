@@ -695,6 +695,7 @@ export default function MaterialsDashboard() {
           }))
         };
 
+        api.assertWritable();
         await createQuiz(payload);
         await api.reload();
         showToast('Đã tạo bài trắc nghiệm thành công!');
@@ -854,6 +855,7 @@ export default function MaterialsDashboard() {
           }))
         };
 
+        api.assertWritable();
         await updateQuiz(quizId, payload);
         await api.reload();
         showToast('Cập nhật bài trắc nghiệm thành công!');
@@ -1007,6 +1009,7 @@ export default function MaterialsDashboard() {
     try {
       if (isQuiz) {
         const quizId = (material?.url && material.url !== '#') ? material.url : id;
+        api.assertWritable();
         await deleteQuiz(quizId);
         await api.reload();
       } else {
