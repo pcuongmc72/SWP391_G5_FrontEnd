@@ -102,7 +102,9 @@ export default function GradingDashboard() {
             }
           }
         }
-      } catch (e) { }
+      } catch (e) {
+        // ignore
+      }
       
       if (!groups[matId]) groups[matId] = [];
       groups[matId].push(asg);
@@ -207,14 +209,19 @@ export default function GradingDashboard() {
       });
       showToast('Đã lưu điểm & phản hồi thành công!');
 
-      // Auto-advance logic
+      // Auto-advance only to the next submission that is waiting to be graded.
+      // Skip students who have not submitted and submissions already graded.
       const currentIndex = currentSubmissions.findIndex(s => s.id === gradingSubmission.id);
       if (currentIndex !== -1) {
-        const nextSub = currentSubmissions.slice(currentIndex + 1).find(s => s.status !== 'GRADED');
+        const nextSub = currentSubmissions
+          .slice(currentIndex + 1)
+          .find(s => s.status === 'SUBMITTED');
+
         if (nextSub) {
           handleSelectSubmission(nextSub);
         } else {
           setGradingSubmissionId(null);
+          showToast('Đã chấm xong tất cả bài đã nộp!');
         }
       }
     } catch (err) {

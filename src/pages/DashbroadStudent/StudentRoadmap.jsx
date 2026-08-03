@@ -312,7 +312,7 @@ function ClassListScreen({ onSelectClass }) {
 
 function getYouTubeVideoId(url) {
     if (!url) return null;
-    const regExp = /^.*(youtu\.be\/|v\/|u\/\w\/|embed\/|watch\?v=|\&v=)([^#\&\?]*).*/;
+    const regExp = /^.*(youtu\.be\/|v\/|u\/\w\/|embed\/|watch\?v=|&v=)([^#&?]*).*/;
     const match = url.match(regExp);
     return (match && match[2].length === 11) ? match[2] : null;
 }
@@ -564,7 +564,6 @@ function RoadmapScreen({ cls, onBack, onSelectMaterial, refreshKey, onProgressCh
     const [togglingId, setTogglingId] = useState(null);
     const [openChapters, setOpenChapters] = useState({});
     const [previewMaterial, setPreviewMaterial] = useState(null);
-    const [isChungOpen, setIsChungOpen] = useState(false);
 
     useEffect(() => {
         /** Tải lộ trình học tập của lớp được chọn. */
@@ -628,13 +627,6 @@ function RoadmapScreen({ cls, onBack, onSelectMaterial, refreshKey, onProgressCh
 
     const completedCount = materials.filter(m => m.isCompleted).length;
     const progressPercent = materials.length > 0 ? Math.round((completedCount / materials.length) * 100) : 0;
-
-    // Học liệu thuộc nhóm "Chung" (không được gán chương)
-    const chungMaterials = React.useMemo(() => {
-        return chapters
-            .filter(c => parseChapterName(c.chapterName) === 'Chung')
-            .flatMap(c => c.materials);
-    }, [chapters]);
 
     // Lọc học liệu theo từ khóa tìm kiếm và loại học liệu
     // Đồng thời bỏ nhóm "Chung" khỏi accordion chính
@@ -796,7 +788,7 @@ function RoadmapScreen({ cls, onBack, onSelectMaterial, refreshKey, onProgressCh
                     {/* Header of Accordion section */}
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                         <span style={{ fontSize: '0.875rem', fontWeight: 600, color: '#475569' }}>
-                            {chapters.filter(c => parseChapterName(c.chapterName) !== 'Chung').length} chương • {materials.length} học liệu học tập • {chungMaterials.length} học liệu chung
+                            {chapters.filter(c => parseChapterName(c.chapterName) !== 'Chung').length} chương • {materials.length} học liệu học tập
                         </span>
                         <button
                             onClick={toggleAllSections}
@@ -990,117 +982,6 @@ function RoadmapScreen({ cls, onBack, onSelectMaterial, refreshKey, onProgressCh
                 </div>
             )}
 
-            {/* ── General Materials (Chung) Section ── */}
-            {!loading && chungMaterials.length > 0 && (
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 0 }}>
-                    {/* Section Header */}
-                    <div
-                        onClick={() => setIsChungOpen(prev => !prev)}
-                        style={{
-                            display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-                            padding: '14px 20px', cursor: 'pointer', userSelect: 'none',
-                            backgroundColor: isChungOpen ? '#f0fdf4' : '#fff',
-                            border: '1px solid #e2e8f0', borderRadius: isChungOpen ? '16px 16px 0 0' : '16px',
-                            transition: 'background-color 0.2s, border-radius 0.2s',
-                            borderLeft: isChungOpen ? '4px solid #0f766e' : '4px solid transparent'
-                        }}
-                        onMouseEnter={e => e.currentTarget.style.backgroundColor = '#e6f4ea'}
-                        onMouseLeave={e => e.currentTarget.style.backgroundColor = isChungOpen ? '#f0fdf4' : '#fff'}
-                    >
-                        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                            <div style={{ transform: isChungOpen ? 'rotate(180deg)' : 'rotate(0deg)', transition: 'transform 0.2s ease', color: '#94a3b8', flexShrink: 0 }}>
-                                <ChevronDown size={18} />
-                            </div>
-                            <span style={{ fontSize: '0.9375rem', fontWeight: 700, color: '#475569' }}>
-                                    Học liệu chung
-                                </span>
-                        </div>
-                        <span style={{ fontSize: '0.8125rem', color: '#94a3b8', fontWeight: 600, flexShrink: 0 }}>
-                            {chungMaterials.length} học liệu
-                        </span>
-                    </div>
-
-                    {/* Section Body */}
-                    {isChungOpen && (
-                        <div style={{
-                            border: '1px solid #e2e8f0', borderTop: 'none',
-                            borderRadius: '0 0 16px 16px', backgroundColor: '#f8fafc',
-                            padding: '12px 20px 20px 20px',
-                            display: 'flex', flexDirection: 'column', gap: 10
-                        }}>
-                            {chungMaterials.map(material => {
-                                const cfg = getTypeConfig(material.type || material.materialType);
-                                const TypeIcon = cfg.icon;
-                                return (
-                                    <div
-                                        key={material.id}
-                                        style={{
-                                            display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-                                            padding: '12px 16px', borderRadius: '12px',
-                                            backgroundColor: '#fff', border: '1.5px solid #e2e8f0',
-                                            boxShadow: '0 1px 2px rgba(0,0,0,0.02)', transition: 'all 0.15s ease'
-                                        }}
-                                    >
-                                        <div style={{ display: 'flex', alignItems: 'center', gap: 12, minWidth: 0 }}>
-                                            {/* Type Icon only — no completion checkbox */}
-                                            <div style={{ width: 32, height: 32, borderRadius: 8, background: cfg.bg, border: `1px solid ${cfg.border}`, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                                                <TypeIcon size={14} color={cfg.color} />
-                                            </div>
-                                            <div style={{ minWidth: 0 }}>
-                                                <span style={{ fontSize: '0.875rem', fontWeight: 600, color: '#334155', display: 'block', lineHeight: '1.4', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                                                    {material.title}
-                                                </span>
-                                                <span style={{ fontSize: '0.75rem', color: '#94a3b8', display: 'flex', gap: 6, alignItems: 'center', flexWrap: 'wrap' }}>
-                                                    <span>{cfg.label}</span>
-                                                    {material.fileSize && <span>• {material.fileSize}</span>}
-                                                    <span>• {formatDate(material.uploadedAt)}</span>
-                                                </span>
-                                            </div>
-                                        </div>
-
-                                        {/* Actions: Preview + Download only */}
-                                        <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexShrink: 0 }}>
-                                            {material.fileUrl && material.fileUrl !== '#' && (
-                                                <>
-                                                    <button
-                                                        onClick={(e) => { e.preventDefault(); setPreviewMaterial(material); }}
-                                                        style={{
-                                                            display: 'inline-flex', alignItems: 'center', gap: 5, fontSize: '0.75rem',
-                                                            fontWeight: 600, color: '#0f766e', background: '#f0fdf4',
-                                                            border: '1px solid #bfe5dc', padding: '6px 12px', borderRadius: 8,
-                                                            textDecoration: 'none', transition: 'all 0.15s', cursor: 'pointer'
-                                                        }}
-                                                        onMouseEnter={e => e.currentTarget.style.background = '#e6f4ea'}
-                                                        onMouseLeave={e => e.currentTarget.style.background = '#f0fdf4'}
-                                                    >
-                                                        <ExternalLink size={12} /> Xem trước
-                                                    </button>
-                                                    <a
-                                                        href={getCloudinaryDownloadUrl(getCleanFileUrl(material.fileUrl))}
-                                                        download
-                                                        target="_blank"
-                                                        rel="noopener noreferrer"
-                                                        style={{
-                                                            display: 'inline-flex', alignItems: 'center', gap: 5, fontSize: '0.75rem',
-                                                            fontWeight: 600, color: '#0f766e', background: '#e6f4ea',
-                                                            border: '1px solid #a3cfbb', padding: '6px 12px', borderRadius: 8,
-                                                            textDecoration: 'none', transition: 'all 0.15s'
-                                                        }}
-                                                        onMouseEnter={e => e.currentTarget.style.background = '#d1e7dd'}
-                                                        onMouseLeave={e => e.currentTarget.style.background = '#e6f4ea'}
-                                                    >
-                                                        <Download size={12} /> Tải xuống
-                                                    </a>
-                                                </>
-                                            )}
-                                        </div>
-                                    </div>
-                                );
-                            })}
-                        </div>
-                    )}
-                </div>
-            )}
         </div>
     );
 }

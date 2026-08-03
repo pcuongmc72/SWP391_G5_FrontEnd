@@ -22,7 +22,7 @@ import StudentQuizPlayer from "./StudentQuizPlayer";
 // ─────────────────────────────────────────
 const STORAGE_PREFIX = "flipped_vpos_";
 const savePlaybackPos = (lectureId, time) => {
-  try { localStorage.setItem(STORAGE_PREFIX + lectureId, String(time)); } catch {}
+  try { localStorage.setItem(STORAGE_PREFIX + lectureId, String(time)); } catch { /* ignore */ }
 };
 const getPlaybackPos = (lectureId) => {
   try { return parseFloat(localStorage.getItem(STORAGE_PREFIX + lectureId) || "0"); } catch { return 0; }
@@ -40,25 +40,10 @@ function VideoPlayer({ src, lectureId }) {
   const isYouTube = src?.includes('youtube.com') || src?.includes('youtu.be');
   const getYouTubeId = (url) => {
     if (!url) return null;
-    const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|\&v=)([^#\&\?]*).*/;
+    const regExp = /^.*(youtu\.be\/|v\/|u\/\w\/|embed\/|watch\?v=|&v=)([^#&?]*).*/;
     const match = url.match(regExp);
     return (match && match[2].length === 11) ? match[2] : null;
   };
-
-  if (isYouTube) {
-    const ytId = getYouTubeId(src);
-    return (
-      <div className="relative w-full h-full bg-black">
-        <iframe
-          src={`https://www.youtube.com/embed/${ytId}?rel=0`}
-          title="YouTube video player"
-          className="w-full h-full border-0"
-          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-          allowFullScreen
-        ></iframe>
-      </div>
-    );
-  }
 
   useEffect(() => {
     setLoading(true);
@@ -86,9 +71,10 @@ function VideoPlayer({ src, lectureId }) {
 
   // Lưu khi rời trang
   useEffect(() => {
+    const currentVideo = videoRef.current;
     return () => {
-      if (videoRef.current) {
-        savePlaybackPos(lectureId, videoRef.current.currentTime);
+      if (currentVideo) {
+        savePlaybackPos(lectureId, currentVideo.currentTime);
       }
     };
   }, [lectureId]);
@@ -107,6 +93,21 @@ function VideoPlayer({ src, lectureId }) {
     window.addEventListener("keydown", handleKey);
     return () => window.removeEventListener("keydown", handleKey);
   }, []);
+
+  if (isYouTube) {
+    const ytId = getYouTubeId(src);
+    return (
+      <div className="relative w-full h-full bg-black">
+        <iframe
+          src={`https://www.youtube.com/embed/${ytId}?rel=0`}
+          title="YouTube video player"
+          className="w-full h-full border-0"
+          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+          allowFullScreen
+        ></iframe>
+      </div>
+    );
+  }
 
   if (error) {
     return (

@@ -116,6 +116,23 @@ function GenericDropdown({ value, onChange, existingItems, hasError = false, pla
   );
 }
 
+const generateRandomGroups = (num, studentsList) => {
+  const list = [...(studentsList || [])];
+  for (let i = list.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [list[i], list[j]] = [list[j], list[i]];
+  }
+  const result = Array.from({ length: num }, (_, index) => ({
+    name: `Nhóm ${index + 1}`,
+    members: [],
+    canView: true,
+  }));
+  list.forEach((student, index) => {
+    result[index % num].members.push({ id: student.id, name: student.name });
+  });
+  return result;
+};
+
 function GroupDistributionConfig({ formState, setFormState, users, showToast }) {
   if (formState.distributeMode === 'all') return null;
   return (
@@ -160,7 +177,7 @@ export default function MaterialsDashboard() {
   const {
     currentUser, users, classrooms, selectedClassId,
     classesLoading, classesError, workspaceLoading,
-    materials, searchQuery, setSearchQuery, api,
+    materials, searchQuery, setSearchQuery, loadWorkspace, api,
   } = useLecturerWorkspace();
 
   const [toast, setToast] = useState(null);
@@ -262,7 +279,7 @@ export default function MaterialsDashboard() {
   // Helper: Get YouTube Video ID from URL
   const getYouTubeVideoId = (url) => {
     if (!url) return null;
-    const regExp = /^.*(youtu\.be\/|v\/|u\/\w\/|embed\/|watch\?v=|\&v=)([^#\&\?]*).*/;
+    const regExp = /^.*(youtu\.be\/|v\/|u\/\w\/|embed\/|watch\?v=|&v=)([^#&?]*).*/;
     const match = url.match(regExp);
     return (match && match[2].length === 11) ? match[2] : null;
   };
@@ -393,22 +410,7 @@ export default function MaterialsDashboard() {
   const existingChaptersForSubject = useMemo(() => existingChapters, [existingChapters]);
   const existingChaptersForEditSubject = useMemo(() => existingChapters, [existingChapters]);
 
-  const generateRandomGroups = (num, studentsList) => {
-    const list = [...studentsList];
-    for (let i = list.length - 1; i > 0; i--) {
-      const j = Math.floor(Math.random() * (i + 1));
-      [list[i], list[j]] = [list[j], list[i]];
-    }
-    const result = Array.from({ length: num }, (_, index) => ({
-      name: `Nhóm ${index + 1}`,
-      members: [],
-      canView: true, // default: group can view the material
-    }));
-    list.forEach((student, index) => {
-      result[index % num].members.push({ id: student.id, name: student.name });
-    });
-    return result;
-  };
+
 
   const handleAddComment = (text) => {
     if (!text.trim()) return;
@@ -1233,11 +1235,11 @@ export default function MaterialsDashboard() {
         fileSize: m.fileSize,
         lesson: m.lesson,
         chapter: newCompound 
-      })));
+      }, { skipReload: true })));
       
+      await loadWorkspace(selectedClassId);
       showToast('Đã đổi tên chương thành công!');
       setRenamingChapter(null);
-      fetchMaterials();
     } catch (e) {
       showToast(e.message || 'Lỗi khi đổi tên chương', 'error');
     } finally {
@@ -2088,7 +2090,9 @@ export default function MaterialsDashboard() {
                                 try {
                                   const doc = e.target.contentDocument;
                                   if (doc && doc.body && doc.body.innerHTML.trim() === '') setIframeError(true);
-                                } catch { }
+                                } catch {
+                                  // ignore
+                                }
                               }}
                             />
                           );

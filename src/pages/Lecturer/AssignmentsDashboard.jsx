@@ -60,7 +60,9 @@ export default function AssignmentsDashboard() {
           attachmentName: data.attachmentName || '',
           attachmentSize: data.attachmentSize || '',
         };
-      } catch (e) { }
+      } catch (e) {
+        // ignore
+      }
     }
     return { desc: rawDesc, linkedItem: '', linkedTitle: '', type: 'individual', instructions: '', attachmentUrl: '', attachmentName: '', attachmentSize: '' };
   };

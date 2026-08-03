@@ -139,7 +139,7 @@ function InfoRow({ icon, label, value }) {
 
 /* ─── ClassCard ────────────────────────────────────────── */
 function ClassCard({ cls, onEdit, onDelete, onViewDetails, onViewRoadmap }) {
-  const isDisabled = cls.status === 'CLOSED' || cls.status === 'ACTIVE';
+  const isDisabled = cls.status === 'CLOSED' ;
   return (
     <div style={{
       background: '#ffffff', border: '1px solid #e2e8f0', borderRadius: 20,
@@ -1625,7 +1625,7 @@ function ClassesDashboard({ terms = [], selectedTerm, onTermChange, users = [], 
 
   const handleOpen = (cls = null) => {
     if (cls) {
-      if (cls.status === 'CLOSED' || cls.status === 'ACTIVE') {
+      if (cls.status === 'CLOSED') {
         showToast('Lớp học này đang diễn ra hoặc đã kết thúc, không thể thực hiện chỉnh sửa!', 'error');
         return;
       }

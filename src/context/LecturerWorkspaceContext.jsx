@@ -389,6 +389,7 @@ export function LecturerWorkspaceProvider({ children }) {
   );
 }
 
+// eslint-disable-next-line react-refresh/only-export-components
 export const useLecturerWorkspace = () => {
   const ctx = useContext(LecturerWorkspaceContext);
   if (!ctx) throw new Error('useLecturerWorkspace must be used within LecturerWorkspaceProvider');

@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
+import { createPortal } from 'react-dom';
 import {
     ClipboardList, Clock, CheckCircle2, XCircle, AlertTriangle,
     Upload, FileText, ChevronDown, ChevronUp, Loader2,
@@ -90,13 +91,22 @@ function getCloudinaryDownloadUrl(url) {
 // ─── Material Preview Modal Component ───────────────────────────────────────────
 
 function MaterialPreviewModal({ isOpen, onClose, fileUrl, fileName }) {
-    const previewRef = useRef(null);
-
     useEffect(() => {
-        if (isOpen && previewRef.current) {
-            previewRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' });
-        }
-    }, [isOpen]);
+        if (!isOpen) return undefined;
+
+        const previousOverflow = document.body.style.overflow;
+        document.body.style.overflow = 'hidden';
+
+        const handleKeyDown = (event) => {
+            if (event.key === 'Escape') onClose();
+        };
+        document.addEventListener('keydown', handleKeyDown);
+
+        return () => {
+            document.body.style.overflow = previousOverflow;
+            document.removeEventListener('keydown', handleKeyDown);
+        };
+    }, [isOpen, onClose]);
 
     if (!isOpen || !fileUrl) return null;
 
@@ -114,23 +124,27 @@ function MaterialPreviewModal({ isOpen, onClose, fileUrl, fileName }) {
             ? `https://docs.google.com/gview?url=${encodeURIComponent(fileUrl)}&embedded=true`
             : fileUrl;
 
-    return (
+    return createPortal(
         <div 
             id="material-preview-modal"
-            ref={previewRef}
             onClick={onClose}
+            role="dialog"
+            aria-modal="true"
+            aria-label={`Xem trước ${fileName || 'tài liệu'}`}
             style={{
                 position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
                 backgroundColor: 'rgba(15, 23, 42, 0.75)', backdropFilter: 'blur(4px)',
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
-                zIndex: 99999, padding: 16
+                zIndex: 999999, padding: 'clamp(8px, 2vw, 24px)',
+                boxSizing: 'border-box'
             }}
         >
             <div 
                 onClick={e => e.stopPropagation()}
                 style={{
                     backgroundColor: '#fff', borderRadius: 16, width: '100%', maxWidth: 1000,
-                    height: '85vh', display: 'flex', flexDirection: 'column', overflow: 'hidden',
+                    height: 'min(85vh, 820px)', maxHeight: 'calc(100dvh - 32px)',
+                    display: 'flex', flexDirection: 'column', overflow: 'hidden',
                     boxShadow: '0 20px 25px -5px rgba(0,0,0,0.1), 0 10px 10px -5px rgba(0,0,0,0.04)'
                 }}
             >
@@ -153,6 +167,8 @@ function MaterialPreviewModal({ isOpen, onClose, fileUrl, fileName }) {
                         </a>
                         <button 
                             onClick={onClose} 
+                            type="button"
+                            aria-label="Đóng cửa sổ xem trước"
                             style={{ background: '#f3f4f6', border: 'none', borderRadius: 8, padding: 8, cursor: 'pointer', display: 'flex', alignItems: 'center', color: '#4b5563' }}
                         >
                             <X size={16} />
@@ -186,7 +202,8 @@ function MaterialPreviewModal({ isOpen, onClose, fileUrl, fileName }) {
                     )}
                 </div>
             </div>
-        </div>
+        </div>,
+        document.body
     );
 }
 
